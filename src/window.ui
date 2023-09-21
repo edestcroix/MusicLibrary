@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <requires lib="gtk" version="4.0" />
+  <requires lib="Adw" version="1.0" />
+  <template class="MusicLibraryWindow" parent="AdwApplicationWindow">
+    <property name="width-request">280</property>
+    <property name="height-request">200</property>
+    <property name="default-width">600</property>
+    <property name="default-height">300</property>
+    <child>
+      <object class="AdwBreakpoint">
+        <condition>max-width: 860sp</condition>
+        <setter object="outer_view" property="collapsed">True</setter>
+        <setter object="inner_view" property="sidebar-width-fraction">0.33</setter>
+      </object>
+    </child>
+    <child>
+      <object class="AdwBreakpoint">
+        <condition>max-width: 500sp</condition>
+        <setter object="outer_view" property="collapsed">True</setter>
+        <setter object="inner_view" property="sidebar-width-fraction">0.33</setter>
+        <setter object="inner_view" property="collapsed">True</setter>
+      </object>
+    </child>
+    <property name="content">
+      <object class="AdwNavigationSplitView" id="outer_view">
+        <property name="min-sidebar-width">470</property>
+        <property name="max-sidebar-width">780</property>
+        <property name="sidebar-width-fraction">0.47</property>
+        <property name="sidebar">
+          <object class="AdwNavigationPage">
+            <property name="title" translatable="yes">Sidebar</property>
+            <property name="child">
+              <object class="AdwNavigationSplitView" id="inner_view">
+                <property name="max-sidebar-width">260</property>
+                <property name="sidebar-width-fraction">0.38</property>
+                <property name="sidebar">
+                  <!-- sidebar -->
+                  <object class="AdwNavigationPage">
+                    <property name="title" translatable="yes">Artist</property>
+                    <property name="child">
+                      <object class="AdwToolbarView">
+                        <!-- <property name="top-bar-style">raised</property> -->
+                        <child type="top">
+                          <object class="AdwHeaderBar">
+                            <child type="end">
+                              <object class="GtkMenuButton">
+                                <property name="icon-name">open-menu-symbolic</property>
+                                <property name="menu-model">primary_menu</property>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+                        <property name="content">
+                          <object class="GtkListBox">
+                            <property name="selection-mode">none</property>
+                            <style>
+                              <class name="boxed-list" />
+                            </style>
+                            <child>
+                              <object class="AdwActionRow">
+                                <property name="title">Item 1</property>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="AdwActionRow">
+                                <property name="title">Item 2</property>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="AdwActionRow">
+                                <property name="title">Item 3</property>
+                              </object>
+                            </child>
+                          </object>
+                        </property>
+                      </object>
+                    </property>
+                  </object>
+                </property>
+                <property name="content">
+                  <!-- middle pane -->
+                  <object class="AdwNavigationPage">
+                    <property name="title" translatable="yes">Album</property>
+                    <property name="child">
+                      <object class="AdwToolbarView">
+                        <!-- <property name="top-bar-style">raised</property> -->
+                        <child type="top">
+                          <object class="AdwHeaderBar" />
+                        </child>
+                        <property name="content">
+                          <object class="GtkLabel">
+                          </object>
+                        </property>
+                      </object>
+                    </property>
+                  </object>
+                </property>
+              </object>
+            </property>
+          </object>
+        </property>
+        <property name="content">
+          <!-- content -->
+          <object class="AdwNavigationPage">
+            <property name="title" translatable="yes">Tracks</property>
+            <property name="child">
+              <object class="AdwToolbarView">
+                <property name="top-bar-style">raised</property>
+                <child type="top">
+                  <object class="AdwHeaderBar" />
+                </child>
+                <property name="content">
+                  <object class="GtkLabel">
+                  </object>
+                </property>
+              </object>
+            </property>
+          </object>
+        </property>
+      </object>
+    </property>
+  </template>
+  <menu id="primary_menu">
+    <section>
+      <item>
+        <attribute name="label" translatable="yes">_Preferences</attribute>
+        <attribute name="action">app.preferences</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">_Keyboard Shortcuts</attribute>
+        <attribute name="action">win.show-help-overlay</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">_About Music Florg</attribute>
+        <attribute name="action">app.about</attribute>
+      </item>
+    </section>
+  </menu>
+</interface>

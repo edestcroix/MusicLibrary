@@ -1,0 +1,6 @@
+data/ca.edestcroix.MusicLibary.desktop.in
+data/ca.edestcroix.MusicLibary.appdata.xml.in
+data/ca.edestcroix.MusicLibary.gschema.xml
+src/main.py
+src/window.py
+src/window.ui
