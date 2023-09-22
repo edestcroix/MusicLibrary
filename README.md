@@ -1,3 +1,8 @@
-# musiclibrary
+# Music Library
 
-A description of this project.
+A work-in-progress application to browse and play music from your local music library. Name and most functionallity subject to change.
+
+The base idea is a very simple, paned navigation view that allows filtering by artist -> album -> track only. No other sorting options
+are planned on being implemented right now. A play queue to play multiple albums is probably going to happend at some point.
+
+
