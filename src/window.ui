@@ -25,18 +25,19 @@
     <property name="content">
       <object class="AdwNavigationSplitView" id="outer_view">
         <property name="min-sidebar-width">470</property>
-        <property name="max-sidebar-width">780</property>
-        <property name="sidebar-width-fraction">0.48</property>
+        <property name="max-sidebar-width">500</property>
+        <property name="sidebar-width-fraction">0.38</property>
         <property name="sidebar">
           <object class="AdwNavigationPage">
             <property name="title" translatable="yes">Sidebar</property>
+            <!-- <property name="tag">lists-views</property> -->
             <property name="child">
               <object class="AdwNavigationSplitView" id="inner_view">
-                <property name="max-sidebar-width">260</property>
-                <property name="sidebar-width-fraction">0.38</property>
+                <property name="max-sidebar-width">250</property>
+                <property name="sidebar-width-fraction">0.5</property>
                 <property name="sidebar">
                   <!-- sidebar -->
-                  <object class="AdwNavigationPage">
+                  <object class="AdwNavigationPage" id="aritst_view">
                     <property name="title" translatable="yes">Artist</property>
                     <property name="child">
                       <object class="AdwToolbarView">
@@ -46,9 +47,9 @@
                             <child type="start">
                               <object class="GtkButton" id="sync_button">
                                 <property name="icon-name">emblem-synchronizing-symbolic</property>
-                                <style>
-                                  <class name="suggested-action" />
-                                </style>
+                                <!-- <style> -->
+                                <!--   <class name="suggested-action" /> -->
+                                <!-- </style> -->
                               </object>
                             </child>
                             <child type="end">
@@ -79,6 +80,7 @@
                   <!-- middle pane -->
                   <object class="AdwNavigationPage">
                     <property name="title" translatable="yes">Album</property>
+                    <property name="tag">album-view</property>
                     <property name="child">
                       <object class="AdwToolbarView">
                         <!-- <property name="top-bar-style">raised</property> -->
@@ -109,6 +111,7 @@
           <!-- content -->
           <object class="AdwNavigationPage">
             <property name="title" translatable="yes">Tracks</property>
+            <property name="tag">track-view</property>
             <property name="child">
               <object class="AdwToolbarView">
                 <!-- <property name="top-bar-style">raised</property> -->
@@ -137,7 +140,7 @@
         <attribute name="action">win.show-help-overlay</attribute>
       </item>
       <item>
-        <attribute name="label" translatable="yes">_About Music Florg</attribute>
+        <attribute name="label" translatable="yes">_About Music Library</attribute>
         <attribute name="action">app.about</attribute>
       </item>
     </section>

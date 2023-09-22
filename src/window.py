@@ -17,7 +17,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from gi.repository import Adw, Gtk, Gdk, Pango
+from gi.repository import Adw, Gtk, Gdk, GLib, Pango
 import gi
 import threading
 
@@ -37,6 +37,12 @@ from musiclibrary.musicdb import MusicDB
 class MusiclibraryWindow(Adw.ApplicationWindow):
     __gtype_name__ = 'MusicLibraryWindow'
 
+    # The two Adw.NavigationSplitViews, first one
+    # contains inner_view and the track view page
+    outer_view = Gtk.Template.Child()
+    # inner_view contains the artist and album lists.
+    inner_view = Gtk.Template.Child()
+
     artist_box = Gtk.Template.Child()
     album_box = Gtk.Template.Child()
     sync_button = Gtk.Template.Child()
@@ -49,18 +55,16 @@ class MusiclibraryWindow(Adw.ApplicationWindow):
         # update_music_library()
         self.db = MusicDB()
 
-        # bind test_button to test_button_clicked
         self.sync_button.connect('clicked', self.sync_library)
 
         self.populate_lists()
 
-        # bind clicks on elements of artist_box to artist_clicked
         self.artist_box.connect('row-activated', self.select_artist)
+        self.album_box.connect('row-activated', self.select_album)
 
     # FIXME: This still freezes the UI, it's not fully detatched.
     # Also, the lists need to be repopulated after the thread finishes.
     def sync_library(self, _):
-
         self.thread = threading.Thread(target=self.update_music_library)
         self.thread.daemon = True
         self.thread.start()
@@ -74,10 +78,16 @@ class MusiclibraryWindow(Adw.ApplicationWindow):
         self.artist_box.remove_all()
         self.album_box.remove_all()
 
+
         for artist in self.db.get_artists():
             self.artist_box.append(self.create_label(artist))
         for album in self.db.get_albums():
             self.album_box.append(self.create_label(album))
+
+    def select_album(self, _, clicked_row):
+        # TODO: Create a template for the track view with methods
+        # to update it's display based on the album selected.
+        self.outer_view.set_show_content('track_view')
 
     def select_artist(self, _, clicked_row):
         if clicked_row:
@@ -85,6 +95,8 @@ class MusiclibraryWindow(Adw.ApplicationWindow):
             albums = self.db.get_albums(clicked_row.get_child().get_label())
             for album in albums:
                 self.album_box.append(self.create_label(album))
+
+        self.inner_view.set_show_content('album_view')
 
     def create_label(self, label):
         label = Gtk.Label(label=label)
