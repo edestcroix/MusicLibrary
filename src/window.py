@@ -17,10 +17,20 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from gi.repository import Adw
-from gi.repository import Gtk
+from gi.repository import Adw, Gtk, Gdk, Pango
+import gi
+import threading
 
-import mutagen
+gi.require_version('Gtk', '4.0')
+
+
+# TODO: Chunck this up into other files/classes as needed
+#       - Page navigation when sidebars are collapsed.
+#       - Track display page
+
+# NOTE: I Bet after getting a nice UI i'm going to end up getting stuck on gstreamer and get mad probably.
+
+from musiclibrary.mutagen_test import MusicDB
 
 
 @Gtk.Template(resource_path='/ca/edestcroix/MusicLibary/window.ui')
@@ -29,51 +39,56 @@ class MusiclibraryWindow(Adw.ApplicationWindow):
 
     artist_box = Gtk.Template.Child()
     album_box = Gtk.Template.Child()
-
-    test_button = Gtk.Template.Child()
+    sync_button = Gtk.Template.Child()
 
     c = 0
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        # artist_box is a GtkListBox
-
-        # artist_model = Gtk.ListStore(str)
-        # album_model = Gtk.ListStore(str)
+        # update_music_library()
+        self.db = MusicDB()
 
         # bind test_button to test_button_clicked
-        self.test_button.connect('clicked', self.test_button_clicked)
+        self.sync_button.connect('clicked', self.sync_library)
 
-        for i in range(100):
-            # self.artist_box.append(Gtk.Label(label=f'Artist {i}'))
-            self.album_box.append(Gtk.Label(label=f'Album {i}'))
+        self.populate_lists()
 
         # bind clicks on elements of artist_box to artist_clicked
         self.artist_box.connect('row-activated', self.select_artist)
 
-        # renderer = Gtk.CellRendererText()
+    # FIXME: This still freezes the UI, it's not fully detatched.
+    # Also, the lists need to be repopulated after the thread finishes.
+    def sync_library(self, _):
 
-        # artist_column = Gtk.TreeViewColumn('Artist', renderer, text=0)
-        # album_column = Gtk.TreeViewColumn('Album', renderer, text=0)
+        self.thread = threading.Thread(target=self.update_music_library)
+        self.thread.daemon = True
+        self.thread.start()
 
-        # artist_column.set_sort_column_id(0)
-        # album_column.set_sort_column_id(0)
+    def update_music_library(self):
+        db = MusicDB()
+        db.parse_library()
 
-        # self.artist_view.set_model(artist_model)
-        # self.artist_view.append_column(artist_column)
-        # self.album_view.set_model(album_model)
-        # self.album_view.append_column(album_column)
+    def populate_lists(self):
+        # Clear the lists
+        self.artist_box.remove_all()
+        self.album_box.remove_all()
 
-    def test_button_clicked(self, _):
-        print('test button clicked')
+        for artist in self.db.get_artists():
+            self.artist_box.append(self.create_label(artist))
+        for album in self.db.get_albums():
+            self.album_box.append(self.create_label(album))
 
-        self.artist_box.append(Gtk.Label(label=f'test ({self.c})'))
-        self.c += 1
-
-    # TODO: This will need to update the album list to show
-    # only albums by the selected artist.
     def select_artist(self, _, clicked_row):
         if clicked_row:
-            print(clicked_row.get_index())
-            print(clicked_row.get_child().get_label())
+            self.album_box.remove_all()
+            albums = self.db.get_albums(clicked_row.get_child().get_label())
+            for album in albums:
+                self.album_box.append(self.create_label(album))
+
+    def create_label(self, label):
+        label = Gtk.Label(label=label)
+        label.set_width_chars(20)
+        label.set_ellipsize(Pango.EllipsizeMode.END)
+
+        return label

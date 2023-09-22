@@ -3,10 +3,10 @@
   <requires lib="gtk" version="4.0" />
   <requires lib="Adw" version="1.0" />
   <template class="MusicLibraryWindow" parent="AdwApplicationWindow">
-    <property name="width-request">280</property>
-    <property name="height-request">200</property>
-    <property name="default-width">600</property>
-    <property name="default-height">300</property>
+    <property name="width-request">480</property>
+    <property name="height-request">300</property>
+    <property name="default-width">1200</property>
+    <property name="default-height">600</property>
     <child>
       <object class="AdwBreakpoint">
         <condition>max-width: 860sp</condition>
@@ -26,7 +26,7 @@
       <object class="AdwNavigationSplitView" id="outer_view">
         <property name="min-sidebar-width">470</property>
         <property name="max-sidebar-width">780</property>
-        <property name="sidebar-width-fraction">0.47</property>
+        <property name="sidebar-width-fraction">0.48</property>
         <property name="sidebar">
           <object class="AdwNavigationPage">
             <property name="title" translatable="yes">Sidebar</property>
@@ -44,8 +44,8 @@
                         <child type="top">
                           <object class="AdwHeaderBar">
                             <child type="start">
-                              <object class="GtkButton" id="test_button">
-                                <property name="label">Temp</property>
+                              <object class="GtkButton" id="sync_button">
+                                <property name="icon-name">emblem-synchronizing-symbolic</property>
                                 <style>
                                   <class name="suggested-action" />
                                 </style>
@@ -61,6 +61,7 @@
                         </child>
                         <property name="content">
                           <object class="GtkScrolledWindow">
+                            <property name="hscrollbar-policy">never</property>
                             <child>
                               <object class="GtkListBox" id="artist_box">
                                 <style>
@@ -86,6 +87,7 @@
                         </child>
                         <property name="content">
                           <object class="GtkScrolledWindow">
+                            <property name="hscrollbar-policy">never</property>
                             <child>
                               <object class="GtkListBox" id="album_box">
                                 <style>
@@ -109,7 +111,7 @@
             <property name="title" translatable="yes">Tracks</property>
             <property name="child">
               <object class="AdwToolbarView">
-                <property name="top-bar-style">raised</property>
+                <!-- <property name="top-bar-style">raised</property> -->
                 <child type="top">
                   <object class="AdwHeaderBar" />
                 </child>
