@@ -43,6 +43,14 @@
                         <!-- <property name="top-bar-style">raised</property> -->
                         <child type="top">
                           <object class="AdwHeaderBar">
+                            <child type="start">
+                              <object class="GtkButton" id="test_button">
+                                <property name="label">Temp</property>
+                                <style>
+                                  <class name="suggested-action" />
+                                </style>
+                              </object>
+                            </child>
                             <child type="end">
                               <object class="GtkMenuButton">
                                 <property name="icon-name">open-menu-symbolic</property>
@@ -52,24 +60,12 @@
                           </object>
                         </child>
                         <property name="content">
-                          <object class="GtkListBox">
-                            <property name="selection-mode">none</property>
-                            <style>
-                              <class name="boxed-list" />
-                            </style>
+                          <object class="GtkScrolledWindow">
                             <child>
-                              <object class="AdwActionRow">
-                                <property name="title">Item 1</property>
-                              </object>
-                            </child>
-                            <child>
-                              <object class="AdwActionRow">
-                                <property name="title">Item 2</property>
-                              </object>
-                            </child>
-                            <child>
-                              <object class="AdwActionRow">
-                                <property name="title">Item 3</property>
+                              <object class="GtkListBox" id="artist_box">
+                                <style>
+                                  <class name="navigation-sidebar" />
+                                </style>
                               </object>
                             </child>
                           </object>
@@ -89,7 +85,14 @@
                           <object class="AdwHeaderBar" />
                         </child>
                         <property name="content">
-                          <object class="GtkLabel">
+                          <object class="GtkScrolledWindow">
+                            <child>
+                              <object class="GtkListBox" id="album_box">
+                                <style>
+                                  <class name="navigation-sidebar" />
+                                </style>
+                              </object>
+                            </child>
                           </object>
                         </property>
                       </object>
