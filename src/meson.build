@@ -30,7 +30,7 @@ musiclibrary_sources = [
   '__init__.py',
   'main.py',
   'window.py',
-  'mutagen_test.py',
+  'musicdb.py',
 ]
 
 install_data(musiclibrary_sources, install_dir: moduledir)

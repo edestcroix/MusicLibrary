@@ -30,7 +30,7 @@ gi.require_version('Gtk', '4.0')
 
 # NOTE: I Bet after getting a nice UI i'm going to end up getting stuck on gstreamer and get mad probably.
 
-from musiclibrary.mutagen_test import MusicDB
+from musiclibrary.musicdb import MusicDB
 
 
 @Gtk.Template(resource_path='/ca/edestcroix/MusicLibary/window.ui')

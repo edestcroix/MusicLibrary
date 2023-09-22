@@ -57,6 +57,7 @@ class MusicDB:
         return [artist[0] for artist in self.c.fetchall()]
 
     def get_albums(self, artist=None):
+
         if artist:
             self.c.execute(
                 'SELECT DISTINCT album FROM music WHERE artist = ?', (artist,)
