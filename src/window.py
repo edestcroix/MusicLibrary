@@ -78,11 +78,12 @@ class MusiclibraryWindow(Adw.ApplicationWindow):
         self.artist_box.remove_all()
         self.album_box.remove_all()
 
+        print('Populating lists')
 
         for artist in self.db.get_artists():
-            self.artist_box.append(self.create_label(artist))
+            self.artist_box.append(self.create_row(artist))
         for album in self.db.get_albums():
-            self.album_box.append(self.create_label(album))
+            self.album_box.append(self.create_row(album))
 
     def select_album(self, _, clicked_row):
         # TODO: Create a template for the track view with methods
@@ -92,15 +93,18 @@ class MusiclibraryWindow(Adw.ApplicationWindow):
     def select_artist(self, _, clicked_row):
         if clicked_row:
             self.album_box.remove_all()
-            albums = self.db.get_albums(clicked_row.get_child().get_label())
+            albums = self.db.get_albums(clicked_row.get_name())
             for album in albums:
-                self.album_box.append(self.create_label(album))
+                self.album_box.append(self.create_row(album))
 
         self.inner_view.set_show_content('album_view')
 
-    def create_label(self, label):
-        label = Gtk.Label(label=label)
-        label.set_width_chars(20)
-        label.set_ellipsize(Pango.EllipsizeMode.END)
+    def create_row(self, label):
+        # # escape characters
+        row = Adw.ActionRow()
+        row.set_title(GLib.markup_escape_text(label))
+        row.set_subtitle('Subtitle')
+        row.set_activatable(True)
+        row.set_name(label)
 
-        return label
+        return row
