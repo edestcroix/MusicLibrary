@@ -31,6 +31,7 @@ musiclibrary_sources = [
   'main.py',
   'window.py',
   'musicdb.py',
+  'album_view.py',
 ]
 
 install_data(musiclibrary_sources, install_dir: moduledir)

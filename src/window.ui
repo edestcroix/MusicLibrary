@@ -23,80 +23,74 @@
       </object>
     </child>
     <property name="content">
-      <object class="AdwNavigationSplitView" id="outer_view">
-        <property name="min-sidebar-width">470</property>
-        <property name="max-sidebar-width">500</property>
-        <property name="sidebar-width-fraction">0.38</property>
-        <property name="sidebar">
-          <object class="AdwNavigationPage">
-            <property name="title" translatable="yes">Sidebar</property>
-            <!-- <property name="tag">lists-views</property> -->
-            <property name="child">
-              <object class="AdwNavigationSplitView" id="inner_view">
-                <property name="max-sidebar-width">250</property>
-                <property name="sidebar-width-fraction">0.5</property>
-                <property name="sidebar">
-                  <!-- sidebar -->
-                  <object class="AdwNavigationPage" id="aritst_view">
-                    <property name="title" translatable="yes">Artist</property>
-                    <property name="child">
-                      <object class="AdwToolbarView">
-                        <!-- <property name="top-bar-style">raised</property> -->
-                        <child type="top">
-                          <object class="AdwHeaderBar">
-                            <child type="start">
-                              <object class="GtkButton" id="sync_button">
-                                <property name="icon-name">emblem-synchronizing-symbolic</property>
-                                <!-- <style> -->
-                                <!--   <class name="suggested-action" /> -->
-                                <!-- </style> -->
+      <object class="AdwToastOverlay" id="toast_overlay">
+        <child>
+          <object class="AdwNavigationSplitView" id="outer_view">
+            <property name="min-sidebar-width">470</property>
+            <property name="max-sidebar-width">500</property>
+            <property name="sidebar-width-fraction">0.38</property>
+            <property name="sidebar">
+              <object class="AdwNavigationPage">
+                <property name="title" translatable="yes">Sidebar</property>
+                <!-- <property name="tag">lists-views</property> -->
+                <property name="child">
+                  <object class="AdwNavigationSplitView" id="inner_view">
+                    <property name="max-sidebar-width">250</property>
+                    <property name="sidebar-width-fraction">0.4</property>
+                    <property name="sidebar">
+                      <!-- sidebar -->
+                      <object class="AdwNavigationPage" id="aritst_view">
+                        <property name="title" translatable="yes">Artist</property>
+                        <property name="child">
+                          <object class="AdwToolbarView">
+                            <child type="top">
+                              <object class="AdwHeaderBar">
+                                <child type="end">
+                                  <object class="GtkMenuButton">
+                                    <property name="icon-name">open-menu-symbolic</property>
+                                    <property name="menu-model">primary_menu</property>
+                                  </object>
+                                </child>
                               </object>
                             </child>
-                            <child type="end">
-                              <object class="GtkMenuButton">
-                                <property name="icon-name">open-menu-symbolic</property>
-                                <property name="menu-model">primary_menu</property>
+                            <property name="content">
+                              <object class="GtkScrolledWindow">
+                                <property name="hscrollbar-policy">never</property>
+                                <child>
+                                  <object class="GtkListBox" id="artist_box">
+                                    <style>
+                                      <class name="navigation-sidebar" />
+                                    </style>
+                                  </object>
+                                </child>
                               </object>
-                            </child>
-                          </object>
-                        </child>
-                        <property name="content">
-                          <object class="GtkScrolledWindow">
-                            <property name="hscrollbar-policy">never</property>
-                            <child>
-                              <object class="GtkListBox" id="artist_box">
-                                <style>
-                                  <class name="navigation-sidebar" />
-                                </style>
-                              </object>
-                            </child>
+                            </property>
                           </object>
                         </property>
                       </object>
                     </property>
-                  </object>
-                </property>
-                <property name="content">
-                  <!-- middle pane -->
-                  <object class="AdwNavigationPage">
-                    <property name="title" translatable="yes">Album</property>
-                    <property name="tag">album-view</property>
-                    <property name="child">
-                      <object class="AdwToolbarView">
-                        <!-- <property name="top-bar-style">raised</property> -->
-                        <child type="top">
-                          <object class="AdwHeaderBar" />
-                        </child>
-                        <property name="content">
-                          <object class="GtkScrolledWindow">
-                            <property name="hscrollbar-policy">never</property>
-                            <child>
-                              <object class="GtkListBox" id="album_box">
-                                <style>
-                                  <class name="navigation-sidebar" />
-                                </style>
-                              </object>
+                    <property name="content">
+                      <!-- middle pane -->
+                      <object class="AdwNavigationPage">
+                        <property name="title" translatable="yes">Album</property>
+                        <property name="tag">album-view</property>
+                        <property name="child">
+                          <object class="AdwToolbarView">
+                            <child type="top">
+                              <object class="AdwHeaderBar" />
                             </child>
+                            <property name="content">
+                              <object class="GtkScrolledWindow">
+                                <property name="hscrollbar-policy">never</property>
+                                <child>
+                                  <object class="GtkListBox" id="album_box">
+                                    <style>
+                                      <class name="navigation-sidebar" />
+                                    </style>
+                                  </object>
+                                </child>
+                              </object>
+                            </property>
                           </object>
                         </property>
                       </object>
@@ -105,32 +99,35 @@
                 </property>
               </object>
             </property>
-          </object>
-        </property>
-        <property name="content">
-          <!-- content -->
-          <object class="AdwNavigationPage">
-            <property name="title" translatable="yes">Tracks</property>
-            <property name="tag">track-view</property>
-            <property name="child">
-              <object class="AdwToolbarView">
-                <!-- <property name="top-bar-style">raised</property> -->
-                <child type="top">
-                  <object class="AdwHeaderBar" />
-                </child>
-                <property name="content">
-                  <object class="GtkLabel">
+            <property name="content">
+              <!-- content -->
+              <object class="AdwNavigationPage">
+                <property name="title" translatable="yes">Tracks</property>
+                <property name="tag">track-view</property>
+                <property name="child">
+                  <object class="AdwToolbarView">
+                    <child type="top">
+                      <object class="AdwHeaderBar" />
+                    </child>
+                    <property name="content">
+                      <object class="MusicLibraryAlbumView" id="album_view">
+                      </object>
+                    </property>
                   </object>
                 </property>
               </object>
             </property>
           </object>
-        </property>
+        </child>
       </object>
     </property>
   </template>
   <menu id="primary_menu">
     <section>
+      <item>
+        <attribute name="label" translatable="yes">_Sync Library</attribute>
+        <attribute name="action">app.refresh</attribute>
+      </item>
       <item>
         <attribute name="label" translatable="yes">_Preferences</attribute>
         <attribute name="action">app.preferences</attribute>

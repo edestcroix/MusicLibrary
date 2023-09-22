@@ -25,16 +25,15 @@ gi.require_version('Gtk', '4.0')
 
 
 # TODO: Chunck this up into other files/classes as needed
-#       - Page navigation when sidebars are collapsed.
 #       - Track display page
 
 # NOTE: I Bet after getting a nice UI i'm going to end up getting stuck on gstreamer and get mad probably.
 
-from musiclibrary.musicdb import MusicDB
+from .musicdb import MusicDB
 
 
 @Gtk.Template(resource_path='/ca/edestcroix/MusicLibary/window.ui')
-class MusiclibraryWindow(Adw.ApplicationWindow):
+class MusicLibraryWindow(Adw.ApplicationWindow):
     __gtype_name__ = 'MusicLibraryWindow'
 
     # The two Adw.NavigationSplitViews, first one
@@ -45,9 +44,10 @@ class MusiclibraryWindow(Adw.ApplicationWindow):
 
     artist_box = Gtk.Template.Child()
     album_box = Gtk.Template.Child()
-    sync_button = Gtk.Template.Child()
 
-    c = 0
+    # cover_image = Gtk.Template.Child()
+
+    toast_overlay = Gtk.Template.Child()
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -55,23 +55,31 @@ class MusiclibraryWindow(Adw.ApplicationWindow):
         # update_music_library()
         self.db = MusicDB()
 
-        self.sync_button.connect('clicked', self.sync_library)
-
+        self.__setup_actions()
         self.populate_lists()
 
+    def __setup_actions(self):
         self.artist_box.connect('row-activated', self.select_artist)
         self.album_box.connect('row-activated', self.select_album)
 
     def sync_library(self, _):
-        self.thread = threading.Thread(target=self.update_music_library)
+        self.thread = threading.Thread(target=self.update_db)
         self.thread.daemon = True
+        self.create_toast('Syncronizing music database...', 3)
         self.thread.start()
 
-    def update_music_library(self):
+    def update_db(self):
         db = MusicDB()
         db.parse_library()
-        # signal main thread to update lists (doing it in this thread causes issues)
+        self.create_toast('Done!', 2)
         GLib.MainContext.default().invoke_full(1, self.populate_lists)
+
+    # TODO Rename this here and in `sync_library` and `update_db`
+    def create_toast(self, title, timeout):
+        toast = Adw.Toast()
+        toast.set_title(title)
+        toast.set_timeout(timeout)
+        self.toast_overlay.add_toast(toast)
 
     def populate_lists(self):
         # Clear the lists
@@ -83,28 +91,46 @@ class MusiclibraryWindow(Adw.ApplicationWindow):
         for artist in self.db.get_artists():
             self.artist_box.append(self.create_row(artist))
         for album in self.db.get_albums():
-            self.album_box.append(self.create_row(album))
+            self.album_box.append(
+                self.create_row(album[0], *self.format_album(album))
+            )
 
     def select_album(self, _, clicked_row):
         # TODO: Create a template for the track view with methods
         # to update it's display based on the album selected.
         self.outer_view.set_show_content('track_view')
+        album = self.db.get_album(clicked_row.get_name())
+        print(album)
+        # self.cover_image.set_from_file(album[4])
 
     def select_artist(self, _, clicked_row):
         if clicked_row:
             self.album_box.remove_all()
             albums = self.db.get_albums(clicked_row.get_name())
             for album in albums:
-                self.album_box.append(self.create_row(album))
+                self.album_box.append(
+                    self.create_row(album[0], *self.format_album(album))
+                )
 
         self.inner_view.set_show_content('album_view')
 
-    def create_row(self, label):
-        # # escape characters
-        row = Adw.ActionRow()
-        row.set_title(GLib.markup_escape_text(label))
-        row.set_subtitle('Subtitle')
-        row.set_activatable(True)
-        row.set_name(label)
+    def format_album(self, album):
+        seconds = album[2]
+        # convert to HH:MM:SS
+        length = f'{int(seconds // 3600):02}:{int(seconds // 60 % 60):02}:{int(seconds % 60):02}'
+        return (f'{length} - {album[1]} tracks', album[4])
+
+    def create_row(self, title, subtitle='', image_path=''):
+        # print(image_path)
+        row = Adw.ActionRow(activatable=True, name=title, subtitle=subtitle)
+        # TODO: Images need to be loaded in a separate thread or something,
+        # and there should be some form of caching.
+        # if image_path:
+        #     image = Gtk.Image()
+        #     image.set_pixel_size(64)
+        #     image.set_from_file(image_path)
+        #     row.add_prefix(image)
+
+        row.set_title(GLib.markup_escape_text(title))
 
         return row
