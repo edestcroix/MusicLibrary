@@ -62,8 +62,6 @@ class MusiclibraryWindow(Adw.ApplicationWindow):
         self.artist_box.connect('row-activated', self.select_artist)
         self.album_box.connect('row-activated', self.select_album)
 
-    # FIXME: This still freezes the UI, it's not fully detatched.
-    # Also, the lists need to be repopulated after the thread finishes.
     def sync_library(self, _):
         self.thread = threading.Thread(target=self.update_music_library)
         self.thread.daemon = True
@@ -72,6 +70,8 @@ class MusiclibraryWindow(Adw.ApplicationWindow):
     def update_music_library(self):
         db = MusicDB()
         db.parse_library()
+        # signal main thread to update lists (doing it in this thread causes issues)
+        GLib.MainContext.default().invoke_full(1, self.populate_lists)
 
     def populate_lists(self):
         # Clear the lists
