@@ -5,7 +5,7 @@ A work-in-progress application to browse and play music from your local music li
 The base idea is a very simple, paned navigation view that allows filtering by artist -> album -> track only. No other sorting options
 are planned on being implemented right now. A play queue to play multiple albums is probably going to happend at some point.
 
-
+![Screenshot of main window](screenshot.png)
 
 # What is Working
 Initial music database generation is working. Right now it is mostly a prototype so as to have some data to work with
