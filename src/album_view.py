@@ -22,12 +22,6 @@ import gi
 
 gi.require_version('Gtk', '4.0')
 
-
-# TODO: Chunck this up into other files/classes as needed
-#       - Track display page
-
-# NOTE: I Bet after getting a nice UI i'm going to end up getting stuck on gstreamer and get mad probably.
-
 from .musicdb import MusicDB
 
 
@@ -35,8 +29,24 @@ from .musicdb import MusicDB
 class MusicLibraryAlbumView(Gtk.Box):
     __gtype_name__ = 'MusicLibraryAlbumView'
 
+    cover_image = Gtk.Template.Child()
+
+    track_list = Gtk.Template.Child()
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
     def update_cover(self, cover_path):
-        pass
+        self.cover_image.set_from_file(cover_path)
+
+    def update_tracks(self, tracks):
+        self.track_list.remove_all()
+        for track in tracks:
+            row = Adw.ActionRow(
+                title=GLib.markup_escape_text(track[1]),
+                # format as mm:ss
+                subtitle=f'{int(track[2] // 60):02}:{int(track[2] % 60):02}',
+                # secondary_text=track[2],
+                icon_name='audio-x-generic-symbolic',
+            )
+            self.track_list.append(row)

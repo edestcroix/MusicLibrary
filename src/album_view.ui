@@ -41,5 +41,17 @@
         </child>
       </object>
     </child>
+    <child>
+      <object class="AdwClamp">
+        <property name="maximum-size">900</property>
+        <child>
+          <object class="GtkListBox" id="track_list">
+            <style>
+              <class name="boxed-list" />
+            </style>
+          </object>
+        </child>
+      </object>
+    </child>
   </template>
 </interface>

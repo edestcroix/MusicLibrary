@@ -57,7 +57,7 @@
                               <object class="GtkScrolledWindow">
                                 <property name="hscrollbar-policy">never</property>
                                 <child>
-                                  <object class="GtkListBox" id="artist_box">
+                                  <object class="MusicLibraryList" id="artist_box">
                                     <style>
                                       <class name="navigation-sidebar" />
                                     </style>
@@ -83,7 +83,7 @@
                               <object class="GtkScrolledWindow">
                                 <property name="hscrollbar-policy">never</property>
                                 <child>
-                                  <object class="GtkListBox" id="album_box">
+                                  <object class="MusicLibraryList" id="album_box">
                                     <style>
                                       <class name="navigation-sidebar" />
                                     </style>
@@ -110,7 +110,12 @@
                       <object class="AdwHeaderBar" />
                     </child>
                     <property name="content">
-                      <object class="MusicLibraryAlbumView" id="album_view">
+                      <object class="GtkScrolledWindow">
+                        <property name="hscrollbar-policy">never</property>
+                        <child>
+                          <object class="MusicLibraryAlbumView" id="album_view">
+                          </object>
+                        </child>
                       </object>
                     </property>
                   </object>

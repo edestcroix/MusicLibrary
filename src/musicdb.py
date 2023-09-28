@@ -25,7 +25,7 @@ class MusicDB:
         self.c = self.conn.cursor()
         self.c.execute(
             """CREATE TABLE IF NOT EXISTS music
-                    (path text, title text, artist text, album text, length real, year date, cover text, UNIQUE(path) ON CONFLICT REPLACE)"""
+                    (path text, title text, artist text, album text, length real, year date, cover text, track text, UNIQUE(path) ON CONFLICT REPLACE)"""
         )
 
     # TODO: more efficient way of parsing library
@@ -53,7 +53,7 @@ class MusicDB:
 
                 # insert if not exists
                 self.c.execute(
-                    'INSERT INTO music VALUES (?, ?, ?, ?, ?, ?, ?)',
+                    'INSERT INTO music VALUES (?, ?, ?, ?, ?, ?, ?, ?) EXCEPT SELECT * FROM music',
                     (
                         entry.path,
                         audio['title'][0],
@@ -62,6 +62,7 @@ class MusicDB:
                         audio.info.length,
                         audio['date'][0],
                         cover,
+                        audio['tracknumber'][0],
                     ),
                 )
                 self.conn.commit()
@@ -80,9 +81,18 @@ class MusicDB:
         self.conn.commit()
 
     def get_artists(self):
-        self.c.execute('SELECT DISTINCT artist FROM music ORDER BY artist')
+        self.c.execute('SELECT DISTINCT artist FROM music')
 
-        return [artist[0] for artist in self.c.fetchall()]
+        return [self.get_artist(artist[0]) for artist in self.c.fetchall()]
+
+    def get_artist(self, artist):
+        # return the number of albums, number of tracks, total length
+
+        self.c.execute(
+            'SELECT COUNT(DISTINCT album), COUNT(title), SUM(length) FROM music WHERE artist = ?',
+            (artist,),
+        )
+        return (artist, *self.c.fetchone())
 
     def get_albums(self, artist=None):
         if artist:
@@ -98,7 +108,14 @@ class MusicDB:
 
     def get_album(self, album):
         self.c.execute(
-            'SELECT COUNT(title), SUM(length), year, cover FROM music WHERE album = ?',
+            'SELECT COUNT(title), SUM(length), year, artist, cover FROM music WHERE album = ?',
             (album,),
         )
         return (album, *self.c.fetchone())
+
+    def get_tracks(self, album):
+        self.c.execute(
+            'SELECT path, title, length FROM music WHERE album = ? ORDER BY track',
+            (album,),
+        )
+        return self.c.fetchall()

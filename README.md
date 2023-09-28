@@ -6,3 +6,7 @@ The base idea is a very simple, paned navigation view that allows filtering by a
 are planned on being implemented right now. A play queue to play multiple albums is probably going to happend at some point.
 
 
+# Planned Features:
+    - Selecting albums, filtered by artist.
+    - View pane for the album featuring: album art, tracklist, play buttons.
+    - Playback of albums.
