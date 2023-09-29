@@ -113,17 +113,36 @@
                 <property name="title" translatable="yes">Tracks</property>
                 <property name="tag">track-view</property>
                 <property name="child">
-                  <object class="AdwToolbarView">
-                    <child type="top">
-                      <object class="AdwHeaderBar" />
-                    </child>
+                  <object class="AdwOverlaySplitView" id="split_view">
+                    <property name="sidebar-position">end</property>
+                    <property name="collapsed">True</property>
+                    <property name="sidebar">
+                      <!-- ... -->
+                      <object class="GtkLabel" id="label">
+                        <property name="label">Placeholder</property>
+                      </object>
+                    </property>
                     <property name="content">
-                      <object class="GtkScrolledWindow">
-                        <property name="hscrollbar-policy">never</property>
-                        <child>
-                          <object class="MusicLibraryAlbumView" id="album_view">
+                      <!-- ... -->
+                      <object class="AdwToolbarView">
+                        <child type="top">
+                          <object class="AdwHeaderBar">
+                            <child type="start">
+                              <object class="GtkButton" id="play">
+                                <property name="icon-name">media-playback-start-symbolic</property>
+                              </object>
+                            </child>
+                            <child type="end">
+                              <object class="GtkButton" id="album_info_toggle">
+                                <property name="icon-name">dialog-information-symbolic</property>
+                              </object>
+                            </child>
                           </object>
                         </child>
+                        <property name="content">
+                          <object class="MusicLibraryAlbumView" id="album_view">
+                          </object>
+                        </property>
                       </object>
                     </property>
                   </object>

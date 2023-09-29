@@ -20,9 +20,9 @@
 from gi.repository import Adw, Gtk, Gdk, GLib, Pango
 import gi
 import threading
-from .musicdb import MusicDB
+from .musicdb import Album, MusicDB
 from .musicrow import MusicRow
-from .album_list import MusicLibraryList
+from .library_list import MusicLibraryList
 
 gi.require_version('Gtk', '4.0')
 
@@ -33,6 +33,7 @@ class MusicLibraryWindow(Adw.ApplicationWindow):
 
     # The two Adw.NavigationSplitViews, first one
     # contains inner_view and the track view page
+
     # TODO: These id's need to be more descriptive to tell them apart easier.
     outer_view = Gtk.Template.Child()
     # inner_view contains the artist and album lists.
@@ -47,6 +48,12 @@ class MusicLibraryWindow(Adw.ApplicationWindow):
 
     album_page = Gtk.Template.Child()
     view_page = Gtk.Template.Child()
+
+    album_info_toggle = Gtk.Template.Child()
+    split_view = Gtk.Template.Child()
+
+    # info_list = Gtk.Template.Child()
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -66,6 +73,12 @@ class MusicLibraryWindow(Adw.ApplicationWindow):
         self.album_box.filter_all()
         self.artist_box.filter_all()
 
+        self.album_info_toggle.connect('clicked', self.toggle_album_info)
+
+    def toggle_album_info(self, _):
+        self.split_view.set_show_sidebar(
+            not self.split_view.get_show_sidebar()
+        )
 
     def sync_library(self, _):
         self.thread = threading.Thread(target=self.update_db)
