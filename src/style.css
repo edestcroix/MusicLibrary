@@ -12,7 +12,11 @@
   border-radius: 50%;
 }
 
-.album-view, .track-list {
+.track-list {
   margin: 20px;
+}
+
+.album-view {
+  padding: 20px;
 }
 
