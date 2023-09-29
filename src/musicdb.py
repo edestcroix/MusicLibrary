@@ -1,11 +1,47 @@
 import mutagen
 import os
 import sqlite3
-
+from typing import Tuple
+from dataclasses import dataclass
 
 # TODO: Needs refactoring, this isn't very good.
 
 from gi.repository import Gtk, GLib
+
+
+AlbumInfo = Tuple[str, int, int, int, str]
+NAME = 0
+NUM_TRACKS = 1
+LENGTH = 2
+ARTIST = 3
+COVER = 4
+
+
+@dataclass
+class Album:
+    name: str
+    num_tracks: int
+    length: int
+    year: str
+    artist: str
+    cover: str
+
+    def get_tracks(self):
+        return self.tracks
+
+    def set_tracks(self, tracks):
+        self.tracks = tracks
+
+    def to_row(self):
+        return (
+            self.name,
+            f'{self.length_str()} - {self.num_tracks} tracks',
+            self.artist,
+            self.cover,
+        )
+
+    def length_str(self):
+        return f'{int(self.length // 3600):02}:{int(self.length // 60 % 60):02}:{int(self.length % 60):02}'
 
 
 class MusicDB:
@@ -37,6 +73,7 @@ class MusicDB:
             # check if there is an image called cover.*
             to_insert = []
             cover = None
+            # TODO: Better detection of cover images.
             for entry in dir:
                 if entry.is_dir():
                     self.parse_library(entry.path)
@@ -111,7 +148,7 @@ class MusicDB:
             'SELECT COUNT(title), SUM(length), year, artist, cover FROM music WHERE album = ?',
             (album,),
         )
-        return (album, *self.c.fetchone())
+        return Album(album, *self.c.fetchone())
 
     def get_tracks(self, album):
         self.c.execute(

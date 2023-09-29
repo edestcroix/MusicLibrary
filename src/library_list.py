@@ -22,9 +22,10 @@ class MusicLibraryList(Gtk.ListBox):
         return row.filter_key == user_data
 
     def append(self, title, subtitle='', filter_key='', image_path=''):
-        row = MusicRow(activatable=True, name=title, subtitle=subtitle)
+        row = MusicRow(activatable=True, subtitle=subtitle)
         row.set_title(title)
         row.set_filter_key(filter_key) if filter_key else None
+        row.set_title_lines(1)
         if image_path:
             image = Gtk.Image()
             image.set_pixel_size(64)

@@ -27,17 +27,13 @@ from .album_list import MusicLibraryList
 gi.require_version('Gtk', '4.0')
 
 
-# TODO: Chunck this up into other files/classes as needed
-#       - Track display page
-#       - (In window.ui) fix breakpoints and minimum sizes of ui elements (second panel doesn't collapse)
-
-
 @Gtk.Template(resource_path='/ca/edestcroix/MusicLibary/window.ui')
 class MusicLibraryWindow(Adw.ApplicationWindow):
     __gtype_name__ = 'MusicLibraryWindow'
 
     # The two Adw.NavigationSplitViews, first one
     # contains inner_view and the track view page
+    # TODO: These id's need to be more descriptive to tell them apart easier.
     outer_view = Gtk.Template.Child()
     # inner_view contains the artist and album lists.
     inner_view = Gtk.Template.Child()
@@ -49,6 +45,8 @@ class MusicLibraryWindow(Adw.ApplicationWindow):
 
     toast_overlay = Gtk.Template.Child()
 
+    album_page = Gtk.Template.Child()
+    view_page = Gtk.Template.Child()
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -67,6 +65,7 @@ class MusicLibraryWindow(Adw.ApplicationWindow):
         self.album_box.connect('row-activated', self.select_album)
         self.album_box.filter_all()
         self.artist_box.filter_all()
+
 
     def sync_library(self, _):
         self.thread = threading.Thread(target=self.update_db)
@@ -96,29 +95,26 @@ class MusicLibraryWindow(Adw.ApplicationWindow):
         for artist in self.db.get_artists():
             self.artist_box.append(*self.format_artist(artist))
         for album in self.db.get_albums():
-            self.album_box.append(*self.format_album(album))
+            self.album_box.append(*album.to_row())
 
     def select_album(self, _, clicked_row):
-        # TODO: Create a template for the track view with methods
-        # to update it's display based on the album selected.
         self.outer_view.set_show_content('track_view')
-        album = self.db.get_album(clicked_row.get_name())
-        self.album_view.update_cover(album[5])
+        album = self.db.get_album(clicked_row.raw_title)
+        self.album_view.update_cover(album.cover)
+        self.album_view.clear_all()
+        self.view_page.set_title(album.name)
 
-        tracks = self.db.get_tracks(album[0])
+        tracks = self.db.get_tracks(album.name)
         self.album_view.update_tracks(tracks)
 
     def select_artist(self, _, clicked_row):
         if clicked_row:
-            self.album_box.filter_on_key(clicked_row.get_name())
+            self.album_box.filter_on_key(clicked_row.raw_title)
+            self.album_page.set_title(clicked_row.raw_title)
         self.inner_view.set_show_content('album_view')
 
     def seconds_to_time(self, seconds):
         return f'{int(seconds // 3600):02}:{int(seconds // 60 % 60):02}:{int(seconds % 60):02}'
-
-    def format_album(self, album):
-        length = self.seconds_to_time(album[2])
-        return (album[0], f'{length} - {album[1]} tracks', album[4], album[5])
 
     def format_artist(self, artist):
         return (

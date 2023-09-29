@@ -9,9 +9,16 @@
     <property name="default-height">600</property>
     <child>
       <object class="AdwBreakpoint">
+        <condition>max-width: 1180sp</condition>
+        <setter object="album_view" property="orientation">vertical</setter>
+      </object>
+    </child>
+    <child>
+      <object class="AdwBreakpoint">
         <condition>max-width: 860sp</condition>
         <setter object="outer_view" property="collapsed">True</setter>
         <setter object="inner_view" property="sidebar-width-fraction">0.33</setter>
+        <setter object="album_view" property="orientation">vertical</setter>
       </object>
     </child>
     <child>
@@ -20,6 +27,7 @@
         <setter object="outer_view" property="collapsed">True</setter>
         <setter object="inner_view" property="sidebar-width-fraction">0.33</setter>
         <setter object="inner_view" property="collapsed">True</setter>
+        <setter object="album_view" property="orientation">vertical</setter>
       </object>
     </child>
     <property name="content">
@@ -27,7 +35,7 @@
         <child>
           <object class="AdwNavigationSplitView" id="outer_view">
             <property name="min-sidebar-width">470</property>
-            <property name="max-sidebar-width">500</property>
+            <property name="max-sidebar-width">900</property>
             <property name="sidebar-width-fraction">0.38</property>
             <property name="sidebar">
               <object class="AdwNavigationPage">
@@ -35,11 +43,11 @@
                 <!-- <property name="tag">lists-views</property> -->
                 <property name="child">
                   <object class="AdwNavigationSplitView" id="inner_view">
-                    <property name="max-sidebar-width">250</property>
-                    <property name="sidebar-width-fraction">0.4</property>
+                    <property name="max-sidebar-width">300</property>
+                    <property name="sidebar-width-fraction">0.45</property>
                     <property name="sidebar">
                       <!-- sidebar -->
-                      <object class="AdwNavigationPage" id="aritst_view">
+                      <object class="AdwNavigationPage">
                         <property name="title" translatable="yes">Artist</property>
                         <property name="child">
                           <object class="AdwToolbarView">
@@ -71,7 +79,7 @@
                     </property>
                     <property name="content">
                       <!-- middle pane -->
-                      <object class="AdwNavigationPage">
+                      <object class="AdwNavigationPage" id="album_page">
                         <property name="title" translatable="yes">Album</property>
                         <property name="tag">album-view</property>
                         <property name="child">
@@ -101,7 +109,7 @@
             </property>
             <property name="content">
               <!-- content -->
-              <object class="AdwNavigationPage">
+              <object class="AdwNavigationPage" id="view_page">
                 <property name="title" translatable="yes">Tracks</property>
                 <property name="tag">track-view</property>
                 <property name="child">
@@ -148,3 +156,4 @@
     </section>
   </menu>
 </interface>
+

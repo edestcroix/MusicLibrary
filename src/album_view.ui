@@ -3,52 +3,37 @@
   <requires lib="gtk" version="4.0" />
   <requires lib="Adw" version="1.0" />
   <template class="MusicLibraryAlbumView" parent="GtkBox">
-    <property name="orientation">vertical</property>
-    <property name="valign">center</property>
+    <property name="orientation">horizontal</property>
+    <property name="homogeneous">false</property>
     <property name="halign">center</property>
-    <property name="spacing">20</property>
+    <property name="spacing">10</property>
+    <style>
+      <class name="album-view" />
+    </style>
     <child>
       <object class="GtkImage" id="cover_image">
         <property name="icon-name">audio-x-generic-symbolic</property>
-        <property name="pixel-size">256</property>
-      </object>
-    </child>
-    <child>
-      <object class="GtkLabel">
-        <property name="label">Track Title</property>
-      </object>
-    </child>
-    <child>
-      <object class="GtkBox">
-        <property name="orientation">horizontal</property>
-        <property name="valign">center</property>
-        <property name="halign">center</property>
-        <property name="spacing">10</property>
-        <child>
-          <object class="GtkButton">
-            <property name="icon-name">media-skip-backward-symbolic</property>
-          </object>
-        </child>
-        <child>
-          <object class="GtkButton">
-            <property name="icon-name">media-playback-start-symbolic</property>
-          </object>
-        </child>
-        <child>
-          <object class="GtkButton">
-            <property name="icon-name">media-skip-forward-symbolic</property>
-          </object>
-        </child>
+        <property name="pixel-size">320</property>
       </object>
     </child>
     <child>
       <object class="AdwClamp">
         <property name="maximum-size">900</property>
         <child>
-          <object class="GtkListBox" id="track_list">
-            <style>
-              <class name="boxed-list" />
-            </style>
+          <!-- <property name="set-vexpand">true</property> -->
+          <object class="GtkScrolledWindow">
+            <property name="hscrollbar-policy">never</property>
+            <property name="vexpand">true</property>
+            <child>
+              <object class="GtkListBox" id="track_list">
+                <property name="width-request">300</property>
+                <property name="vexpand">true</property>
+                <style>
+                  <class name="boxed-list" />
+                  <class name="track-list" />
+                </style>
+              </object>
+            </child>
           </object>
         </child>
       </object>

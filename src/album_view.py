@@ -22,7 +22,7 @@ import gi
 
 gi.require_version('Gtk', '4.0')
 
-from .musicdb import MusicDB
+from .musicdb import MusicDB, Album
 
 
 @Gtk.Template(resource_path='/ca/edestcroix/MusicLibary/album_view.ui')
@@ -39,14 +39,54 @@ class MusicLibraryAlbumView(Gtk.Box):
     def update_cover(self, cover_path):
         self.cover_image.set_from_file(cover_path)
 
-    def update_tracks(self, tracks):
+    def clear_all(self):
         self.track_list.remove_all()
+
+    # def update_info(self, album: Album):
+    #     info_row = Adw.ExpanderRow(title='Album Info')
+    #     info_row.set_selectable(False)
+
+    #     self.__create_row(
+    #         title='Artist',
+    #         subtitle=album.artist,
+    #         icon_name='audio-x-generic-symbolic',
+    #         parent_row=info_row,
+    #     )
+
+    #     self.__create_row(
+    #         title='Length',
+    #         subtitle=album.length_str(),
+    #         icon_name='audio-x-generic-symbolic',
+    #         parent_row=info_row,
+    #     )
+
+    #     self.__create_row(
+    #         title='Year',
+    #         subtitle=str(album.year),
+    #         icon_name='audio-x-generic-symbolic',
+    #         parent_row=info_row,
+    #     )
+
+    #     self.track_list.append(info_row)
+
+    def update_tracks(self, tracks):
         for track in tracks:
-            row = Adw.ActionRow(
-                title=GLib.markup_escape_text(track[1]),
-                # format as mm:ss
+            row = self.__create_row(
+                title=track[1],
                 subtitle=f'{int(track[2] // 60):02}:{int(track[2] % 60):02}',
-                # secondary_text=track[2],
                 icon_name='audio-x-generic-symbolic',
             )
             self.track_list.append(row)
+
+    def __create_row(self, title, subtitle, icon_name, parent_row=None):
+        row = Adw.ActionRow(
+            title=GLib.markup_escape_text(title),
+            subtitle=GLib.markup_escape_text(subtitle),
+            icon_name=icon_name,
+        )
+        row.set_title_lines(1)
+        if parent_row:
+            row.get_style_context().add_class('property')
+            parent_row.add_row(row)
+
+        return row

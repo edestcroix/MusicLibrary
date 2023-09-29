@@ -1,0 +1,18 @@
+
+.play-button {
+  min-width: 60px;
+  min-height: 60px;
+  border-radius: 50%;
+  /* max-width: 40px; */
+  /* max-height: 40px; */
+  /* height: 40px; */
+}
+
+.skip-button {
+  border-radius: 50%;
+}
+
+.album-view, .track-list {
+  margin: 20px;
+}
+
