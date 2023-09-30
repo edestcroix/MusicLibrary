@@ -1,20 +1,11 @@
 import mutagen
 import os
 import sqlite3
-from typing import Tuple
 from dataclasses import dataclass
 
 # TODO: Needs refactoring, this isn't very good.
 
 from gi.repository import Gtk, GLib
-
-
-AlbumInfo = Tuple[str, int, int, int, str]
-NAME = 0
-NUM_TRACKS = 1
-LENGTH = 2
-ARTIST = 3
-COVER = 4
 
 
 @dataclass
@@ -38,6 +29,23 @@ class Album:
             f'{self.length_str()} - {self.num_tracks} tracks',
             self.artist,
             self.cover,
+        )
+
+    def length_str(self):
+        return f'{int(self.length // 3600):02}:{int(self.length // 60 % 60):02}:{int(self.length % 60):02}'
+
+
+@dataclass
+class Artist:
+    name: str
+    num_albums: int
+    num_tracks: int
+    length: int
+
+    def to_row(self):
+        return (
+            self.name,
+            f'{self.num_albums} albums, {self.num_tracks} tracks, {self.length_str()}',
         )
 
     def length_str(self):
@@ -129,7 +137,7 @@ class MusicDB:
             'SELECT COUNT(DISTINCT album), COUNT(title), SUM(length) FROM music WHERE artist = ?',
             (artist,),
         )
-        return (artist, *self.c.fetchone())
+        return Artist(artist, *self.c.fetchone())
 
     def get_albums(self, artist=None):
         if artist:

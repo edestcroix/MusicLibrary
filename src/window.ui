@@ -10,30 +10,30 @@
     <child>
       <object class="AdwBreakpoint">
         <condition>max-width: 1180sp</condition>
-        <setter object="album_view" property="orientation">vertical</setter>
+        <setter object="album_overview" property="orientation">vertical</setter>
       </object>
     </child>
     <child>
       <object class="AdwBreakpoint">
         <condition>max-width: 860sp</condition>
-        <setter object="outer_view" property="collapsed">True</setter>
-        <setter object="inner_view" property="sidebar-width-fraction">0.33</setter>
-        <setter object="album_view" property="orientation">vertical</setter>
+        <setter object="outer_split" property="collapsed">True</setter>
+        <setter object="inner_split" property="sidebar-width-fraction">0.33</setter>
+        <setter object="album_overview" property="orientation">vertical</setter>
       </object>
     </child>
     <child>
       <object class="AdwBreakpoint">
         <condition>max-width: 500sp</condition>
-        <setter object="outer_view" property="collapsed">True</setter>
-        <setter object="inner_view" property="sidebar-width-fraction">0.33</setter>
-        <setter object="inner_view" property="collapsed">True</setter>
-        <setter object="album_view" property="orientation">vertical</setter>
+        <setter object="outer_split" property="collapsed">True</setter>
+        <setter object="inner_split" property="sidebar-width-fraction">0.33</setter>
+        <setter object="inner_split" property="collapsed">True</setter>
+        <setter object="album_overview" property="orientation">vertical</setter>
       </object>
     </child>
     <property name="content">
       <object class="AdwToastOverlay" id="toast_overlay">
         <child>
-          <object class="AdwNavigationSplitView" id="outer_view">
+          <object class="AdwNavigationSplitView" id="outer_split">
             <property name="min-sidebar-width">470</property>
             <property name="max-sidebar-width">900</property>
             <property name="sidebar-width-fraction">0.38</property>
@@ -42,7 +42,7 @@
                 <property name="title" translatable="yes">Sidebar</property>
                 <!-- <property name="tag">lists-views</property> -->
                 <property name="child">
-                  <object class="AdwNavigationSplitView" id="inner_view">
+                  <object class="AdwNavigationSplitView" id="inner_split">
                     <property name="max-sidebar-width">300</property>
                     <property name="sidebar-width-fraction">0.45</property>
                     <property name="sidebar">
@@ -65,7 +65,7 @@
                               <object class="GtkScrolledWindow">
                                 <property name="hscrollbar-policy">never</property>
                                 <child>
-                                  <object class="MusicLibraryList" id="artist_box">
+                                  <object class="MusicLibraryList" id="artist_list">
                                     <style>
                                       <class name="navigation-sidebar" />
                                     </style>
@@ -79,7 +79,7 @@
                     </property>
                     <property name="content">
                       <!-- middle pane -->
-                      <object class="AdwNavigationPage" id="album_page">
+                      <object class="AdwNavigationPage" id="album_list_page">
                         <property name="title" translatable="yes">Album</property>
                         <property name="tag">album-view</property>
                         <property name="child">
@@ -91,7 +91,7 @@
                               <object class="GtkScrolledWindow">
                                 <property name="hscrollbar-policy">never</property>
                                 <child>
-                                  <object class="MusicLibraryList" id="album_box">
+                                  <object class="MusicLibraryList" id="album_list">
                                     <style>
                                       <class name="navigation-sidebar" />
                                     </style>
@@ -109,11 +109,11 @@
             </property>
             <property name="content">
               <!-- content -->
-              <object class="AdwNavigationPage" id="view_page">
+              <object class="AdwNavigationPage" id="album_overview_page">
                 <property name="title" translatable="yes">Tracks</property>
                 <property name="tag">track-view</property>
                 <property name="child">
-                  <object class="AdwOverlaySplitView" id="split_view">
+                  <object class="AdwOverlaySplitView" id="queue_panel_split_view">
                     <property name="sidebar-position">end</property>
                     <property name="collapsed">True</property>
                     <property name="sidebar">
@@ -133,7 +133,7 @@
                               </object>
                             </child>
                             <child type="end">
-                              <object class="GtkButton" id="album_info_toggle">
+                              <object class="GtkButton" id="queue_toggle">
                                 <property name="icon-name">dialog-information-symbolic</property>
                               </object>
                             </child>

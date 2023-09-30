@@ -34,23 +34,23 @@ class MusicLibraryWindow(Adw.ApplicationWindow):
     # The two Adw.NavigationSplitViews, first one
     # contains inner_view and the track view page
 
-    # TODO: These id's need to be more descriptive to tell them apart easier.
-    outer_view = Gtk.Template.Child()
+    outer_split = Gtk.Template.Child()
     # inner_view contains the artist and album lists.
-    inner_view = Gtk.Template.Child()
-
-    artist_box = Gtk.Template.Child()
-    album_box = Gtk.Template.Child()
-
-    album_view = Gtk.Template.Child()
+    inner_split = Gtk.Template.Child()
 
     toast_overlay = Gtk.Template.Child()
 
-    album_page = Gtk.Template.Child()
-    view_page = Gtk.Template.Child()
+    artist_list = Gtk.Template.Child()
+    album_list = Gtk.Template.Child()
 
-    album_info_toggle = Gtk.Template.Child()
-    split_view = Gtk.Template.Child()
+    album_list_page = Gtk.Template.Child()
+    album_overview_page = Gtk.Template.Child()
+    album_overview = Gtk.Template.Child()
+
+    queue_toggle = Gtk.Template.Child()
+    queue_panel_split_view = Gtk.Template.Child()
+
+    overview_stack = Gtk.Template.Child()
 
     # info_list = Gtk.Template.Child()
 
@@ -68,16 +68,16 @@ class MusicLibraryWindow(Adw.ApplicationWindow):
         self.refresh_lists()
 
     def __setup_actions(self):
-        self.artist_box.connect('row-activated', self.select_artist)
-        self.album_box.connect('row-activated', self.select_album)
-        self.album_box.filter_all()
-        self.artist_box.filter_all()
+        self.artist_list.connect('row-activated', self.select_artist)
+        self.album_list.connect('row-activated', self.select_album)
+        self.album_list.filter_all()
+        self.artist_list.filter_all()
 
-        self.album_info_toggle.connect('clicked', self.toggle_album_info)
+        self.queue_toggle.connect('clicked', self.toggle_album_info)
 
     def toggle_album_info(self, _):
-        self.split_view.set_show_sidebar(
-            not self.split_view.get_show_sidebar()
+        self.queue_panel_split_view.set_show_sidebar(
+            not self.queue_panel_split_view.get_show_sidebar()
         )
 
     def sync_library(self, _):
@@ -100,37 +100,31 @@ class MusicLibraryWindow(Adw.ApplicationWindow):
 
     def refresh_lists(self):
         # Clear the lists
-        self.artist_box.remove_all()
-        self.album_box.remove_all()
+        self.artist_list.remove_all()
+        self.album_list.remove_all()
 
         print('Populating lists')
 
         for artist in self.db.get_artists():
-            self.artist_box.append(*self.format_artist(artist))
+            self.artist_list.append(*artist.to_row())
         for album in self.db.get_albums():
-            self.album_box.append(*album.to_row())
+            self.album_list.append(*album.to_row())
 
     def select_album(self, _, clicked_row):
-        self.outer_view.set_show_content('track_view')
+        self.outer_split.set_show_content('track_view')
         album = self.db.get_album(clicked_row.raw_title)
-        self.album_view.update_cover(album.cover)
-        self.album_view.clear_all()
-        self.view_page.set_title(album.name)
+        self.album_overview.update_cover(album.cover)
+        self.album_overview.clear_all()
+        self.album_overview_page.set_title(album.name)
 
         tracks = self.db.get_tracks(album.name)
-        self.album_view.update_tracks(tracks)
+        self.album_overview.update_tracks(tracks)
 
     def select_artist(self, _, clicked_row):
         if clicked_row:
-            self.album_box.filter_on_key(clicked_row.raw_title)
-            self.album_page.set_title(clicked_row.raw_title)
-        self.inner_view.set_show_content('album_view')
+            self.album_list.filter_on_key(clicked_row.raw_title)
+            self.album_list_page.set_title(clicked_row.raw_title)
+        self.inner_split.set_show_content('album_view')
 
     def seconds_to_time(self, seconds):
         return f'{int(seconds // 3600):02}:{int(seconds // 60 % 60):02}:{int(seconds % 60):02}'
-
-    def format_artist(self, artist):
-        return (
-            artist[0],
-            f'{artist[1]} albums, {artist[2]} tracks, {self.seconds_to_time(artist[3])}',
-        )
