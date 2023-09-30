@@ -1,7 +1,9 @@
 import mutagen
 import os
 import sqlite3
+from PIL import Image
 from dataclasses import dataclass
+from hashlib import sha256
 
 # TODO: Needs refactoring, this isn't very good.
 
@@ -77,6 +79,8 @@ class MusicDB:
 
         self.remove_missing(self.find_missing())
 
+        # os.mkdir(f'{GLib.get_user_cache_dir()}/musiclibrary')
+
         with os.scandir(os.path.expanduser(path)) as dir:
             # check if there is an image called cover.*
             to_insert = []
@@ -90,8 +94,14 @@ class MusicDB:
                         to_insert.append((entry, audio))
 
                     if entry.name.startswith('cover'):
+                        # shrink image
+
                         cover = entry.path
 
+            if cover and not os.path.exists(
+                cache_name := sha256(open(cover, 'rb').read()).hexdigest()
+            ):
+                path = self.create_thumbnail(cover, cache_name)
             for (entry, audio) in to_insert:
                 # itentify file type and parse metadata
                 print(audio['title'], audio['date'], cover)
@@ -106,11 +116,25 @@ class MusicDB:
                         audio['album'][0],
                         audio.info.length,
                         audio['date'][0],
-                        cover,
+                        path,
                         audio['tracknumber'][0],
                     ),
                 )
                 self.conn.commit()
+
+    def create_thumbnail(self, cover, cache_name):
+        print(f'Converting {cover}')
+        img = Image.open(cover)
+        rgb_img = img.convert('RGB')
+        rgb_img.thumbnail((320, 320))
+        # generate a unique string for the cover
+        rgb_img.save(
+            result := f'{GLib.get_user_cache_dir()}/musiclibrary/{cache_name}.jpg'
+        )
+
+        print(result)
+
+        return result
 
     def find_missing(self):
         self.c.execute('SELECT path FROM music')
