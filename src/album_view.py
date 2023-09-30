@@ -26,21 +26,39 @@ from .musicdb import MusicDB, Album
 
 
 @Gtk.Template(resource_path='/ca/edestcroix/MusicLibary/album_view.ui')
-class MusicLibraryAlbumView(Gtk.Box):
+class MusicLibraryAlbumView(Adw.Bin):
     __gtype_name__ = 'MusicLibraryAlbumView'
 
     cover_image = Gtk.Template.Child()
 
     track_list = Gtk.Template.Child()
 
+    album_box = Gtk.Template.Child()
+
+    stack = Gtk.Template.Child()
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+
+    def apply_breakpoint(self, _):
+        self.album_box.set_orientation(Gtk.Orientation.VERTICAL)
+
+    def unset_breakpoint(self, _):
+        self.album_box.set_orientation(Gtk.Orientation.HORIZONTAL)
 
     def update_cover(self, cover_path):
         self.cover_image.set_from_file(cover_path)
 
     def clear_all(self):
         self.track_list.remove_all()
+
+    def update_album(self, album: Album):
+        self.clear_all()
+        self.update_cover(album.cover)
+        # self.update_info(album)
+        self.update_tracks(album.get_tracks())
+
+        self.stack.set_visible_child_name('album_view')
 
     # def update_info(self, album: Album):
     #     info_row = Adw.ExpanderRow(title='Album Info')

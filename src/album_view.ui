@@ -2,39 +2,63 @@
 <interface>
   <requires lib="gtk" version="4.0" />
   <requires lib="Adw" version="1.0" />
-  <template class="MusicLibraryAlbumView" parent="GtkBox">
-    <property name="orientation">horizontal</property>
-    <property name="homogeneous">false</property>
-    <property name="halign">center</property>
-    <property name="spacing">10</property>
-    <style>
-      <class name="album-view" />
-    </style>
+  <template class="MusicLibraryAlbumView" parent="AdwBin">
     <child>
-      <object class="GtkImage" id="cover_image">
-        <property name="icon-name">audio-x-generic-symbolic</property>
-        <property name="pixel-size">320</property>
-      </object>
-    </child>
-    <child>
-      <object class="AdwClamp">
-        <property name="maximum-size">900</property>
+      <object class="AdwViewStack" id="stack">
         <child>
-          <!-- <property name="set-vexpand">true</property> -->
-          <object class="GtkScrolledWindow">
-            <property name="hscrollbar-policy">never</property>
-            <!-- <property name="vexpand">true</property> -->
-            <child>
-              <object class="GtkListBox" id="track_list">
-                <property name="width-request">300</property>
-                <property name="vexpand">true</property>
-                <property name="valign">center</property>
-                <style>
-                  <class name="boxed-list" />
-                  <class name="track-list" />
-                </style>
+          <object class="AdwViewStackPage">
+            <property name="name">Start</property>
+            <property name="title">Select Album</property>
+            <property name="child">
+              <object class="AdwStatusPage">
+                <property name="title">Welcome!</property>
               </object>
-            </child>
+            </property>
+          </object>
+        </child>
+        <child>
+          <object class="AdwViewStackPage">
+            <property name="name">album_view</property>
+            <property name="child">
+              <object class="GtkBox" id="album_box">
+                <property name="orientation">horizontal</property>
+                <property name="homogeneous">false</property>
+                <property name="halign">center</property>
+                <property name="spacing">10</property>
+                <style>
+                  <class name="album-view" />
+                </style>
+                <child>
+                  <object class="GtkImage" id="cover_image">
+                    <property name="icon-name">audio-x-generic-symbolic</property>
+                    <property name="pixel-size">320</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="AdwClamp">
+                    <property name="maximum-size">900</property>
+                    <child>
+                      <!-- <property name="set-vexpand">true</property> -->
+                      <object class="GtkScrolledWindow">
+                        <property name="hscrollbar-policy">never</property>
+                        <!-- <property name="vexpand">true</property> -->
+                        <child>
+                          <object class="GtkListBox" id="track_list">
+                            <property name="width-request">300</property>
+                            <property name="vexpand">true</property>
+                            <property name="valign">center</property>
+                            <style>
+                              <class name="boxed-list" />
+                              <class name="track-list" />
+                            </style>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+              </object>
+            </property>
           </object>
         </child>
       </object>

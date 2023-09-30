@@ -34,6 +34,10 @@ class MusicLibraryWindow(Adw.ApplicationWindow):
     # The two Adw.NavigationSplitViews, first one
     # contains inner_view and the track view page
 
+    breakpoint1 = Gtk.Template.Child()
+    breakpoint2 = Gtk.Template.Child()
+    breakpoint3 = Gtk.Template.Child()
+
     outer_split = Gtk.Template.Child()
     # inner_view contains the artist and album lists.
     inner_split = Gtk.Template.Child()
@@ -42,17 +46,13 @@ class MusicLibraryWindow(Adw.ApplicationWindow):
 
     artist_list = Gtk.Template.Child()
     album_list = Gtk.Template.Child()
-
     album_list_page = Gtk.Template.Child()
+
     album_overview_page = Gtk.Template.Child()
     album_overview = Gtk.Template.Child()
 
     queue_toggle = Gtk.Template.Child()
     queue_panel_split_view = Gtk.Template.Child()
-
-    overview_stack = Gtk.Template.Child()
-
-    # info_list = Gtk.Template.Child()
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -74,6 +74,14 @@ class MusicLibraryWindow(Adw.ApplicationWindow):
         self.artist_list.filter_all()
 
         self.queue_toggle.connect('clicked', self.toggle_album_info)
+
+        self.__connect_breakpoint(self.breakpoint1)
+        self.__connect_breakpoint(self.breakpoint2)
+        self.__connect_breakpoint(self.breakpoint3)
+
+    def __connect_breakpoint(self, breakpoint):
+        breakpoint.connect('apply', self.album_overview.apply_breakpoint)
+        breakpoint.connect('unapply', self.album_overview.unset_breakpoint)
 
     def toggle_album_info(self, _):
         self.queue_panel_split_view.set_show_sidebar(
@@ -111,14 +119,13 @@ class MusicLibraryWindow(Adw.ApplicationWindow):
             self.album_list.append(*album.to_row())
 
     def select_album(self, _, clicked_row):
-        self.outer_split.set_show_content('track_view')
         album = self.db.get_album(clicked_row.raw_title)
-        self.album_overview.update_cover(album.cover)
-        self.album_overview.clear_all()
-        self.album_overview_page.set_title(album.name)
 
+        self.album_overview_page.set_title(album.name)
         tracks = self.db.get_tracks(album.name)
-        self.album_overview.update_tracks(tracks)
+        album.set_tracks(tracks)
+        self.album_overview.update_album(album)
+        self.outer_split.set_show_content('track_view')
 
     def select_artist(self, _, clicked_row):
         if clicked_row:

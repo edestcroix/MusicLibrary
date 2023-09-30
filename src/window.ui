@@ -8,26 +8,23 @@
     <property name="default-width">1200</property>
     <property name="default-height">600</property>
     <child>
-      <object class="AdwBreakpoint">
+      <object class="AdwBreakpoint" id="breakpoint1">
         <condition>max-width: 1180sp</condition>
-        <setter object="album_overview" property="orientation">vertical</setter>
       </object>
     </child>
     <child>
-      <object class="AdwBreakpoint">
+      <object class="AdwBreakpoint" id="breakpoint2">
         <condition>max-width: 860sp</condition>
         <setter object="outer_split" property="collapsed">True</setter>
         <setter object="inner_split" property="sidebar-width-fraction">0.33</setter>
-        <setter object="album_overview" property="orientation">vertical</setter>
       </object>
     </child>
     <child>
-      <object class="AdwBreakpoint">
+      <object class="AdwBreakpoint" id="breakpoint3">
         <condition>max-width: 500sp</condition>
         <setter object="outer_split" property="collapsed">True</setter>
         <setter object="inner_split" property="sidebar-width-fraction">0.33</setter>
         <setter object="inner_split" property="collapsed">True</setter>
-        <setter object="album_overview" property="orientation">vertical</setter>
       </object>
     </child>
     <property name="content">
@@ -140,7 +137,7 @@
                           </object>
                         </child>
                         <property name="content">
-                          <object class="MusicLibraryAlbumView" id="album_view">
+                          <object class="MusicLibraryAlbumView" id="album_overview">
                           </object>
                         </property>
                       </object>

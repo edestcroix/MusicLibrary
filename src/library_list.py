@@ -9,17 +9,14 @@ from .musicrow import MusicRow
 class MusicLibraryList(Gtk.ListBox):
     __gtype_name__ = 'MusicLibraryList'
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def __filter(self, row, user_data):
+        return row.filter_key == user_data
 
     def filter_on_key(self, artist):
         self.set_filter_func(self.__filter, artist)
 
     def filter_all(self):
         self.set_filter_func(lambda _: True)
-
-    def __filter(self, row, user_data):
-        return row.filter_key == user_data
 
     def append(self, title, subtitle='', filter_key='', image_path=''):
         row = MusicRow(activatable=True, subtitle=subtitle)
