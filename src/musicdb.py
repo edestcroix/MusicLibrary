@@ -5,8 +5,6 @@ from PIL import Image
 from dataclasses import dataclass
 from hashlib import sha256
 
-# TODO: Needs refactoring, this isn't very good.
-
 from gi.repository import Gtk, GLib
 
 
@@ -41,17 +39,16 @@ class Album:
 class Artist:
     name: str
     num_albums: int
-    num_tracks: int
-    length: int
 
     def to_row(self):
         return (
             self.name,
-            f'{self.num_albums} albums, {self.num_tracks} tracks, {self.length_str()}',
+            f'{self.num_albums} albums',
         )
 
-    def length_str(self):
-        return f'{int(self.length // 3600):02}:{int(self.length // 60 % 60):02}:{int(self.length % 60):02}'
+
+# TODO: Better detection of changed files. Currently the library sync is slow because
+# it completely replaces everything in the database.
 
 
 class MusicDB:
@@ -69,17 +66,23 @@ class MusicDB:
             f'{GLib.get_user_data_dir()}/musiclibrary/music.db'
         )
         self.c = self.conn.cursor()
+
         self.c.execute(
-            """CREATE TABLE IF NOT EXISTS music
-                    (path text, title text, artist text, album text, length real, year date, cover text, track text, UNIQUE(path) ON CONFLICT REPLACE)"""
+            """CREATE TABLE IF NOT EXISTS albums
+                (name text, artist text, year date, cover text, UNIQUE(name, artist) ON CONFLICT REPLACE)
+                """
+        )
+        self.c.execute(
+            """
+                CREATE TABLE IF NOT EXISTS tracks
+                (album text, track text, title text, length real, path text, UNIQUE(album, track) ON CONFLICT REPLACE)
+                """
         )
 
     # TODO: more efficient way of parsing library
     def parse_library(self, path='~/Music'):
 
         self.remove_missing(self.find_missing())
-
-        # os.mkdir(f'{GLib.get_user_cache_dir()}/musiclibrary')
 
         with os.scandir(os.path.expanduser(path)) as dir:
             # check if there is an image called cover.*
@@ -98,6 +101,7 @@ class MusicDB:
 
                         cover = entry.path
 
+            # FIXME: Change how the cache name is generated.
             if cover and not os.path.exists(
                 cache_name := sha256(open(cover, 'rb').read()).hexdigest()
             ):
@@ -105,22 +109,32 @@ class MusicDB:
             for (entry, audio) in to_insert:
                 # itentify file type and parse metadata
                 print(audio['title'], audio['date'], cover)
-
-                # insert if not exists
-                self.c.execute(
-                    'INSERT INTO music VALUES (?, ?, ?, ?, ?, ?, ?, ?) EXCEPT SELECT * FROM music',
+                self.insert(
+                    'albums',
                     (
-                        entry.path,
-                        audio['title'][0],
-                        audio['artist'][0],
                         audio['album'][0],
-                        audio.info.length,
+                        audio['artist'][0],
                         audio['date'][0],
                         path,
+                    ),
+                )
+                self.insert(
+                    'tracks',
+                    (
+                        audio['album'][0],
                         audio['tracknumber'][0],
+                        audio['title'][0],
+                        audio.info.length,
+                        entry.path,
                     ),
                 )
                 self.conn.commit()
+
+    def insert(self, table, values):
+        self.c.execute(
+            f'INSERT INTO {table} VALUES ({", ".join(["?"] * len(values))})',
+            values,
+        )
 
     def create_thumbnail(self, cover, cache_name):
         print(f'Converting {cover}')
@@ -137,7 +151,7 @@ class MusicDB:
         return result
 
     def find_missing(self):
-        self.c.execute('SELECT path FROM music')
+        self.c.execute('SELECT path FROM tracks')
         return [
             path[0]
             for path in self.c.fetchall()
@@ -146,45 +160,38 @@ class MusicDB:
 
     def remove_missing(self, paths):
         for path in paths:
-            self.c.execute('DELETE FROM music WHERE path = ?', (path,))
+            self.c.execute('DELETE FROM tracks WHERE path = ?', (path,))
+            self.conn.commit()
+
+        self.c.execute(
+            'DELETE FROM albums WHERE name NOT IN (SELECT DISTINCT album FROM tracks)'
+        )
         self.conn.commit()
 
     def get_artists(self):
-        self.c.execute('SELECT DISTINCT artist FROM music')
-
-        return [self.get_artist(artist[0]) for artist in self.c.fetchall()]
-
-    def get_artist(self, artist):
-        # return the number of albums, number of tracks, total length
+        # return a list of artists, and the number of albums in one query
 
         self.c.execute(
-            'SELECT COUNT(DISTINCT album), COUNT(title), SUM(length) FROM music WHERE artist = ?',
-            (artist,),
+            'SELECT DISTINCT artist, COUNT(DISTINCT name) FROM albums GROUP BY artist'
         )
-        return Artist(artist, *self.c.fetchone())
+        return [Artist(*a) for a in self.c.fetchall()]
 
-    def get_albums(self, artist=None):
-        if artist:
-            self.c.execute(
-                # TODO: Expose setting to change sort order.
-                'SELECT DISTINCT album FROM music WHERE artist = ? ORDER BY year',
-                (artist,),
-            )
-
-        else:
-            self.c.execute('SELECT DISTINCT album FROM music ORDER BY year')
-        return [self.get_album(album[0]) for album in self.c.fetchall()]
+    def get_albums(self):
+        self.c.execute(
+            'SELECT DISTINCT name, COUNT(title), SUM(length), year, artist, cover FROM albums JOIN tracks ON albums.name = tracks.album GROUP BY name ORDER BY year',
+        )
+        return [Album(*a) for a in self.c.fetchall()]
 
     def get_album(self, album):
         self.c.execute(
-            'SELECT COUNT(title), SUM(length), year, artist, cover FROM music WHERE album = ?',
+            'SELECT DISTINCT name, COUNT(title), SUM(length), year, artist, cover FROM albums JOIN tracks ON albums.name = tracks.album WHERE name = ? GROUP BY name',
             (album,),
         )
-        return Album(album, *self.c.fetchone())
+        return Album(*self.c.fetchone())
 
     def get_tracks(self, album):
         self.c.execute(
-            'SELECT path, title, length FROM music WHERE album = ? ORDER BY track',
+            'SELECT track, title, length, path FROM tracks WHERE album = ? ORDER BY track',
             (album,),
         )
         return self.c.fetchall()
