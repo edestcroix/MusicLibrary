@@ -19,6 +19,7 @@
 
 from gi.repository import Adw, Gtk, Gdk, GLib, Pango
 import gi
+import re
 
 gi.require_version('Gtk', '4.0')
 
@@ -39,6 +40,7 @@ class MusicLibraryAlbumView(Adw.Bin):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.track_list.set_sort_func(self.__track_sort_func)
 
     def apply_breakpoint(self, _):
         self.album_box.set_orientation(Gtk.Orientation.VERTICAL)
@@ -89,12 +91,16 @@ class MusicLibraryAlbumView(Adw.Bin):
 
     def update_tracks(self, tracks):
         for track in tracks:
+            track_num = re.sub(r'/.*', '', track[0])
             row = self.__create_row(
-                title=track[1],
+                title=f'{track_num:0>2} - {track[1]}',
                 subtitle=f'{int(track[2] // 60):02}:{int(track[2] % 60):02}',
                 icon_name='audio-x-generic-symbolic',
             )
             self.track_list.append(row)
+
+    def __track_sort_func(self, row1, row2):
+        return int(row1.get_title()[:3]) > int(row2.get_title()[:3])
 
     def __create_row(self, title, subtitle, icon_name, parent_row=None):
         row = Adw.ActionRow(
