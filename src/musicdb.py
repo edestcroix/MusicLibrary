@@ -1,8 +1,13 @@
+import contextlib
+from io import BytesIO
 import mutagen
+from mutagen.easyid3 import EasyID3
 import os
 import sqlite3
+import mimetypes
 from PIL import Image
 from dataclasses import dataclass
+import base64
 from hashlib import sha256
 
 from gi.repository import Gtk, GLib
@@ -84,51 +89,117 @@ class MusicDB:
 
         self.remove_missing(self.find_missing())
 
-        with os.scandir(os.path.expanduser(path)) as dir:
-            # check if there is an image called cover.*
-            to_insert = []
-            cover = None
-            # TODO: Better detection of cover images.
-            for entry in dir:
-                if entry.is_dir():
-                    self.parse_library(entry.path)
-                elif entry.is_file():
-                    if audio := mutagen.File(entry.path, easy=True):
-                        to_insert.append((entry, audio))
+        current_dir = list(os.scandir(os.path.expanduser(path)))
 
-                    if entry.name.startswith('cover'):
-                        # shrink image
+        print('In directory:', path)
 
-                        cover = entry.path
+        directories = [entry for entry in current_dir if entry.is_dir()]
 
-            # FIXME: Change how the cache name is generated.
-            if cover and not os.path.exists(
-                cache_name := sha256(open(cover, 'rb').read()).hexdigest()
+        images = [
+            entry
+            for entry in current_dir
+            if (mimetype := mimetypes.guess_type(entry.path)[0])
+            and mimetype.startswith('image')
+        ]
+
+        current_dir = [entry for entry in current_dir if entry.is_file()]
+        cover = self.find_cover(images)
+
+        to_insert = []
+
+        # TODO: Better detection of cover images.
+        for entry in directories:
+            self.parse_library(entry.path)
+
+        embed_cover = None
+        for entry in current_dir:
+            if audio_list := mutagen.File(entry.path, easy=True):
+                to_insert.append((entry, audio_list))
+
+            embed_cover = self.get_embeded_cover(entry) or embed_cover
+
+        cache_name = None
+        cache_path = None
+
+        if embed_cover:
+            print(f'Embeded cover found in {path}')
+            cache_name = sha256(embed_cover).hexdigest()
+            if not os.path.exists(
+                cache_path := f'{GLib.get_user_cache_dir()}/musiclibrary/{cache_name}.jpg'
             ):
-                path = self.create_thumbnail(cover, cache_name)
-            for (entry, audio) in to_insert:
-                # itentify file type and parse metadata
-                print(audio['title'], audio['date'], cover)
-                self.insert(
-                    'albums',
-                    (
-                        audio['album'][0],
-                        audio['artist'][0],
-                        audio['date'][0],
-                        path,
-                    ),
+                print('Generating cached image from embeded cover')
+                cache_path = self.create_thumbnail(
+                    BytesIO(embed_cover), cache_name
                 )
-                self.insert(
-                    'tracks',
-                    (
-                        audio['album'][0],
-                        audio['tracknumber'][0],
-                        audio['title'][0],
-                        audio.info.length,
-                        entry.path,
-                    ),
-                )
-                self.conn.commit()
+            else:
+                print('Cached image already exists')
+
+        elif cover:
+            print(f'Cover found in {path}')
+            cache_name = sha256(open(cover, 'rb').read()).hexdigest()
+            if not os.path.exists(
+                cache_path := f'{GLib.get_user_cache_dir()}/musiclibrary/{cache_name}.jpg'
+            ):
+                print('Generating cached image from cover')
+                cache_path = self.create_thumbnail(cover, cache_name)
+            else:
+                print('Cached image already exists')
+
+        self.insert_to_db(to_insert, cache_path)
+
+    def find_cover(self, images):
+        cover = next(
+            (
+                image.path
+                for image in images
+                if image.name.lower()[:-4] in ('cover', 'folder', 'front')
+            ),
+            None,
+        )
+        if not cover and images:
+            cover = images[0].path
+        return cover
+
+    def get_embeded_cover(self, audio_path):
+        embed_cover = None
+        if full := mutagen.File(audio_path.path):
+            # look for APIC, covr, or pictures
+            if 'covr' in full.tags:
+                embed_cover = full.tags['covr'][0].data
+            elif 'APIC:' in full:
+                embed_cover = full.tags.get('APIC:').data
+            else:
+                with contextlib.suppress(AttributeError):
+                    embed_cover = (
+                        full.pictures[0].data if full.pictures else None
+                    )
+        return embed_cover
+
+    def insert_to_db(self, to_insert, cover):
+        for (entry, audio) in to_insert:
+
+            # itentify file type and parse metadata
+            # print(audio['title'], audio['date'], cover)
+            self.insert(
+                'albums',
+                (
+                    audio['album'][0],
+                    audio['artist'][0],
+                    audio['date'][0],
+                    cover,
+                ),
+            )
+            self.insert(
+                'tracks',
+                (
+                    audio['album'][0],
+                    audio['tracknumber'][0],
+                    audio['title'][0],
+                    audio.info.length,
+                    entry.path,
+                ),
+            )
+            self.conn.commit()
 
     def insert(self, table, values):
         self.c.execute(
@@ -137,7 +208,7 @@ class MusicDB:
         )
 
     def create_thumbnail(self, cover, cache_name):
-        print(f'Converting {cover}')
+        # print(f'Converting {cover}')
         img = Image.open(cover)
         rgb_img = img.convert('RGB')
         rgb_img.thumbnail((320, 320))
