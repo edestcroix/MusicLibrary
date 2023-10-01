@@ -117,6 +117,7 @@ class MusicLibraryWindow(Adw.ApplicationWindow):
             self.artist_list.append(*artist.to_row())
         for album in self.db.get_albums():
             self.album_list.append(*album.to_row())
+            self.album_list.sort()
 
     def select_album(self, _, clicked_row):
         album = self.db.get_album(clicked_row.raw_title)

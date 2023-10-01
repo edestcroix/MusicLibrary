@@ -17,7 +17,7 @@ class Album:
     name: str
     num_tracks: int
     length: int
-    year: str
+    date: str
     artist: str
     cover: str
 
@@ -33,6 +33,7 @@ class Album:
             f'{self.length_str()} - {self.num_tracks} tracks',
             self.artist,
             self.cover,
+            str(self.date),
         )
 
     def length_str(self):
@@ -239,7 +240,7 @@ class MusicDB:
 
     def get_album(self, album):
         self.c.execute(
-            'SELECT DISTINCT name, COUNT(title), SUM(length), year, artist, cover FROM albums JOIN tracks ON albums.name = tracks.album WHERE name = ? GROUP BY name',
+            'SELECT name, COUNT(title), SUM(length), year, artist, cover FROM albums JOIN tracks ON albums.name = tracks.album WHERE name = ? GROUP BY name',
             (album,),
         )
         return Album(*self.c.fetchone())
