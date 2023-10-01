@@ -20,5 +20,6 @@ class MusicRow(Adw.ActionRow):
         self.sort_key = key
 
     def set_title(self, title, date=''):
+        date = f'({date})' if date else ''
         super().set_title(f'{GLib.markup_escape_text(title)} {date}')
         self.raw_title = title

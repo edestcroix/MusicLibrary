@@ -39,6 +39,10 @@ class MusicLibraryWindow(Adw.ApplicationWindow):
     breakpoint3 = Gtk.Template.Child()
 
     outer_split = Gtk.Template.Child()
+
+    lists_toggle = Gtk.Template.Child()
+    artist_return = Gtk.Template.Child()
+    album_return = Gtk.Template.Child()
     # inner_view contains the artist and album lists.
     inner_split = Gtk.Template.Child()
 
@@ -74,6 +78,22 @@ class MusicLibraryWindow(Adw.ApplicationWindow):
         self.artist_list.filter_all()
 
         self.queue_toggle.connect('clicked', self.toggle_album_info)
+
+        self.artist_return.connect(
+            'clicked',
+            lambda _: self.inner_split.set_show_content('album_view'),
+        )
+
+        self.album_return.connect(
+            'clicked', lambda _: self.outer_split.set_show_sidebar(False)
+        )
+
+        self.lists_toggle.connect(
+            'clicked',
+            lambda _: self.outer_split.set_show_sidebar(
+                not self.outer_split.get_show_sidebar()
+            ),
+        )
 
         self.__connect_breakpoint(self.breakpoint1)
         self.__connect_breakpoint(self.breakpoint2)
@@ -126,13 +146,15 @@ class MusicLibraryWindow(Adw.ApplicationWindow):
         tracks = self.db.get_tracks(album.name)
         album.set_tracks(tracks)
         self.album_overview.update_album(album)
-        self.outer_split.set_show_content('track_view')
+        self.outer_split.set_show_sidebar(
+            self.outer_split.get_collapsed() == False
+        )
 
     def select_artist(self, _, clicked_row):
         if clicked_row:
             self.album_list.filter_on_key(clicked_row.raw_title)
             self.album_list_page.set_title(clicked_row.raw_title)
-        self.inner_split.set_show_content('album_view')
+            self.inner_split.set_show_content('album_view')
 
     def seconds_to_time(self, seconds):
         return f'{int(seconds // 3600):02}:{int(seconds // 60 % 60):02}:{int(seconds % 60):02}'

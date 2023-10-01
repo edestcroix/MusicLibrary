@@ -16,86 +16,103 @@
       <object class="AdwBreakpoint" id="breakpoint2">
         <condition>max-width: 860sp</condition>
         <setter object="outer_split" property="collapsed">True</setter>
+        <setter object="outer_split" property="pin-sidebar">false</setter>
         <setter object="inner_split" property="sidebar-width-fraction">0.33</setter>
+        <setter object="lists_toggle" property="visible">true</setter>
+        <setter object="album_return" property="visible">true</setter>
       </object>
     </child>
     <child>
       <object class="AdwBreakpoint" id="breakpoint3">
         <condition>max-width: 500sp</condition>
+        <setter object="outer_split" property="pin-sidebar">false</setter>
         <setter object="outer_split" property="collapsed">True</setter>
         <setter object="inner_split" property="sidebar-width-fraction">0.33</setter>
         <setter object="inner_split" property="collapsed">True</setter>
+        <setter object="lists_toggle" property="visible">true</setter>
+        <setter object="album_return" property="visible">true</setter>
+        <setter object="artist_return" property="visible">true</setter>
       </object>
     </child>
     <property name="content">
-      <object class="AdwToastOverlay" id="toast_overlay">
-        <child>
-          <object class="AdwNavigationSplitView" id="outer_split">
-            <property name="min-sidebar-width">470</property>
-            <property name="max-sidebar-width">900</property>
-            <property name="sidebar-width-fraction">0.38</property>
-            <property name="sidebar">
-              <object class="AdwNavigationPage">
-                <property name="title" translatable="yes">Sidebar</property>
-                <!-- <property name="tag">lists-views</property> -->
-                <property name="child">
-                  <object class="AdwNavigationSplitView" id="inner_split">
-                    <property name="max-sidebar-width">300</property>
-                    <property name="sidebar-width-fraction">0.45</property>
-                    <property name="sidebar">
-                      <!-- sidebar -->
-                      <object class="AdwNavigationPage">
-                        <property name="title" translatable="yes">Artist</property>
-                        <property name="child">
-                          <object class="AdwToolbarView">
-                            <child type="top">
-                              <object class="AdwHeaderBar">
-                                <child type="end">
-                                  <object class="GtkMenuButton">
-                                    <property name="icon-name">open-menu-symbolic</property>
-                                    <property name="menu-model">primary_menu</property>
-                                  </object>
-                                </child>
+      <object class="AdwOverlaySplitView" id="outer_split">
+        <property name="min-sidebar-width">380</property>
+        <property name="max-sidebar-width">900</property>
+        <property name="sidebar-width-fraction">0.38</property>
+        <property name="show-sidebar">true</property>
+        <property name="sidebar">
+          <object class="AdwNavigationPage">
+            <property name="title" translatable="yes">Sidebar</property>
+            <!-- <property name="tag">lists-views</property> -->
+            <property name="child">
+              <object class="AdwNavigationSplitView" id="inner_split">
+                <property name="max-sidebar-width">300</property>
+                <property name="sidebar-width-fraction">0.45</property>
+                <property name="sidebar">
+                  <!-- sidebar -->
+                  <object class="AdwNavigationPage">
+                    <property name="title" translatable="yes">Artist</property>
+                    <property name="child">
+                      <object class="AdwToolbarView">
+                        <child type="top">
+                          <object class="AdwHeaderBar">
+                            <child type="end">
+                              <object class="GtkButton" id="artist_return">
+                                <property name="visible">False</property>
+                                <property name="icon-name">go-next-symbolic</property>
                               </object>
                             </child>
-                            <property name="content">
-                              <object class="GtkScrolledWindow">
-                                <property name="hscrollbar-policy">never</property>
-                                <child>
-                                  <object class="MusicLibraryList" id="artist_list">
-                                    <style>
-                                      <class name="navigation-sidebar" />
-                                    </style>
-                                  </object>
-                                </child>
+                            <child type="end">
+                              <object class="GtkMenuButton">
+                                <property name="icon-name">open-menu-symbolic</property>
+                                <property name="menu-model">primary_menu</property>
                               </object>
-                            </property>
+                            </child>
+                          </object>
+                        </child>
+                        <property name="content">
+                          <object class="GtkScrolledWindow">
+                            <property name="hscrollbar-policy">never</property>
+                            <child>
+                              <object class="MusicLibraryList" id="artist_list">
+                                <style>
+                                  <class name="navigation-sidebar" />
+                                </style>
+                              </object>
+                            </child>
                           </object>
                         </property>
                       </object>
                     </property>
-                    <property name="content">
-                      <!-- middle pane -->
-                      <object class="AdwNavigationPage" id="album_list_page">
-                        <property name="title" translatable="yes">Album</property>
-                        <property name="tag">album-view</property>
-                        <property name="child">
-                          <object class="AdwToolbarView">
-                            <child type="top">
-                              <object class="AdwHeaderBar" />
-                            </child>
-                            <property name="content">
-                              <object class="GtkScrolledWindow">
-                                <property name="hscrollbar-policy">never</property>
-                                <child>
-                                  <object class="MusicLibraryList" id="album_list">
-                                    <style>
-                                      <class name="navigation-sidebar" />
-                                    </style>
-                                  </object>
-                                </child>
+                  </object>
+                </property>
+                <property name="content">
+                  <!-- middle pane -->
+                  <object class="AdwNavigationPage" id="album_list_page">
+                    <property name="title" translatable="yes">Album</property>
+                    <property name="tag">album-view</property>
+                    <property name="child">
+                      <object class="AdwToolbarView">
+                        <child type="top">
+                          <object class="AdwHeaderBar">
+                            <child type="end">
+                              <object class="GtkButton" id="album_return">
+                                <property name="visible">False</property>
+                                <property name="icon-name">go-next-symbolic</property>
                               </object>
-                            </property>
+                            </child>
+                          </object>
+                        </child>
+                        <property name="content">
+                          <object class="GtkScrolledWindow">
+                            <property name="hscrollbar-policy">never</property>
+                            <child>
+                              <object class="MusicLibraryList" id="album_list">
+                                <style>
+                                  <class name="navigation-sidebar" />
+                                </style>
+                              </object>
+                            </child>
                           </object>
                         </property>
                       </object>
@@ -104,8 +121,12 @@
                 </property>
               </object>
             </property>
-            <property name="content">
-              <!-- content -->
+          </object>
+        </property>
+        <property name="content">
+          <!-- content -->
+          <object class="AdwToastOverlay" id="toast_overlay">
+            <child>
               <object class="AdwNavigationPage" id="album_overview_page">
                 <property name="title" translatable="yes">Tracks</property>
                 <property name="tag">track-view</property>
@@ -114,13 +135,24 @@
                     <child type="top">
                       <object class="AdwHeaderBar">
                         <child type="start">
+                          <object class="GtkButton" id="lists_toggle">
+                            <property name="icon-name">sidebar-show-symbolic</property>
+                            <property name="visible">False</property>
+                          </object>
+                        </child>
+                        <child type="start">
                           <object class="GtkButton" id="play">
                             <property name="icon-name">media-playback-start-symbolic</property>
                           </object>
                         </child>
+                        <child type="start">
+                          <object class="GtkButton" id="queue_add">
+                            <property name="icon-name">list-add-symbolic</property>
+                          </object>
+                        </child>
                         <child type="end">
                           <object class="GtkButton" id="queue_toggle">
-                            <property name="icon-name">dialog-information-symbolic</property>
+                            <property name="icon-name">sidebar-show-right-symbolic</property>
                           </object>
                         </child>
                       </object>
@@ -145,9 +177,9 @@
                   </object>
                 </property>
               </object>
-            </property>
+            </child>
           </object>
-        </child>
+        </property>
       </object>
     </property>
   </template>
