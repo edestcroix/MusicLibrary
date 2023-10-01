@@ -30,7 +30,6 @@ class MusicLibraryList(Gtk.ListBox):
         row.set_filter_key(filter_key) if filter_key else None
         row.set_sort_key(date) if date else None
         row.set_title_lines(1)
-        row.set_tooltip_text(title)
         if image_path:
             image = Gtk.Image()
             image.set_pixel_size(64)

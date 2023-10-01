@@ -22,4 +22,5 @@ class MusicRow(Adw.ActionRow):
     def set_title(self, title, date=''):
         date = f'({date})' if date else ''
         super().set_title(f'{GLib.markup_escape_text(title)} {date}')
+        super().set_tooltip_text(super().get_title())
         self.raw_title = title
