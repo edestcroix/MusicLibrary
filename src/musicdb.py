@@ -1,13 +1,12 @@
 import contextlib
 from io import BytesIO
+from gi.types import re
 import mutagen
-from mutagen.easyid3 import EasyID3
 import os
 import sqlite3
 import mimetypes
 from PIL import Image
 from dataclasses import dataclass
-import base64
 from hashlib import sha256
 
 from gi.repository import Gtk, GLib
@@ -54,6 +53,12 @@ class Artist:
 
 # TODO: Better detection of changed files. Currently the library sync is slow because
 # it completely replaces everything in the database.
+# This file is still really messy, maybe the database retrevial functions and the library parsing
+# should be separated.
+# Ideas for better parsing:
+# - Store the modification time of the file in the database, and only reparse if it has changed
+# - Store the hash of the file in the database, and only reparse if it has changed.
+# - Skip the INSERT query if the path already exists and the hash matches.
 
 
 class MusicDB:
@@ -107,7 +112,6 @@ class MusicDB:
 
         to_insert = []
 
-        # TODO: Better detection of cover images.
         for entry in directories:
             self.parse_library(entry.path)
 
@@ -118,34 +122,11 @@ class MusicDB:
 
             embed_cover = self.get_embeded_cover(entry) or embed_cover
 
-        cache_name = None
-        cache_path = None
+        cached_cover_path = None
+        if cover := embed_cover or cover:
+            cached_cover_path = self.cache_cover(cover)
 
-        if embed_cover:
-            print(f'Embeded cover found in {path}')
-            cache_name = sha256(embed_cover).hexdigest()
-            if not os.path.exists(
-                cache_path := f'{GLib.get_user_cache_dir()}/musiclibrary/{cache_name}.jpg'
-            ):
-                print('Generating cached image from embeded cover')
-                cache_path = self.create_thumbnail(
-                    BytesIO(embed_cover), cache_name
-                )
-            else:
-                print('Cached image already exists')
-
-        elif cover:
-            print(f'Cover found in {path}')
-            cache_name = sha256(open(cover, 'rb').read()).hexdigest()
-            if not os.path.exists(
-                cache_path := f'{GLib.get_user_cache_dir()}/musiclibrary/{cache_name}.jpg'
-            ):
-                print('Generating cached image from cover')
-                cache_path = self.create_thumbnail(cover, cache_name)
-            else:
-                print('Cached image already exists')
-
-        self.insert_to_db(to_insert, cache_path)
+        self.insert_to_db(to_insert, cached_cover_path)
 
     def find_cover(self, images):
         cover = next(
@@ -159,6 +140,12 @@ class MusicDB:
         if not cover and images:
             cover = images[0].path
         return cover
+
+    def hash_cover(self, cover):
+        if type(cover) == str:
+            return sha256(open(cover, 'rb').read()).hexdigest()
+        elif type(cover) == bytes:
+            return sha256(cover).hexdigest()
 
     def get_embeded_cover(self, audio_path):
         embed_cover = None
@@ -175,51 +162,48 @@ class MusicDB:
                     )
         return embed_cover
 
+    def cache_cover(self, cover):
+        cache_name = self.hash_cover(cover)
+        cover = BytesIO(cover) if type(cover) == bytes else cover
+        cached_cover_path = (
+            f'{GLib.get_user_cache_dir()}/musiclibrary/{cache_name}.jpg'
+        )
+        if not os.path.exists(cached_cover_path):
+            print('Generating cached image from cover')
+            self.create_thumbnail(cover, cached_cover_path)
+        return cached_cover_path
+
     def insert_to_db(self, to_insert, cover):
         for (entry, audio) in to_insert:
-
-            # itentify file type and parse metadata
-            # print(audio['title'], audio['date'], cover)
             self.insert(
                 'albums',
-                (
-                    audio['album'][0],
-                    audio['artist'][0],
-                    audio['date'][0],
-                    cover,
-                ),
+                audio['album'][0],
+                audio['artist'][0],
+                audio['date'][0],
+                cover,
             )
             self.insert(
                 'tracks',
-                (
-                    audio['album'][0],
-                    audio['tracknumber'][0],
-                    audio['title'][0],
-                    audio.info.length,
-                    entry.path,
-                ),
+                audio['album'][0],
+                audio['tracknumber'][0],
+                audio['title'][0],
+                audio.info.length,
+                entry.path,
             )
             self.conn.commit()
 
-    def insert(self, table, values):
+    def insert(self, table, *args):
         self.c.execute(
-            f'INSERT INTO {table} VALUES ({", ".join(["?"] * len(values))})',
-            values,
+            f'INSERT INTO {table} VALUES ({", ".join(["?"] * len(args))})',
+            args,
         )
 
-    def create_thumbnail(self, cover, cache_name):
-        # print(f'Converting {cover}')
+    def create_thumbnail(self, cover, out_path):
         img = Image.open(cover)
         rgb_img = img.convert('RGB')
         rgb_img.thumbnail((320, 320))
         # generate a unique string for the cover
-        rgb_img.save(
-            result := f'{GLib.get_user_cache_dir()}/musiclibrary/{cache_name}.jpg'
-        )
-
-        print(result)
-
-        return result
+        rgb_img.save(out_path)
 
     def find_missing(self):
         self.c.execute('SELECT path FROM tracks')
