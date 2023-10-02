@@ -23,7 +23,10 @@ Gst.init(None)
 class Player:
     def __init__(self, play_queue):
         """Initialize the player."""
-        self._player = Gst.ElementFactory.make('playbin', 'player')
+        # self._player = Gst.ElementFactory.make('playbin', 'player')
+        self._player = Gst.parse_launch(
+            'playbin audio-sink="rgvolume ! autoaudiosink"'
+        )
         self._player.connect('about-to-finish', self.on_about_to_finish)
         self.bus = self._player.get_bus()
         self.bus.add_signal_watch()
