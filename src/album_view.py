@@ -66,10 +66,10 @@ class MusicLibraryAlbumView(Adw.Bin):
 
     def update_tracks(self, tracks):
         for track in tracks:
-            track_num = re.sub(r'/.*', '', track[0])
+            track_num = re.sub(r'/.*', '', track.track)
             row = self.__create_row(
-                title=f'{track_num:0>2} - {track[1]}',
-                subtitle=f'{int(track[2] // 60):02}:{int(track[2] % 60):02}',
+                title=f'{track_num:0>2} - {track.title}',
+                subtitle=f'{int(track.length // 60):02}:{int(track.length % 60):02}',
                 icon_name='audio-x-generic-symbolic',
             )
             self.track_list.append(row)

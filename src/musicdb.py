@@ -26,6 +26,8 @@ class Album:
 
     def set_tracks(self, tracks):
         self.tracks = tracks
+        # sort tracks by their track number (which might be in the form 1/10)
+        self.tracks.sort(key=lambda t: int(t.track.split('/')[0]))
 
     def to_row(self):
         return (
@@ -52,6 +54,15 @@ class Artist:
         )
 
 
+@dataclass
+class Track:
+    track: int
+    title: str
+    length: int
+    path: str
+
+    def to_row(self):
+        return (self.track, self.title, self.length, self.path)
 # TODO: Better detection of changed files. Currently the library sync is slow because
 # it completely replaces everything in the database.
 # This file is still really messy, maybe the database retrevial functions and the library parsing
@@ -250,4 +261,4 @@ class MusicDB:
             'SELECT track, title, length, path FROM tracks WHERE album = ? ORDER BY track',
             (album,),
         )
-        return self.c.fetchall()
+        return [Track(*t) for t in self.c.fetchall()]

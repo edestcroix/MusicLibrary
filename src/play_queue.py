@@ -50,7 +50,7 @@ class PlayQueue(Gtk.ListBox):
         for track in album.tracks:
             row = Adw.ActionRow()
             row.get_style_context().add_class('queue-row')
-            row.set_title(GLib.markup_escape_text(track[1]))
+            row.set_title(GLib.markup_escape_text(track.title))
             remove_button = Gtk.Button()
             remove_button.get_style_context().add_class('flat')
             remove_button.set_icon_name('list-remove-symbolic')
