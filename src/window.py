@@ -20,6 +20,7 @@
 from gi.repository import Adw, Gtk, Gdk, GLib, Pango
 import gi
 import threading
+from .album_view import MusicLibraryAlbumView
 from .musicdb import Album, MusicDB
 from .musicrow import MusicRow
 from .library_list import MusicLibraryList
@@ -58,6 +59,8 @@ class MusicLibraryWindow(Adw.ApplicationWindow):
 
     queue_toggle = Gtk.Template.Child()
     queue_panel_split_view = Gtk.Template.Child()
+    queue_add = Gtk.Template.Child()
+    play_queue = Gtk.Template.Child()
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

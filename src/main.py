@@ -23,9 +23,9 @@ import gi
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 
-from gi.repository import Gtk, Gio, Adw
+from gi.repository import Gtk, Gio, Adw, GObject
+
 from .window import MusicLibraryWindow
-from .album_view import MusicLibraryAlbumView
 
 
 class MusicLibraryApplication(Adw.Application):
