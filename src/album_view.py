@@ -43,7 +43,7 @@ class MusicLibraryAlbumView(Adw.Bin):
         super().__init__(**kwargs)
         self.track_list.set_sort_func(self.__track_sort_func)
 
-    def apply_breakpoint(self, _):
+    def set_breakpoint(self, _):
         self.album_box.set_orientation(Gtk.Orientation.VERTICAL)
 
     def unset_breakpoint(self, _):

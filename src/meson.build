@@ -36,6 +36,7 @@ musiclibrary_sources = [
   'library_list.py',
   'player.py',
   'play_queue.py',
+  'main_view.py',
 ]
 
 install_data(musiclibrary_sources, install_dir: moduledir)

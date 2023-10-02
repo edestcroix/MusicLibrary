@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <requires lib="gtk" version="4.0" />
+  <requires lib="Adw" version="1.0" />
+  <template class="MainView" parent="AdwBin">
+    <child>
+      <object class="AdwToolbarView">
+        <child type="top">
+          <object class="AdwHeaderBar">
+            <child type="start">
+              <object class="GtkButton" id="lists_toggle">
+                <property name="icon-name">sidebar-show-symbolic</property>
+                <property name="visible">False</property>
+              </object>
+            </child>
+            <child type="start">
+              <object class="GtkButton" id="play">
+                <property name="icon-name">media-playback-start-symbolic</property>
+              </object>
+            </child>
+            <child type="start">
+              <object class="GtkButton" id="queue_add">
+                <property name="icon-name">list-add-symbolic</property>
+              </object>
+            </child>
+            <child type="end">
+              <object class="GtkButton" id="queue_toggle">
+                <property name="icon-name">view-list-symbolic</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child type="bottom">
+          <object class="GtkActionBar">
+            <property name="revealed">false</property>
+            <child type="start">
+              <object class="GtkButton">
+                <property name="icon-name">media-playback-pause-symbolic</property>
+              </object>
+            </child>
+            <child type="center">
+              <object class="GtkScale" id="progress_indicator">
+                <property name="draw-value">True</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <property name="content">
+          <!-- ... -->
+          <object class="AdwOverlaySplitView" id="queue_panel_split_view">
+            <property name="sidebar-position">end</property>
+            <property name="collapsed">True</property>
+            <property name="sidebar">
+              <!-- ... -->
+              <object class="GtkScrolledWindow">
+                <property name="hscrollbar-policy">never</property>
+                <child>
+                  <object class="PlayQueue" id="play_queue">
+                    <style>
+                      <class name="navigation-sidebar" />
+                    </style>
+                  </object>
+                </child>
+              </object>
+            </property>
+            <property name="content">
+              <object class="MusicLibraryAlbumView" id="album_overview">
+              </object>
+            </property>
+          </object>
+        </property>
+      </object>
+    </child>
+  </template>
+</interface>

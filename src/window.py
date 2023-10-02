@@ -20,34 +20,31 @@
 from gi.repository import Adw, Gtk, Gdk, GLib, Pango
 import gi
 import threading
-from .album_view import MusicLibraryAlbumView
 from .musicdb import Album, MusicDB
 from .musicrow import MusicRow
 from .library_list import MusicLibraryList
 from .play_queue import PlayQueue
 from .player import Player
+from .main_view import MainView
 
 gi.require_version('Gtk', '4.0')
+
+
+# TODO: (Probably not in this file) Implement a player interface in the bottom bar of the AdwToolbarView that holds
+# the album overview. (Play/pause, loop, shuffle, progress bar.)
 
 
 @Gtk.Template(resource_path='/ca/edestcroix/MusicLibary/window.ui')
 class MusicLibraryWindow(Adw.ApplicationWindow):
     __gtype_name__ = 'MusicLibraryWindow'
 
-    # The two Adw.NavigationSplitViews, first one
-    # contains inner_view and the track view page
-
-    breakpoint1 = Gtk.Template.Child()
-    breakpoint2 = Gtk.Template.Child()
-    breakpoint3 = Gtk.Template.Child()
-
+    # outer_split is the AdwOverlaySplitView with the artist/album lists as it's sidebar
     outer_split = Gtk.Template.Child()
+    # inner_split is the AdwNavigationSplitView that contains the artist and album lists
+    inner_split = Gtk.Template.Child()
 
-    lists_toggle = Gtk.Template.Child()
     artist_return = Gtk.Template.Child()
     album_return = Gtk.Template.Child()
-    # inner_view contains the artist and album lists.
-    inner_split = Gtk.Template.Child()
 
     toast_overlay = Gtk.Template.Child()
 
@@ -55,37 +52,26 @@ class MusicLibraryWindow(Adw.ApplicationWindow):
     album_list = Gtk.Template.Child()
     album_list_page = Gtk.Template.Child()
 
-    album_overview_page = Gtk.Template.Child()
-    album_overview = Gtk.Template.Child()
+    main_page = Gtk.Template.Child()
+    main_view = Gtk.Template.Child()
 
-    queue_toggle = Gtk.Template.Child()
-    queue_panel_split_view = Gtk.Template.Child()
-    queue_add = Gtk.Template.Child()
-    play_queue = Gtk.Template.Child()
+    breakpoint1 = Gtk.Template.Child()
+    breakpoint2 = Gtk.Template.Child()
+    breakpoint3 = Gtk.Template.Child()
 
-    play = Gtk.Template.Child()
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        # update_music_library()
         self.db = MusicDB()
 
-        self.__setup_actions()
-        # TODO: On start, finish init without refresing lists
-        # so the window will display, have main.py start refresing
-        # after the window displays, make refresh_lists() add a
-        # loading screen while running.
+        self._setup_actions()
         self.refresh_lists()
 
-        self.player = Player(self.play_queue)
-
-    def __setup_actions(self):
+    def _setup_actions(self):
         self.artist_list.connect('row-activated', self.select_artist)
         self.album_list.connect('row-activated', self.select_album)
         self.album_list.filter_all()
         self.artist_list.filter_all()
-
-        self.queue_toggle.connect('clicked', self.toggle_album_info)
 
         self.artist_return.connect(
             'clicked',
@@ -96,34 +82,17 @@ class MusicLibraryWindow(Adw.ApplicationWindow):
             'clicked', lambda _: self.outer_split.set_show_sidebar(False)
         )
 
-        self.lists_toggle.connect(
+        self.main_view.lists_toggle.connect(
             'clicked',
             lambda _: self.outer_split.set_show_sidebar(
                 not self.outer_split.get_show_sidebar()
             ),
         )
 
-        self.queue_add.connect('clicked', self.enqueue_album)
-
-        self.play.connect('clicked', self.play_album)
-
-        self.__connect_breakpoint(self.breakpoint1)
-        self.__connect_breakpoint(self.breakpoint2)
-        self.__connect_breakpoint(self.breakpoint3)
-
-    def __connect_breakpoint(self, breakpoint):
-        breakpoint.connect('apply', self.album_overview.apply_breakpoint)
-        breakpoint.connect('unapply', self.album_overview.unset_breakpoint)
-
-    def play_album(self, _):
-        if album := self.album_overview.current_album:
-            self.play_queue.clear()
-            self.play_queue.add_album(album)
-            self.player.play()
-
-    def enqueue_album(self, _):
-        if album := self.album_overview.current_album:
-            self.play_queue.add_album(album)
+        # Connect breakpoint signals to functions so that the breakpoint signal can be propagated to child widgets,
+        self._connect_breakpoint(self.breakpoint1, 1)
+        self._connect_breakpoint(self.breakpoint2, 2)
+        self._connect_breakpoint(self.breakpoint3, 3)
 
     def toggle_album_info(self, _):
         self.queue_panel_split_view.set_show_sidebar(
@@ -164,10 +133,10 @@ class MusicLibraryWindow(Adw.ApplicationWindow):
     def select_album(self, _, clicked_row):
         album = self.db.get_album(clicked_row.raw_title)
 
-        self.album_overview_page.set_title(album.name)
+        self.main_page.set_title(album.name)
         tracks = self.db.get_tracks(album.name)
         album.set_tracks(tracks)
-        self.album_overview.update_album(album)
+        self.main_view.update_album(album)
         self.outer_split.set_show_sidebar(
             self.outer_split.get_collapsed() == False
         )
@@ -178,5 +147,6 @@ class MusicLibraryWindow(Adw.ApplicationWindow):
             self.album_list_page.set_title(clicked_row.raw_title)
             self.inner_split.set_show_content('album_view')
 
-    def seconds_to_time(self, seconds):
-        return f'{int(seconds // 3600):02}:{int(seconds // 60 % 60):02}:{int(seconds % 60):02}'
+    def _connect_breakpoint(self, breakpoint, num):
+        breakpoint.connect('apply', self.main_view.set_breakpoint, num)
+        breakpoint.connect('unapply', self.main_view.unset_breakpoint, num)

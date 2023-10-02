@@ -6,7 +6,7 @@
     <property name="width-request">380</property>
     <property name="height-request">600</property>
     <property name="default-width">1200</property>
-    <property name="default-height">600</property>
+    <property name="default-height">650</property>
     <child>
       <object class="AdwBreakpoint" id="breakpoint1">
         <condition>max-width: 1180sp</condition>
@@ -18,7 +18,6 @@
         <setter object="outer_split" property="collapsed">True</setter>
         <setter object="outer_split" property="pin-sidebar">false</setter>
         <setter object="inner_split" property="sidebar-width-fraction">0.33</setter>
-        <setter object="lists_toggle" property="visible">true</setter>
         <setter object="album_return" property="visible">true</setter>
       </object>
     </child>
@@ -29,7 +28,6 @@
         <setter object="outer_split" property="collapsed">True</setter>
         <setter object="inner_split" property="sidebar-width-fraction">0.33</setter>
         <setter object="inner_split" property="collapsed">True</setter>
-        <setter object="lists_toggle" property="visible">true</setter>
         <setter object="album_return" property="visible">true</setter>
         <setter object="artist_return" property="visible">true</setter>
       </object>
@@ -127,61 +125,11 @@
           <!-- content -->
           <object class="AdwToastOverlay" id="toast_overlay">
             <child>
-              <object class="AdwNavigationPage" id="album_overview_page">
+              <object class="AdwNavigationPage" id="main_page">
                 <property name="title" translatable="yes">Tracks</property>
                 <property name="tag">track-view</property>
                 <property name="child">
-                  <object class="AdwToolbarView">
-                    <child type="top">
-                      <object class="AdwHeaderBar">
-                        <child type="start">
-                          <object class="GtkButton" id="lists_toggle">
-                            <property name="icon-name">sidebar-show-symbolic</property>
-                            <property name="visible">False</property>
-                          </object>
-                        </child>
-                        <child type="start">
-                          <object class="GtkButton" id="play">
-                            <property name="icon-name">media-playback-start-symbolic</property>
-                          </object>
-                        </child>
-                        <child type="start">
-                          <object class="GtkButton" id="queue_add">
-                            <property name="icon-name">list-add-symbolic</property>
-                          </object>
-                        </child>
-                        <child type="end">
-                          <object class="GtkButton" id="queue_toggle">
-                            <property name="icon-name">sidebar-show-right-symbolic</property>
-                          </object>
-                        </child>
-                      </object>
-                    </child>
-                    <property name="content">
-                      <!-- ... -->
-                      <object class="AdwOverlaySplitView" id="queue_panel_split_view">
-                        <property name="sidebar-position">end</property>
-                        <property name="collapsed">True</property>
-                        <property name="sidebar">
-                          <!-- ... -->
-                          <object class="GtkScrolledWindow">
-                            <property name="hscrollbar-policy">never</property>
-                            <child>
-                              <object class="PlayQueue" id="play_queue">
-                                <style>
-                                  <class name="navigation-sidebar" />
-                                </style>
-                              </object>
-                            </child>
-                          </object>
-                        </property>
-                        <property name="content">
-                          <object class="MusicLibraryAlbumView" id="album_overview">
-                          </object>
-                        </property>
-                      </object>
-                    </property>
-                  </object>
+                  <object class="MainView" id="main_view" />
                 </property>
               </object>
             </child>
