@@ -77,7 +77,7 @@ class MusicLibraryWindow(Adw.ApplicationWindow):
         # loading screen while running.
         self.refresh_lists()
 
-        self.player = Player(None)
+        self.player = Player(self.play_queue)
 
     def __setup_actions(self):
         self.artist_list.connect('row-activated', self.select_artist)
@@ -118,8 +118,8 @@ class MusicLibraryWindow(Adw.ApplicationWindow):
     def play_album(self, _):
         if album := self.album_overview.current_album:
             self.play_queue.clear()
-            self.player.play(album.tracks[0])
             self.play_queue.add_album(album)
+            self.player.play()
 
     def enqueue_album(self, _):
         if album := self.album_overview.current_album:

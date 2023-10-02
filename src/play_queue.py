@@ -27,6 +27,7 @@ class PlayQueue(Gtk.ListBox):
 
     # Might have to subclass both ExpanderRow and ActionRow, so the ExpanderRow
     # can track its children better.
+    queue = []
 
     def add_album(self, album):
         album_row = Adw.ExpanderRow()
@@ -40,6 +41,8 @@ class PlayQueue(Gtk.ListBox):
 
         album_row.add_suffix(remove_button)
         remove_button.connect('clicked', lambda _: self.remove(album_row))
+
+        self.queue.extend(album.tracks)
 
         if album.cover:
             image = Gtk.Image()
@@ -72,4 +75,9 @@ class PlayQueue(Gtk.ListBox):
             self.remove(album_row)
 
     def clear(self):
+        self.queue = []
         self.remove_all()
+
+    def get_next_track(self):
+        print(self.queue[0].title)
+        return self.queue.pop(0)
