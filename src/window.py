@@ -23,6 +23,7 @@ import threading
 from .musicdb import Album, MusicDB
 from .musicrow import MusicRow
 from .library_list import MusicLibraryList
+from .play_queue import PlayQueue
 
 gi.require_version('Gtk', '4.0')
 
@@ -95,6 +96,8 @@ class MusicLibraryWindow(Adw.ApplicationWindow):
             ),
         )
 
+        self.queue_add.connect('clicked', self.enqueue_album)
+
         self.__connect_breakpoint(self.breakpoint1)
         self.__connect_breakpoint(self.breakpoint2)
         self.__connect_breakpoint(self.breakpoint3)
@@ -103,6 +106,9 @@ class MusicLibraryWindow(Adw.ApplicationWindow):
         breakpoint.connect('apply', self.album_overview.apply_breakpoint)
         breakpoint.connect('unapply', self.album_overview.unset_breakpoint)
 
+    def enqueue_album(self, _):
+        if album := self.album_overview.current_album:
+            self.play_queue.add_album(album)
     def toggle_album_info(self, _):
         self.queue_panel_split_view.set_show_sidebar(
             not self.queue_panel_split_view.get_show_sidebar()
