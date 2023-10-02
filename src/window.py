@@ -25,6 +25,7 @@ from .musicdb import Album, MusicDB
 from .musicrow import MusicRow
 from .library_list import MusicLibraryList
 from .play_queue import PlayQueue
+from .player import Player
 
 gi.require_version('Gtk', '4.0')
 
@@ -62,6 +63,7 @@ class MusicLibraryWindow(Adw.ApplicationWindow):
     queue_add = Gtk.Template.Child()
     play_queue = Gtk.Template.Child()
 
+    play = Gtk.Template.Child()
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -74,6 +76,8 @@ class MusicLibraryWindow(Adw.ApplicationWindow):
         # after the window displays, make refresh_lists() add a
         # loading screen while running.
         self.refresh_lists()
+
+        self.player = Player(None)
 
     def __setup_actions(self):
         self.artist_list.connect('row-activated', self.select_artist)
@@ -101,6 +105,8 @@ class MusicLibraryWindow(Adw.ApplicationWindow):
 
         self.queue_add.connect('clicked', self.enqueue_album)
 
+        self.play.connect('clicked', self.play_album)
+
         self.__connect_breakpoint(self.breakpoint1)
         self.__connect_breakpoint(self.breakpoint2)
         self.__connect_breakpoint(self.breakpoint3)
@@ -109,9 +115,16 @@ class MusicLibraryWindow(Adw.ApplicationWindow):
         breakpoint.connect('apply', self.album_overview.apply_breakpoint)
         breakpoint.connect('unapply', self.album_overview.unset_breakpoint)
 
+    def play_album(self, _):
+        if album := self.album_overview.current_album:
+            self.play_queue.clear()
+            self.player.play(album.tracks[0])
+            self.play_queue.add_album(album)
+
     def enqueue_album(self, _):
         if album := self.album_overview.current_album:
             self.play_queue.add_album(album)
+
     def toggle_album_info(self, _):
         self.queue_panel_split_view.set_show_sidebar(
             not self.queue_panel_split_view.get_show_sidebar()

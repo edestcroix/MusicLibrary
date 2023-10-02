@@ -34,6 +34,7 @@ musiclibrary_sources = [
   'album_view.py',
   'musicrow.py',
   'library_list.py',
+  'player.py',
   'play_queue.py',
 ]
 
