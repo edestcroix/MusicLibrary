@@ -79,14 +79,6 @@
               </object>
             </child>
             <child type="end">
-              <object class="GtkLabel" id="progress">
-                <property name="ellipsize">end</property>
-                <attributes>
-                  <attribute name="weight" value="PANGO_WEIGHT_BOLD" />
-                </attributes>
-              </object>
-            </child>
-            <child type="end">
               <object class="GtkBox">
                 <property name="orientation">horizontal</property>
                 <property name="spacing">0</property>
@@ -103,6 +95,14 @@
                     <property name="icon-name">emblem-synchronizing-symbolic</property>
                   </object>
                 </child>
+              </object>
+            </child>
+            <child type="end">
+              <object class="GtkLabel" id="progress">
+                <property name="ellipsize">end</property>
+                <attributes>
+                  <attribute name="weight" value="PANGO_WEIGHT_BOLD" />
+                </attributes>
               </object>
             </child>
             <!-- <child type="center"> -->

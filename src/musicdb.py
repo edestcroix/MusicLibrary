@@ -60,9 +60,13 @@ class Track:
     title: str
     length: int
     path: str
+    album: str
+    artist: str
 
     def to_row(self):
         return (self.track, self.title, self.length, self.path)
+
+
 # TODO: Better detection of changed files. Currently the library sync is slow because
 # it completely replaces everything in the database.
 # This file is still really messy, maybe the database retrevial functions and the library parsing
@@ -94,6 +98,7 @@ class MusicDB:
                 (name text, artist text, year date, cover text, UNIQUE(name, artist) ON CONFLICT REPLACE)
                 """
         )
+        # TODO: Need to track disk number and account for it.
         self.c.execute(
             """
                 CREATE TABLE IF NOT EXISTS tracks
@@ -259,6 +264,6 @@ class MusicDB:
     def get_tracks(self, album):
         self.c.execute(
             'SELECT track, title, length, path FROM tracks WHERE album = ? ORDER BY track',
-            (album,),
+            (album.name,),
         )
-        return [Track(*t) for t in self.c.fetchall()]
+        return [Track(*t, album.name, album.artist) for t in self.c.fetchall()]

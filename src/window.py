@@ -134,7 +134,7 @@ class MusicLibraryWindow(Adw.ApplicationWindow):
         album = self.db.get_album(clicked_row.raw_title)
 
         self.main_page.set_title(album.name)
-        tracks = self.db.get_tracks(album.name)
+        tracks = self.db.get_tracks(album)
         album.set_tracks(tracks)
         self.main_view.update_album(album)
         self.outer_split.set_show_sidebar(
