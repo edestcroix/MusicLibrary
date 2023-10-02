@@ -37,6 +37,7 @@ class MusicLibraryAlbumView(Adw.Bin):
     album_box = Gtk.Template.Child()
 
     stack = Gtk.Template.Child()
+    current_album = None
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -55,39 +56,13 @@ class MusicLibraryAlbumView(Adw.Bin):
         self.track_list.remove_all()
 
     def update_album(self, album: Album):
+        self.current_album = album
         self.clear_all()
         self.update_cover(album.cover)
         # self.update_info(album)
         self.update_tracks(album.get_tracks())
 
         self.stack.set_visible_child_name('album_view')
-
-    # def update_info(self, album: Album):
-    #     info_row = Adw.ExpanderRow(title='Album Info')
-    #     info_row.set_selectable(False)
-
-    #     self.__create_row(
-    #         title='Artist',
-    #         subtitle=album.artist,
-    #         icon_name='audio-x-generic-symbolic',
-    #         parent_row=info_row,
-    #     )
-
-    #     self.__create_row(
-    #         title='Length',
-    #         subtitle=album.length_str(),
-    #         icon_name='audio-x-generic-symbolic',
-    #         parent_row=info_row,
-    #     )
-
-    #     self.__create_row(
-    #         title='Year',
-    #         subtitle=str(album.year),
-    #         icon_name='audio-x-generic-symbolic',
-    #         parent_row=info_row,
-    #     )
-
-    #     self.track_list.append(info_row)
 
     def update_tracks(self, tracks):
         for track in tracks:
