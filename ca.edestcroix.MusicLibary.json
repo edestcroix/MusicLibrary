@@ -9,7 +9,9 @@
     "--share=ipc",
     "--socket=fallback-x11",
     "--device=dri",
-    "--socket=wayland"
+    "--socket=wayland",
+    "--filesystem=xdg-music",
+    "--socket=pulseaudio"
   ],
   "cleanup": [
     "/include",
@@ -36,6 +38,34 @@
           "type": "archive",
           "url": "https://download.osgeo.org/libtiff/tiff-4.4.0.tar.gz",
           "sha256": "917223b37538959aca3b790d2d73aa6e626b688e02dcda272aec24c2f498abed"
+        }
+      ]
+    },
+    {
+      "name": "gst-plugins-ugly",
+      "buildsystem": "meson",
+      "cleanup": [
+        "*.la",
+        "/share/gtk-doc"
+      ],
+      "sources": [
+        {
+          "type": "git",
+          "url": "https://gitlab.freedesktop.org/gstreamer/gst-plugins-ugly.git"
+        }
+      ]
+    },
+    {
+      "name": "gst-plugins-bad",
+      "buildsystem": "meson",
+      "cleanup": [
+        "*.la",
+        "/share/gtk-doc"
+      ],
+      "sources": [
+        {
+          "type": "git",
+          "url": "https://gitlab.freedesktop.org/gstreamer/gst-plugins-bad.git"
         }
       ]
     },
