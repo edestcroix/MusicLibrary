@@ -34,6 +34,7 @@ musiclibrary_sources = [
   'album_view.py',
   'musicrow.py',
   'library_list.py',
+  'play_queue.py',
 ]
 
 install_data(musiclibrary_sources, install_dir: moduledir)
