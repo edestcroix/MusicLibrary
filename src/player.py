@@ -6,7 +6,7 @@ import os
 import queue
 import time
 import urllib
-import urllib.request
+import urllib.parse
 
 import gi
 
@@ -36,11 +36,9 @@ class Player:
 
     def play(self):
         """Start playback."""
-
-        track = self.play_queue.get_next_track()
-        path = os.path.realpath(track.path.strip())
+        url = self.prepare_url()
         self._player.set_state(Gst.State.NULL)
-        self._player.set_property('uri', f'file:/{path}')
+        self._player.set_property('uri', url)
         self._player.set_state(Gst.State.PLAYING)
         print(self._player.get_state(1 * Gst.SECOND))
 
@@ -56,6 +54,20 @@ class Player:
             print(f'Error: {err}', debug)
 
     def on_about_to_finish(self, _):
-        next_track = self.play_queue.get_next_track()
-        path = os.path.realpath(next_track.path.strip())
-        self._player.set_property('uri', f'file:/{path}')
+        url = self.prepare_url()
+        self._player.set_property('uri', url)
+
+    # TODO Rename this here and in `play` and `on_about_to_finish`
+    def prepare_url(self):
+        track = self.play_queue.get_next_track()
+        path = os.path.realpath(track.path.strip())
+        result = urllib.parse.ParseResult(
+            scheme='file',
+            path=path,
+            netloc='',
+            query='',
+            fragment='',
+            params='',
+        )
+        result = urllib.parse.urlunparse(result)
+        return result
