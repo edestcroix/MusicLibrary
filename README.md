@@ -1,6 +1,6 @@
 # Music Library
 
-A work-in-progress application to browse and play music from your local music library. Name and most functionallity subject to change.
+A work-in-progress application to browse and play music from your local music library. Name and most functionality subject to change.
 
 The base idea is a very simple, paned navigation view that allows filtering by artist -> album -> track only. No other navigation options
 are planned on being implemented, but the ability to sort the artist and album lists by different values is planned.
@@ -8,7 +8,7 @@ are planned on being implemented, but the ability to sort the artist and album l
 ![Screenshot of main window](screenshot.png)
 
 # What is Working
-Database generation is mostly working, along with cover art parsing. The parser is able to detect and cache embeded covers and covers in
+Database generation is mostly working, along with cover art parsing. The parser is able to detect and cache embedded covers and covers in
 the same directory as the albums. Now that covers are compressed, RAM usage has gone down from the absolutely ridiculous 1.4GB to around 100MB.
 
 Artist and Album lists are working, and selecting artist filters to show only albums by that artist. For the lists, all that is really left
@@ -20,10 +20,13 @@ The Album Overview page is mostly done for now. It's usable. At some point more 
 The play queue exists. Currently only albums can be added, not individual tracks. Removing Albums and Tracks work, but removing the
 last track of an album doens't remove the album.
 
+Playback is now working. By using a GStreamer playbin with the audio sink sent through a `rgvolume` element, both gapless playback and
+ReplayGain are now supported. Further changes to the GStreamer pipeline are probably not necessary right now, so most playback functionality
+left to implement is down to better implementations of the play queue and other UI controls.
+
 # What is Not
-Proper playback. Basic playback exists right now (but not comitted to the repo yet) that only plays the first song from the album
-and stops. The current implementation needs to be extended to load the next song from the play queue, and the UI elements to seek
-and control the playback need to be implemented.
+Playback control. After starting an album, there is no way to control the playback. The plan is to implement a bottom bar in the
+album overview section with a progress/seek bar and play/pause, stop, loop, shuffle, etc. 
 
 Refreshing the database is slow because it does a complete rebuild of the database. When parsing, there needs to be a better
 check to see if a file already exists. A possible way to do this would be to store file modification times, and don't bother
@@ -34,3 +37,8 @@ but no albums are selectable. Also, albums with multiple discs aren't handled co
 the database. Secondly, there is no way to display discs in the UI yet. (Which wouldn't be too hard after the database stores it)
 
 No preferences exist yet. This would be stuff like sort-by options, playback, etc.
+
+
+# Want-to-Haves
+- MPRIS support
+- Keep the application running in the background when a song is playing.
