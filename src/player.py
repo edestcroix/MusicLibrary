@@ -32,6 +32,7 @@ class Player:
         self.bus.add_signal_watch()
         self.bus.connect('message', self.on_message)
         self.play_queue = play_queue
+        self.state = 'stopped'
         # self.bus.connect('about-to-finish', self.on_about_to_finish)
 
     def play(self):
@@ -40,7 +41,23 @@ class Player:
         self._player.set_state(Gst.State.NULL)
         self._player.set_property('uri', url)
         self._player.set_state(Gst.State.PLAYING)
+        self.state = 'playing'
         print(self._player.get_state(1 * Gst.SECOND))
+
+    def toggle(self):
+        if self._player.get_state(1 * Gst.SECOND)[1] == Gst.State.PLAYING:
+            self._player.set_state(Gst.State.PAUSED)
+            self.state = 'paused'
+        elif self._player.get_state(1 * Gst.SECOND)[1] == Gst.State.PAUSED:
+            self._player.set_state(Gst.State.PLAYING)
+            self.state = 'playing'
+
+    def get_progress(self):
+        """Get the current progress of the track."""
+        return self._player.query_position(Gst.Format.TIME)[1]
+
+    def get_duration(self):
+        return self._player.query_duration(Gst.Format.TIME)[1]
 
     def on_message(self, _, message):
         t = message.type

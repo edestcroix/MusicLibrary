@@ -41,14 +41,17 @@ class MainView(Adw.Bin):
     lists_toggle = Gtk.Template.Child()
 
     play = Gtk.Template.Child()
+    play_pause = Gtk.Template.Child()
+    player_controls = Gtk.Template.Child()
+
+    playing_song = Gtk.Template.Child()
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self._setup_actions()
         self.player = Player(self.play_queue)
+        self._setup_actions()
 
     def set_breakpoint(self, _, breakpoint_num):
-        print(breakpoint_num)
         self.album_overview.set_breakpoint(None)
         if breakpoint_num > 1:
             self.lists_toggle.set_visible(True)
@@ -66,12 +69,22 @@ class MainView(Adw.Bin):
         self.play.connect('clicked', self._on_play_clicked)
         self.queue_add.connect('clicked', self._on_queue_add_clicked)
         self.queue_toggle.connect('clicked', self._on_queue_toggle_clicked)
+        self.play_pause.connect('clicked', self._on_play_pause)
 
     def _on_play_clicked(self, _):
         if album := self.album_overview.current_album:
             self.play_queue.clear()
             self.play_queue.add_album(album)
             self.player.play()
+            self.player_controls.set_revealed(True)
+            self.play_pause.set_icon_name('media-playback-pause-symbolic')
+
+            self.playing_song.set_text(
+                f'{self.play_queue.get_current_track().title} - {album.artist}'
+            )
+
+            # duration = self.player.get_duration()
+            # GLib.timeout_add(duration, self._monitor_progress)
 
     def _on_queue_add_clicked(self, _):
         if album := self.album_overview.current_album:
@@ -80,4 +93,12 @@ class MainView(Adw.Bin):
     def _on_queue_toggle_clicked(self, _):
         self.queue_panel_split_view.set_show_sidebar(
             not self.queue_panel_split_view.get_show_sidebar()
+        )
+
+    def _on_play_pause(self, button):
+        self.player.toggle()
+        button.set_icon_name(
+            'media-playback-pause-symbolic'
+            if self.player.state == 'playing'
+            else 'media-playback-start-symbolic'
         )

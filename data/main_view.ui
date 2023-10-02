@@ -31,18 +31,85 @@
           </object>
         </child>
         <child type="bottom">
-          <object class="GtkActionBar">
+          <object class="GtkActionBar" id="player_controls">
+            <style>
+              <class name="play_controls" />
+            </style>
             <property name="revealed">false</property>
             <child type="start">
-              <object class="GtkButton">
-                <property name="icon-name">media-playback-pause-symbolic</property>
+              <object class="GtkBox">
+                <property name="orientation">horizontal</property>
+                <property name="spacing">0</property>
+                <style>
+                  <class name="linked" />
+                </style>
+                <child>
+                  <object class="GtkButton" id="skip-backward">
+                    <property name="icon-name">media-skip-backward-symbolic</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkButton" id="seek-backward">
+                    <property name="icon-name">media-seek-backward-symbolic</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkButton" id="play_pause">
+                    <property name="icon-name">media-playback-pause-symbolic</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkButton" id="seek-forward">
+                    <property name="icon-name">media-seek-forward-symbolic</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkButton" id="skip-forward">
+                    <property name="icon-name">media-skip-forward-symbolic</property>
+                  </object>
+                </child>
               </object>
             </child>
-            <child type="center">
-              <object class="GtkScale" id="progress_indicator">
-                <property name="draw-value">True</property>
+            <child type="start">
+              <object class="GtkLabel" id="playing_song">
+                <property name="ellipsize">end</property>
+                <attributes>
+                  <attribute name="weight" value="PANGO_WEIGHT_BOLD" />
+                </attributes>
               </object>
             </child>
+            <child type="end">
+              <object class="GtkLabel" id="progress">
+                <property name="ellipsize">end</property>
+                <attributes>
+                  <attribute name="weight" value="PANGO_WEIGHT_BOLD" />
+                </attributes>
+              </object>
+            </child>
+            <child type="end">
+              <object class="GtkBox">
+                <property name="orientation">horizontal</property>
+                <property name="spacing">0</property>
+                <style>
+                  <class name="linked" />
+                </style>
+                <child>
+                  <object class="GtkButton" id="shuffle">
+                    <property name="icon-name">media-playlist-shuffle-symbolic</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkButton" id="loop">
+                    <property name="icon-name">emblem-synchronizing-symbolic</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <!-- <child type="center"> -->
+            <!--   <object class="GtkScale" id="progress_indicator"> -->
+            <!--     <property name="draw-value">True</property> -->
+            <!--   </object> -->
+            <!-- </child> -->
           </object>
         </child>
         <property name="content">
