@@ -44,9 +44,11 @@ class MainView(Adw.Bin):
 
     lists_toggle = Gtk.Template.Child()
 
+    player_controls = Gtk.Template.Child()
     play = Gtk.Template.Child()
     play_pause = Gtk.Template.Child()
-    player_controls = Gtk.Template.Child()
+    skip_forward = Gtk.Template.Child()
+    skip_backward = Gtk.Template.Child()
 
     playing_song = Gtk.Template.Child()
 
@@ -55,9 +57,9 @@ class MainView(Adw.Bin):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.player = Player(self.play_queue)
+        self._build_seek_scale()
         self._setup_actions()
-
-        self.thread_num = 0
+        self._start_monitor_thread()
 
     def set_breakpoint(self, _, breakpoint_num):
         self.album_overview.set_breakpoint(None)
@@ -72,11 +74,36 @@ class MainView(Adw.Bin):
     def update_album(self, album: Album):
         self.album_overview.update_album(album)
 
+    def _build_seek_scale(self):
+        popup = Gtk.Popover.new()
+        box = Gtk.Box.new(Gtk.Orientation.HORIZONTAL, 0)
+        box.append(start_label := Gtk.Label.new('Seek'))
+        box.set_homogeneous(False)
+        self.start_label = start_label
+        box.append(
+            scale := Gtk.Scale.new_with_range(
+                Gtk.Orientation.HORIZONTAL, 0, 100, 1
+            )
+        )
+        box.append(end_label := Gtk.Label.new('Seek'))
+        self.end_label = end_label
+        popup.set_child(box)
+        scale.set_slider_size_fixed(True)
+        scale.set_size_request(200, 0)
+        self.seek_scale = scale
+        self.progress.set_popover(popup)
+        self.progress.set_direction(Gtk.ArrowType.UP)
+
     def _setup_actions(self):
-        self.play.connect('clicked', self._on_play_clicked)
         self.queue_add.connect('clicked', self._on_queue_add_clicked)
         self.queue_toggle.connect('clicked', self._on_queue_toggle_clicked)
+
+        self.play.connect('clicked', self._on_play_clicked)
         self.play_pause.connect('clicked', self._on_play_pause)
+        self.skip_forward.connect('clicked', self._skip_forward)
+        self.skip_backward.connect('clicked', self._skip_backward)
+
+        self.seek_scale.connect('change-value', self._on_seek)
 
         self.player.bus.connect('message', self._on_message)
 
@@ -87,13 +114,6 @@ class MainView(Adw.Bin):
             self.player.play()
             self.player_controls.set_revealed(True)
             self.play_pause.set_icon_name('media-playback-pause-symbolic')
-
-            # quick and dirty way to make sure the old duration monitor thread stops.
-            # Increases the thread_num evertime the play button is pressed. This is needed
-            # because if the thread just checks for the pause state it can miss the player stopping
-            # and immediatly starting again. Will work on a better system.
-            self.thread_num += 1
-            self._start_monitor_thread(self.thread_num)
 
     def _on_queue_add_clicked(self, _):
         if album := self.album_overview.current_album:
@@ -112,30 +132,52 @@ class MainView(Adw.Bin):
             else 'media-playback-start-symbolic'
         )
 
-    def _start_monitor_thread(self, thread_num=0):
+    def _start_monitor_thread(self):
         progress_thread = threading.Thread(
             target=self._monitor_progress,
             daemon=True,
-            args=(thread_num,),
         )
         progress_thread.daemon = True
         progress_thread.start()
 
-    def _monitor_progress(self, thread_num=0):
-        while self.thread_num == thread_num:
-            duration = self.player.get_duration() / 1000000000
-            progress = self.player.get_progress() / 1000000000
-            time_str = f'{int(progress // 60):02}:{int(progress % 60):02}'
-            duration_str = f'{int(duration // 60):02}:{int(duration % 60):02}'
-            GLib.idle_add(
-                self.progress.set_text, f'{time_str} / {duration_str}'
-            )
+    def _monitor_progress(self):
+        while True:
+            if self.player.state == 'stopped':
+                self.progress.set_label('')
+                self.start_label.set_text('')
+                self.end_label.set_text('')
+            else:
+                duration = self.player.get_duration() / 1000000000
+                progress = self.player.get_progress() / 1000000000
+                time_str = f'{int(progress // 60):02}:{int(progress % 60):02}'
+                duration_str = (
+                    f'{int(duration // 60):02}:{int(duration % 60):02}'
+                )
+                self.seek_scale.set_range(
+                    0, duration
+                ) if progress < duration else None
+                self.seek_scale.set_value(progress)
+                self.start_label.set_text(time_str)
+                self.end_label.set_text(duration_str)
+                GLib.idle_add(
+                    self.progress.set_label, f'{time_str} / {duration_str}'
+                )
             time.sleep(0.5)
-        print('exiting')
 
     def _on_message(self, _, message):
         if message.type == Gst.MessageType.STREAM_START:
             current_track = self.play_queue.get_current_track()
             self.playing_song.set_text(
-                f'{current_track.title} - {current_track.artist}'
+                f'{current_track.title} - {current_track.album.artist}'
             )
+
+    def _on_seek(self, _, __, value):
+        self.player.seek(value * 1000000000)
+
+    def _skip_forward(self, _):
+        self.play_queue.next()
+        self.player.play()
+
+    def _skip_backward(self, _):
+        self.play_queue.previous()
+        self.player.play()

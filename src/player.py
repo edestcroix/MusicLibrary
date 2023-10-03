@@ -25,19 +25,18 @@ class Player:
         """Initialize the player."""
         # self._player = Gst.ElementFactory.make('playbin', 'player')
         self._player = Gst.parse_launch(
-            'playbin audio-sink="rgvolume ! autoaudiosink"'
+            'playbin audio-sink="rgvolume album-mode=\\"true\\" ! autoaudiosink"'
         )
-        self._player.connect('about-to-finish', self.on_about_to_finish)
+        self._player.connect('about-to-finish', self._on_about_to_finish)
         self.bus = self._player.get_bus()
         self.bus.add_signal_watch()
-        self.bus.connect('message', self.on_message)
-        self.play_queue = play_queue
+        self.bus.connect('message', self._on_message)
+        self._play_queue = play_queue
         self.state = 'stopped'
-        # self.bus.connect('about-to-finish', self.on_about_to_finish)
 
     def play(self):
         """Start playback."""
-        url = self.prepare_url()
+        url = self._prepare_url(self._play_queue.get_current_track())
         self._player.set_state(Gst.State.NULL)
         self._player.set_property('uri', url)
         self._player.set_state(Gst.State.PLAYING)
@@ -59,24 +58,26 @@ class Player:
     def get_duration(self):
         return self._player.query_duration(Gst.Format.TIME)[1]
 
-    def on_message(self, _, message):
-        t = message.type
-        if t == Gst.MessageType.EOS:
-            self._player.set_state(Gst.State.NULL)
-        # elif t == Gst.MessageType.ABOUT_TO_FINISH:
-        #     print('about to finish')
-        elif t == Gst.MessageType.ERROR:
-            self._player.set_state(Gst.State.NULL)
-            err, debug = message.parse_error()
-            print(f'Error: {err}', debug)
+    # TODO: Either here or in the main_view, prevent too frequent
+    # seeking caused by the scale being scrolled too fast (because it makes
+    # awful noises)
+    def seek(self, position):
+        """Seek to a position in the current track."""
+        # first check status of player so two seeks aren't sent at once
 
-    def on_about_to_finish(self, _):
-        url = self.prepare_url()
+        duration = self._player.query_duration(Gst.Format.TIME)[1]
+        if position > duration:
+            return
+        else:
+            self._player.seek_simple(
+                Gst.Format.TIME, Gst.SeekFlags.FLUSH, position
+            )
+
+    def _on_about_to_finish(self, _):
+        url = self._prepare_url(self._play_queue.get_next_track())
         self._player.set_property('uri', url)
 
-    # TODO Rename this here and in `play` and `on_about_to_finish`
-    def prepare_url(self):
-        track = self.play_queue.get_next_track()
+    def _prepare_url(self, track):
         path = os.path.realpath(track.path.strip())
         result = urllib.parse.ParseResult(
             scheme='file',
@@ -88,3 +89,12 @@ class Player:
         )
         result = urllib.parse.urlunparse(result)
         return result
+
+    def _on_message(self, _, message):
+        t = message.type
+        if t == Gst.MessageType.EOS:
+            self._player.set_state(Gst.State.NULL)
+        elif t == Gst.MessageType.ERROR:
+            self._player.set_state(Gst.State.NULL)
+            err, debug = message.parse_error()
+            print(f'Error: {err}', debug)

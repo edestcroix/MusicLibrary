@@ -44,7 +44,7 @@
                   <class name="linked" />
                 </style>
                 <child>
-                  <object class="GtkButton" id="skip-backward">
+                  <object class="GtkButton" id="skip_backward">
                     <property name="icon-name">media-skip-backward-symbolic</property>
                   </object>
                 </child>
@@ -54,7 +54,7 @@
                   </object>
                 </child>
                 <child>
-                  <object class="GtkButton" id="skip-forward">
+                  <object class="GtkButton" id="skip_forward">
                     <property name="icon-name">media-skip-forward-symbolic</property>
                   </object>
                 </child>
@@ -88,18 +88,14 @@
               </object>
             </child>
             <child type="end">
-              <object class="GtkLabel" id="progress">
-                <property name="ellipsize">end</property>
-                <attributes>
-                  <attribute name="weight" value="PANGO_WEIGHT_BOLD" />
-                </attributes>
+              <object class="GtkMenuButton" id="progress">
+                <property name="label">test</property>
+                <!-- <property name="menu-model">seek_menu</property> -->
+                <style>
+                  <class name="flat" />
+                </style>
               </object>
             </child>
-            <!-- <child type="center"> -->
-            <!--   <object class="GtkScale" id="progress_indicator"> -->
-            <!--     <property name="draw-value">True</property> -->
-            <!--   </object> -->
-            <!-- </child> -->
           </object>
         </child>
         <property name="content">

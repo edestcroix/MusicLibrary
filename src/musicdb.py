@@ -61,7 +61,6 @@ class Track:
     length: int
     path: str
     album: str
-    artist: str
 
     def to_row(self):
         return (self.track, self.title, self.length, self.path)
@@ -266,4 +265,4 @@ class MusicDB:
             'SELECT track, title, length, path FROM tracks WHERE album = ? ORDER BY track',
             (album.name,),
         )
-        return [Track(*t, album.name, album.artist) for t in self.c.fetchall()]
+        return [Track(*(t + (album,))) for t in self.c.fetchall()]
