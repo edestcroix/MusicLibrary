@@ -49,18 +49,8 @@
                   </object>
                 </child>
                 <child>
-                  <object class="GtkButton" id="seek-backward">
-                    <property name="icon-name">media-seek-backward-symbolic</property>
-                  </object>
-                </child>
-                <child>
                   <object class="GtkButton" id="play_pause">
                     <property name="icon-name">media-playback-pause-symbolic</property>
-                  </object>
-                </child>
-                <child>
-                  <object class="GtkButton" id="seek-forward">
-                    <property name="icon-name">media-seek-forward-symbolic</property>
                   </object>
                 </child>
                 <child>
