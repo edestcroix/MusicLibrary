@@ -41,7 +41,7 @@ class MusicLibraryAlbumView(Adw.Bin):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.track_list.set_sort_func(self.__track_sort_func)
+        self.track_list.set_sort_func(self._track_sort_func)
 
     def set_breakpoint(self, _):
         self.album_box.set_orientation(Gtk.Orientation.VERTICAL)
@@ -59,7 +59,6 @@ class MusicLibraryAlbumView(Adw.Bin):
         self.current_album = album
         self.clear_all()
         self.update_cover(album.cover)
-        # self.update_info(album)
         self.update_tracks(album.get_tracks())
 
         self.stack.set_visible_child_name('album_view')
@@ -67,17 +66,17 @@ class MusicLibraryAlbumView(Adw.Bin):
     def update_tracks(self, tracks):
         for track in tracks:
             track_num = re.sub(r'/.*', '', track.track)
-            row = self.__create_row(
+            row = self._create_row(
                 title=f'{track_num:0>2} - {track.title}',
                 subtitle=f'{int(track.length // 60):02}:{int(track.length % 60):02}',
                 icon_name='audio-x-generic-symbolic',
             )
             self.track_list.append(row)
 
-    def __track_sort_func(self, row1, row2):
+    def _track_sort_func(self, row1, row2):
         return int(row1.get_title()[:3]) > int(row2.get_title()[:3])
 
-    def __create_row(self, title, subtitle, icon_name, parent_row=None):
+    def _create_row(self, title, subtitle, icon_name, parent_row=None):
         row = Adw.ActionRow(
             title=GLib.markup_escape_text(title),
             subtitle=GLib.markup_escape_text(subtitle),
