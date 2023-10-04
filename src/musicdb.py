@@ -164,14 +164,11 @@ class MusicDB:
         self.c.execute('SELECT modified FROM tracks WHERE path = ?', (path,))
         modified = self.c.fetchone()
         if modified and modified[0] >= file.stat().st_mtime:
-            print('Skipping', path)
             return
-        else:
-            print('Syncing', path)
-            self.c.execute('DELETE FROM tracks WHERE path = ?', (path,))
-            self.conn.commit()
-            if audio := mutagen.File(file.path, easy=True):
-                to_insert.append((file, audio))
+        self.c.execute('DELETE FROM tracks WHERE path = ?', (path,))
+        self.conn.commit()
+        if audio := mutagen.File(file.path, easy=True):
+            to_insert.append((file, audio))
 
     def _find_cover(self, images):
         cover = next(
@@ -207,7 +204,6 @@ class MusicDB:
             f'{GLib.get_user_cache_dir()}/musiclibrary/{cache_name}.jpg'
         )
         if not os.path.exists(cached_cover_path):
-            print('Generating cached image from cover')
             self._create_thumbnail(cover, cached_cover_path)
         return cached_cover_path
 
