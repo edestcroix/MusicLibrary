@@ -38,10 +38,10 @@ class Player:
         """Start playback."""
         url = self._prepare_url(self._play_queue.get_current_track())
         self._player.set_state(Gst.State.NULL)
+        time.sleep(0.1)
         self._player.set_property('uri', url)
         self._player.set_state(Gst.State.PLAYING)
         self.state = 'playing'
-        print(self._player.get_state(1 * Gst.SECOND))
 
     def toggle(self):
         if self._player.get_state(1 * Gst.SECOND)[1] == Gst.State.PLAYING:
@@ -74,8 +74,8 @@ class Player:
             )
 
     def _on_about_to_finish(self, _):
-        url = self._prepare_url(self._play_queue.get_next_track())
-        self._player.set_property('uri', url)
+        if next_track := self._play_queue.get_next_track():
+            self._player.set_property('uri', self._prepare_url(next_track))
 
     def _prepare_url(self, track):
         path = os.path.realpath(track.path.strip())
@@ -94,6 +94,7 @@ class Player:
         t = message.type
         if t == Gst.MessageType.EOS:
             self._player.set_state(Gst.State.NULL)
+            self.state = 'stopped'
         elif t == Gst.MessageType.ERROR:
             self._player.set_state(Gst.State.NULL)
             err, debug = message.parse_error()
