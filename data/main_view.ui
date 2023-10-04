@@ -4,124 +4,128 @@
   <requires lib="Adw" version="1.0" />
   <template class="MainView" parent="AdwBin">
     <child>
-      <object class="AdwToolbarView">
-        <child type="top">
-          <object class="AdwHeaderBar">
-            <child type="start">
-              <object class="GtkButton" id="lists_toggle">
-                <property name="icon-name">sidebar-show-symbolic</property>
-                <property name="visible">False</property>
+      <object class="AdwToastOverlay" id="toast">
+        <child>
+          <object class="AdwToolbarView">
+            <child type="top">
+              <object class="AdwHeaderBar">
+                <child type="start">
+                  <object class="GtkButton" id="lists_toggle">
+                    <property name="icon-name">sidebar-show-symbolic</property>
+                    <property name="visible">False</property>
+                  </object>
+                </child>
+                <child type="start">
+                  <object class="GtkButton" id="play">
+                    <property name="icon-name">media-playback-start-symbolic</property>
+                  </object>
+                </child>
+                <child type="start">
+                  <object class="GtkButton" id="queue_add">
+                    <property name="icon-name">list-add-symbolic</property>
+                  </object>
+                </child>
+                <child type="end">
+                  <object class="GtkButton" id="queue_toggle">
+                    <property name="icon-name">view-list-symbolic</property>
+                  </object>
+                </child>
               </object>
             </child>
-            <child type="start">
-              <object class="GtkButton" id="play">
-                <property name="icon-name">media-playback-start-symbolic</property>
-              </object>
-            </child>
-            <child type="start">
-              <object class="GtkButton" id="queue_add">
-                <property name="icon-name">list-add-symbolic</property>
-              </object>
-            </child>
-            <child type="end">
-              <object class="GtkButton" id="queue_toggle">
-                <property name="icon-name">view-list-symbolic</property>
-              </object>
-            </child>
-          </object>
-        </child>
-        <child type="bottom">
-          <object class="GtkActionBar" id="player_controls">
-            <style>
-              <class name="play_controls" />
-            </style>
-            <property name="revealed">false</property>
-            <child type="start">
-              <object class="GtkBox">
-                <property name="orientation">horizontal</property>
-                <property name="spacing">0</property>
+            <child type="bottom">
+              <object class="GtkActionBar" id="player_controls">
                 <style>
-                  <class name="linked" />
+                  <class name="play_controls" />
                 </style>
-                <child>
-                  <object class="GtkButton" id="skip_backward">
-                    <property name="icon-name">media-skip-backward-symbolic</property>
-                  </object>
-                </child>
-                <child>
-                  <object class="GtkButton" id="play_pause">
-                    <property name="icon-name">media-playback-pause-symbolic</property>
-                  </object>
-                </child>
-                <child>
-                  <object class="GtkButton" id="skip_forward">
-                    <property name="icon-name">media-skip-forward-symbolic</property>
-                  </object>
-                </child>
-              </object>
-            </child>
-            <child type="start">
-              <object class="GtkLabel" id="playing_song">
-                <property name="ellipsize">end</property>
-                <attributes>
-                  <attribute name="weight" value="PANGO_WEIGHT_BOLD" />
-                </attributes>
-              </object>
-            </child>
-            <child type="end">
-              <object class="GtkBox">
-                <property name="orientation">horizontal</property>
-                <property name="spacing">0</property>
-                <style>
-                  <class name="linked" />
-                </style>
-                <child>
-                  <object class="GtkButton" id="shuffle">
-                    <property name="icon-name">media-playlist-shuffle-symbolic</property>
-                  </object>
-                </child>
-                <child>
-                  <object class="GtkButton" id="loop">
-                    <property name="icon-name">emblem-synchronizing-symbolic</property>
-                  </object>
-                </child>
-              </object>
-            </child>
-            <child type="end">
-              <object class="GtkMenuButton" id="progress">
-                <property name="label">test</property>
-                <!-- <property name="menu-model">seek_menu</property> -->
-                <style>
-                  <class name="flat" />
-                </style>
-              </object>
-            </child>
-          </object>
-        </child>
-        <property name="content">
-          <!-- ... -->
-          <object class="AdwOverlaySplitView" id="queue_panel_split_view">
-            <property name="sidebar-position">end</property>
-            <property name="collapsed">True</property>
-            <property name="sidebar">
-              <!-- ... -->
-              <object class="GtkScrolledWindow">
-                <property name="hscrollbar-policy">never</property>
-                <child>
-                  <object class="PlayQueue" id="play_queue">
+                <property name="revealed">false</property>
+                <child type="start">
+                  <object class="GtkBox">
+                    <property name="orientation">horizontal</property>
+                    <property name="spacing">0</property>
                     <style>
-                      <class name="navigation-sidebar" />
+                      <class name="linked" />
+                    </style>
+                    <child>
+                      <object class="GtkButton" id="skip_backward">
+                        <property name="icon-name">media-skip-backward-symbolic</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkButton" id="play_pause">
+                        <property name="icon-name">media-playback-pause-symbolic</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkButton" id="skip_forward">
+                        <property name="icon-name">media-skip-forward-symbolic</property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+                <child type="start">
+                  <object class="GtkLabel" id="playing_song">
+                    <property name="ellipsize">end</property>
+                    <attributes>
+                      <attribute name="weight" value="PANGO_WEIGHT_BOLD" />
+                    </attributes>
+                  </object>
+                </child>
+                <child type="end">
+                  <object class="GtkBox">
+                    <property name="orientation">horizontal</property>
+                    <property name="spacing">0</property>
+                    <style>
+                      <class name="linked" />
+                    </style>
+                    <child>
+                      <object class="GtkButton" id="shuffle">
+                        <property name="icon-name">media-playlist-shuffle-symbolic</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkButton" id="loop">
+                        <property name="icon-name">emblem-synchronizing-symbolic</property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+                <child type="end">
+                  <object class="GtkMenuButton" id="progress">
+                    <property name="label">test</property>
+                    <!-- <property name="menu-model">seek_menu</property> -->
+                    <style>
+                      <class name="flat" />
                     </style>
                   </object>
                 </child>
               </object>
-            </property>
+            </child>
             <property name="content">
-              <object class="MusicLibraryAlbumView" id="album_overview">
+              <!-- ... -->
+              <object class="AdwOverlaySplitView" id="queue_panel_split_view">
+                <property name="sidebar-position">end</property>
+                <property name="collapsed">True</property>
+                <property name="sidebar">
+                  <!-- ... -->
+                  <object class="GtkScrolledWindow">
+                    <property name="hscrollbar-policy">never</property>
+                    <child>
+                      <object class="PlayQueue" id="play_queue">
+                        <style>
+                          <class name="navigation-sidebar" />
+                        </style>
+                      </object>
+                    </child>
+                  </object>
+                </property>
+                <property name="content">
+                  <object class="MusicLibraryAlbumView" id="album_overview">
+                  </object>
+                </property>
               </object>
             </property>
           </object>
-        </property>
+        </child>
       </object>
     </child>
   </template>

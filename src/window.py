@@ -46,8 +46,6 @@ class MusicLibraryWindow(Adw.ApplicationWindow):
     artist_return = Gtk.Template.Child()
     album_return = Gtk.Template.Child()
 
-    toast_overlay = Gtk.Template.Child()
-
     artist_list = Gtk.Template.Child()
     album_list = Gtk.Template.Child()
     album_list_page = Gtk.Template.Child()
@@ -102,20 +100,14 @@ class MusicLibraryWindow(Adw.ApplicationWindow):
     def sync_library(self, _):
         self.thread = threading.Thread(target=self.update_db)
         self.thread.daemon = True
-        self.create_toast('Syncronizing music database...', 3)
+        self.main_view.send_toast('Syncronizing music database...', 3)
         self.thread.start()
 
     def update_db(self):
         db = MusicDB()
-        self.create_toast('Done!', 2)
         db.sync_library()
+        self.main_view.send_toast('Done!', 2)
         GLib.MainContext.default().invoke_full(1, self.refresh_lists)
-
-    def create_toast(self, title, timeout):
-        toast = Adw.Toast()
-        toast.set_title(title)
-        toast.set_timeout(timeout)
-        self.toast_overlay.add_toast(toast)
 
     def refresh_lists(self):
         # Clear the lists

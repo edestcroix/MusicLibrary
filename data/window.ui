@@ -123,16 +123,12 @@
         </property>
         <property name="content">
           <!-- content -->
-          <object class="AdwToastOverlay" id="toast_overlay">
-            <child>
-              <object class="AdwNavigationPage" id="main_page">
-                <property name="title" translatable="yes">Tracks</property>
-                <property name="tag">track-view</property>
-                <property name="child">
-                  <object class="MainView" id="main_view" />
-                </property>
-              </object>
-            </child>
+          <object class="AdwNavigationPage" id="main_page">
+            <property name="title" translatable="yes">Tracks</property>
+            <property name="tag">track-view</property>
+            <property name="child">
+              <object class="MainView" id="main_view" />
+            </property>
           </object>
         </property>
       </object>

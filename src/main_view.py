@@ -54,6 +54,8 @@ class MainView(Adw.Bin):
 
     progress = Gtk.Template.Child()
 
+    toast = Gtk.Template.Child()
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.player = Player(self.play_queue)
@@ -74,6 +76,12 @@ class MainView(Adw.Bin):
 
     def update_album(self, album: Album):
         self.album_overview.update_album(album)
+
+    def send_toast(self, title, timeout):
+        toast = Adw.Toast()
+        toast.set_title(title)
+        toast.set_timeout(timeout)
+        self.toast.add_toast(toast)
 
     def _build_seek_scale(self):
         popup = Gtk.Popover.new()
