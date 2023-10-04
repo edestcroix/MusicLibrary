@@ -50,6 +50,8 @@ class MainView(Adw.Bin):
     skip_forward = Gtk.Template.Child()
     skip_backward = Gtk.Template.Child()
 
+    stop = Gtk.Template.Child()
+
     playing_song = Gtk.Template.Child()
 
     progress = Gtk.Template.Child()
@@ -62,7 +64,7 @@ class MainView(Adw.Bin):
         self.monitor_thread_id = 0
         self._build_seek_scale()
         self._setup_actions()
-        self._start_monitor_thread()
+        self.queue_toggle.set_sensitive(False)
 
     def set_breakpoint(self, _, breakpoint_num):
         self.album_overview.set_breakpoint(None)
@@ -111,6 +113,7 @@ class MainView(Adw.Bin):
         self.play_pause.connect('clicked', self._on_play_pause)
         self.skip_forward.connect('clicked', self._skip_forward)
         self.skip_backward.connect('clicked', self._skip_backward)
+        self.stop.connect('clicked', self._on_stop_clicked)
 
         self.seek_scale.connect('change-value', self._on_seek)
 
@@ -122,13 +125,14 @@ class MainView(Adw.Bin):
             self.play_queue.add_album(album)
             self.player.play()
             self._start_monitor_thread()
-            self.player_controls.set_revealed(True)
-            self.play_pause.set_icon_name('media-playback-pause-symbolic')
+            self._set_controls_active(playing=True)
 
     def _on_queue_add_clicked(self, _):
         if album := self.album_overview.current_album:
             self.play_queue.add_album(album)
-            self.player_controls.set_revealed(True)
+            self._set_controls_active()
+            if self.player.state == 'stopped':
+                self.player.ready()
 
     def _on_queue_toggle_clicked(self, _):
         self.queue_panel_split_view.set_show_sidebar(
@@ -136,8 +140,7 @@ class MainView(Adw.Bin):
         )
 
     def _on_play_pause(self, button):
-        if self.player.state == 'stopped' and self.play_queue.current_track:
-            self.player.play()
+        if self.player.state == 'ready' and self.play_queue.current_track:
             self._start_monitor_thread()
             button.set_icon_name('media-playback-pause-symbolic')
         self.player.toggle()
@@ -146,6 +149,22 @@ class MainView(Adw.Bin):
             if self.player.state == 'playing'
             else 'media-playback-start-symbolic'
         )
+
+    def _on_stop_clicked(self, _):
+        self.player.stop()
+        self._set_controls_stopped()
+
+    def _set_controls_stopped(self):
+        self.play_pause.set_icon_name('media-playback-start-symbolic')
+        self.player_controls.set_revealed(False)
+        self.queue_toggle.set_sensitive(False)
+        self.play_queue.clear()
+
+    def _set_controls_active(self, playing=False):
+        self.player_controls.set_revealed(True)
+        self.queue_toggle.set_sensitive(True)
+        if playing:
+            self.play_pause.set_icon_name('media-playback-pause-symbolic')
 
     def _start_monitor_thread(self):
         self.monitor_thread_id += 1
@@ -186,8 +205,7 @@ class MainView(Adw.Bin):
                 self.playing_song.set_text('')
 
         if message.type == Gst.MessageType.EOS:
-            self.player_controls.set_revealed(False)
-            self.play_queue.clear()
+            self._set_controls_stopped()
 
     def _on_seek(self, _, __, value):
         self.player.seek(value * 1000000000)

@@ -52,7 +52,7 @@
                     </child>
                     <child>
                       <object class="GtkButton" id="play_pause">
-                        <property name="icon-name">media-playback-pause-symbolic</property>
+                        <property name="icon-name">media-playback-start-symbolic</property>
                       </object>
                     </child>
                     <child>
@@ -78,21 +78,19 @@
                       <class name="linked" />
                     </style>
                     <child>
-                      <object class="GtkButton" id="shuffle">
-                        <property name="icon-name">media-playlist-shuffle-symbolic</property>
+                      <object class="GtkButton" id="loop">
+                        <property name="icon-name">emblem-synchronizing-symbolic</property>
                       </object>
                     </child>
                     <child>
-                      <object class="GtkButton" id="loop">
-                        <property name="icon-name">emblem-synchronizing-symbolic</property>
+                      <object class="GtkButton" id="stop">
+                        <property name="icon-name">media-playback-stop-symbolic</property>
                       </object>
                     </child>
                   </object>
                 </child>
                 <child type="end">
                   <object class="GtkMenuButton" id="progress">
-                    <property name="label">test</property>
-                    <!-- <property name="menu-model">seek_menu</property> -->
                     <style>
                       <class name="flat" />
                     </style>

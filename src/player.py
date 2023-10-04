@@ -34,6 +34,14 @@ class Player:
         self._player.set_state(Gst.State.PLAYING)
         self.state = 'playing'
 
+    def ready(self):
+        url = self._prepare_url(self._play_queue.get_current_track())
+        self._player.set_state(Gst.State.NULL)
+        time.sleep(0.1)
+        self._player.set_property('uri', url)
+        self._player.set_state(Gst.State.PAUSED)
+        self.state = 'ready'
+
     def toggle(self):
         if self._player.get_state(1 * Gst.SECOND)[1] == Gst.State.PLAYING:
             self._player.set_state(Gst.State.PAUSED)
@@ -41,6 +49,10 @@ class Player:
         elif self._player.get_state(1 * Gst.SECOND)[1] == Gst.State.PAUSED:
             self._player.set_state(Gst.State.PLAYING)
             self.state = 'playing'
+
+    def stop(self):
+        self._player.set_state(Gst.State.NULL)
+        self.state = 'stopped'
 
     def get_progress(self):
         return self._player.query_position(Gst.Format.TIME)[1]
