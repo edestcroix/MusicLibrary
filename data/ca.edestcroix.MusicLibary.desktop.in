@@ -1,5 +1,5 @@
 [Desktop Entry]
-Name=musiclibrary
+Name=MusicLibrary
 Exec=musiclibrary
 Icon=ca.edestcroix.MusicLibary
 Terminal=false
