@@ -57,6 +57,7 @@ class MainView(Adw.Bin):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.player = Player(self.play_queue)
+        self.monitor_thread_id = 0
         self._build_seek_scale()
         self._setup_actions()
         self._start_monitor_thread()
@@ -112,12 +113,14 @@ class MainView(Adw.Bin):
             self.play_queue.clear()
             self.play_queue.add_album(album)
             self.player.play()
+            self._start_monitor_thread()
             self.player_controls.set_revealed(True)
             self.play_pause.set_icon_name('media-playback-pause-symbolic')
 
     def _on_queue_add_clicked(self, _):
         if album := self.album_overview.current_album:
             self.play_queue.add_album(album)
+            self.player_controls.set_revealed(True)
 
     def _on_queue_toggle_clicked(self, _):
         self.queue_panel_split_view.set_show_sidebar(
@@ -125,6 +128,10 @@ class MainView(Adw.Bin):
         )
 
     def _on_play_pause(self, button):
+        if self.player.state == 'stopped' and self.play_queue.current_track:
+            self.player.play()
+            self._start_monitor_thread()
+            button.set_icon_name('media-playback-pause-symbolic')
         self.player.toggle()
         button.set_icon_name(
             'media-playback-pause-symbolic'
@@ -133,51 +140,56 @@ class MainView(Adw.Bin):
         )
 
     def _start_monitor_thread(self):
+        self.monitor_thread_id += 1
         progress_thread = threading.Thread(
             target=self._monitor_progress,
             daemon=True,
+            args=(self.monitor_thread_id,),
         )
         progress_thread.daemon = True
         progress_thread.start()
 
-    def _monitor_progress(self):
-        while True:
-            if self.player.state == 'stopped':
-                self.progress.set_label('')
-                self.start_label.set_text('')
-                self.end_label.set_text('')
-            else:
-                duration = self.player.get_duration() / 1000000000
-                progress = self.player.get_progress() / 1000000000
-                time_str = f'{int(progress // 60):02}:{int(progress % 60):02}'
-                duration_str = (
-                    f'{int(duration // 60):02}:{int(duration % 60):02}'
-                )
-                self.seek_scale.set_range(
-                    0, duration
-                ) if progress < duration else None
-                self.seek_scale.set_value(progress)
-                self.start_label.set_text(time_str)
-                self.end_label.set_text(duration_str)
-                GLib.idle_add(
-                    self.progress.set_label, f'{time_str} / {duration_str}'
-                )
+    def _monitor_progress(self, num):
+        while self.player.state != 'stopped' and self.monitor_thread_id == num:
+            duration = self.player.get_duration() / 1000000000
+            progress = self.player.get_progress() / 1000000000
+            time_str = f'{int(progress // 60):02}:{int(progress % 60):02}'
+            duration_str = f'{int(duration // 60):02}:{int(duration % 60):02}'
+            if progress < duration:
+                self.seek_scale.set_range(0, duration)
+            self.seek_scale.set_value(progress)
+            self.start_label.set_text(time_str)
+            self.end_label.set_text(duration_str)
+            GLib.idle_add(
+                self.progress.set_label, f'{time_str} / {duration_str}'
+            )
             time.sleep(0.5)
+        self.progress.set_label('')
+        self.start_label.set_text('')
+        self.end_label.set_text('')
 
     def _on_message(self, _, message):
         if message.type == Gst.MessageType.STREAM_START:
-            current_track = self.play_queue.get_current_track()
-            self.playing_song.set_text(
-                f'{current_track.title} - {current_track.album.artist}'
-            )
+            if current_track := self.play_queue.get_current_track():
+                self.playing_song.set_text(
+                    f'{current_track.title} - {current_track.album.artist}'
+                )
+            else:
+                self.playing_song.set_text('')
+
+        if message.type == Gst.MessageType.EOS:
+            self.player_controls.set_revealed(False)
+            self.play_queue.clear()
 
     def _on_seek(self, _, __, value):
         self.player.seek(value * 1000000000)
 
     def _skip_forward(self, _):
-        self.play_queue.next()
-        self.player.play()
+        if self.play_queue.next():
+            self.player.play()
+            self.play_pause.set_icon_name('media-playback-pause-symbolic')
 
     def _skip_backward(self, _):
-        self.play_queue.previous()
-        self.player.play()
+        if self.play_queue.previous():
+            self.player.play()
+            self.play_pause.set_icon_name('media-playback-pause-symbolic')
