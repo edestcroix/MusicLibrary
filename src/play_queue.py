@@ -1,9 +1,7 @@
-from gi.repository import Adw, Gtk, Gdk, GLib, Pango
+from gi.repository import Adw, Gtk, GLib
 import gi
 
 gi.require_version('Gtk', '4.0')
-
-from .musicrow import MusicRow
 
 
 # TODO: Allow adding lone tracks to the queue. (Then allow for that in the UI)

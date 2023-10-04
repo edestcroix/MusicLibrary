@@ -1,9 +1,6 @@
 """Gstreamer API."""
 
-import logging
-import multiprocessing
 import os
-import queue
 import time
 import urllib
 import urllib.parse

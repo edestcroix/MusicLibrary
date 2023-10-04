@@ -17,7 +17,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from gi.repository import Adw, Gtk, Gdk, GLib, Pango
+from gi.repository import Adw, Gtk, GLib
 import gi
 import re
 

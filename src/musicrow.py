@@ -1,7 +1,7 @@
-from gi.repository import Adw, Gtk, Gdk, GLib, Pango
+from gi.repository import Adw, GLib
 import gi
 
-gi.require_version('Gtk', '4.0')
+gi.require_version('Adw', '1')
 
 
 class MusicRow(Adw.ActionRow):

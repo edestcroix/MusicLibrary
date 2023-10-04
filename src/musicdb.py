@@ -1,15 +1,13 @@
 import contextlib
+from dataclasses import dataclass
+from gi.repository import GLib
+from hashlib import sha256
 from io import BytesIO
-from gi.types import re
+import mimetypes
 import mutagen
 import os
-import sqlite3
-import mimetypes
 from PIL import Image
-from dataclasses import dataclass
-from hashlib import sha256
-
-from gi.repository import Gtk, GLib
+import sqlite3
 
 
 @dataclass
