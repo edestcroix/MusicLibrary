@@ -25,7 +25,14 @@ class Album:
     def set_tracks(self, tracks):
         self.tracks = tracks
         # sort tracks by their track number (which might be in the form 1/10)
-        self.tracks.sort(key=lambda t: int(t.track.split('/')[0]))
+        self.tracks.sort(key=self._sort_tracks)
+
+    def _sort_tracks(self, t):
+        if t.discnumber is None:
+            return int(t.track.split('/')[0])
+        discnum = int(t.discnumber.split('/')[0])
+        tracknum = int(t.track.split('/')[0])
+        return discnum * 100 + tracknum
 
     def to_row(self):
         return (
@@ -55,6 +62,7 @@ class Artist:
 @dataclass
 class Track:
     track: int
+    discnumber: str
     title: str
     length: int
     path: str
@@ -83,7 +91,7 @@ class MusicDB:
         self.c.execute(
             """
                 CREATE TABLE IF NOT EXISTS tracks
-                (title text, track text, discnumber text, album text, length real, path text, modified time, UNIQUE(album, track) ON CONFLICT REPLACE)
+                (title text, track text, discnumber text, album text, length real, path text, modified time, UNIQUE(album, track, discnumber) ON CONFLICT REPLACE)
                 """
         )
 
@@ -108,7 +116,7 @@ class MusicDB:
 
     def get_tracks(self, album):
         self.c.execute(
-            'SELECT track, title, length, path FROM tracks WHERE album = ? ORDER BY track',
+            'SELECT track, discnumber, title, length, path FROM tracks WHERE album = ? ORDER BY discnumber, track',
             (album.name,),
         )
         return [Track(*(t + (album,))) for t in self.c.fetchall()]

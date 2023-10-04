@@ -66,15 +66,36 @@ class MusicLibraryAlbumView(Adw.Bin):
     def update_tracks(self, tracks):
         for track in tracks:
             track_num = re.sub(r'/.*', '', track.track)
+            disc_num = (
+                re.sub(r'/.*', '', track.discnumber) + '/'
+                if track.discnumber
+                else ''
+            )
+            if disc_num:
+                title = f'{disc_num:0>2}{track_num:0>2} - {track.title}'
+            else:
+                title = f'{track_num:0>2} - {track.title}'
             row = self._create_row(
-                title=f'{track_num:0>2} - {track.title}',
+                title=title,
                 subtitle=f'{int(track.length // 60):02}:{int(track.length % 60):02}',
                 icon_name='audio-x-generic-symbolic',
             )
             self.track_list.append(row)
 
     def _track_sort_func(self, row1, row2):
-        return int(row1.get_title()[:3]) > int(row2.get_title()[:3])
+        # get string inside parentheses
+        seg1 = re.search(r'(.*?)-', row1.get_title())
+        seg2 = re.search(r'(.*?)-', row2.get_title())
+
+        if not seg1 or not seg2:
+            return False
+        num1, num2 = 0, 0
+        if set1 := seg1[1].split('/'):
+            num1 = int(set1[0])
+        if set2 := seg2[1].split('/'):
+            num2 = int(set2[0])
+
+        return num1 > num2
 
     def _create_row(self, title, subtitle, icon_name, parent_row=None):
         row = Adw.ActionRow(
