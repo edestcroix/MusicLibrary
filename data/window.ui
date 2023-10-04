@@ -2,7 +2,7 @@
 <interface>
   <requires lib="gtk" version="4.0" />
   <requires lib="Adw" version="1.0" />
-  <template class="MusicLibraryWindow" parent="AdwApplicationWindow">
+  <template class="RecordBoxWindow" parent="AdwApplicationWindow">
     <property name="width-request">380</property>
     <property name="height-request">600</property>
     <property name="default-width">1200</property>
@@ -72,7 +72,7 @@
                           <object class="GtkScrolledWindow">
                             <property name="hscrollbar-policy">never</property>
                             <child>
-                              <object class="MusicLibraryList" id="artist_list">
+                              <object class="RecordBoxList" id="artist_list">
                                 <style>
                                   <class name="navigation-sidebar" />
                                 </style>
@@ -105,7 +105,7 @@
                           <object class="GtkScrolledWindow">
                             <property name="hscrollbar-policy">never</property>
                             <child>
-                              <object class="MusicLibraryList" id="album_list">
+                              <object class="RecordBoxList" id="album_list">
                                 <style>
                                   <class name="navigation-sidebar" />
                                 </style>

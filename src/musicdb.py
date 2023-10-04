@@ -75,11 +75,14 @@ class Track:
 class MusicDB:
     def __init__(self):
 
-        if not os.path.exists(f'{GLib.get_user_cache_dir()}/musiclibrary'):
-            os.mkdir(f'{GLib.get_user_cache_dir()}/musiclibrary')
+        if not os.path.exists(f'{GLib.get_user_cache_dir()}/recordbox'):
+            os.mkdir(f'{GLib.get_user_cache_dir()}/recordbox')
+
+        if not os.path.exists(f'{GLib.get_user_data_dir()}/recordbox'):
+            os.mkdir(f'{GLib.get_user_data_dir()}/recordbox')
 
         self.conn = sqlite3.connect(
-            f'{GLib.get_user_data_dir()}/musiclibrary/music.db'
+            f'{GLib.get_user_data_dir()}/recordbox/music.db'
         )
         self.c = self.conn.cursor()
 
@@ -201,7 +204,7 @@ class MusicDB:
         cache_name = self._hash_cover(cover)
         cover = BytesIO(cover) if type(cover) == bytes else cover
         cached_cover_path = (
-            f'{GLib.get_user_cache_dir()}/musiclibrary/{cache_name}.jpg'
+            f'{GLib.get_user_cache_dir()}/recordbox/{cache_name}.jpg'
         )
         if not os.path.exists(cached_cover_path):
             self._create_thumbnail(cover, cached_cover_path)

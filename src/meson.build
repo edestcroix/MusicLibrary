@@ -8,15 +8,15 @@ conf.set('localedir', join_paths(get_option('prefix'), get_option('localedir')))
 conf.set('pkgdatadir', pkgdatadir)
 
 configure_file(
-  input: 'musiclibrary.in',
-  output: 'musiclibrary',
+  input: 'recordbox.in',
+  output: 'recordbox',
   configuration: conf,
   install: true,
   install_dir: get_option('bindir'),
   install_mode: 'r-xr--r--'
 )
 
-musiclibrary_sources = [
+recordbox_sources = [
   '__init__.py',
   'main.py',
   'window.py',
@@ -29,4 +29,4 @@ musiclibrary_sources = [
   'main_view.py',
 ]
 
-install_data(musiclibrary_sources, install_dir: moduledir)
+install_data(recordbox_sources, install_dir: moduledir)

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <gresources>
-  <gresource prefix="/ca/edestcroix/MusicLibary">
+  <gresource prefix="/com/github/edestcroix/RecordBox">
     <file preprocess="xml-stripblanks">window.ui</file>
     <file preprocess="xml-stripblanks">album_view.ui</file>
     <file preprocess="xml-stripblanks">main_view.ui</file>

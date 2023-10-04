@@ -25,15 +25,15 @@ gi.require_version('Adw', '1')
 
 from gi.repository import Gtk, Gio, Adw
 
-from .window import MusicLibraryWindow
+from .window import RecordBoxWindow
 
 
-class MusicLibraryApplication(Adw.Application):
+class RecordBoxApplication(Adw.Application):
     """The main application singleton class."""
 
     def __init__(self):
         super().__init__(
-            application_id='ca.edestcroix.MusicLibary',
+            application_id='com.github.edestcroix.RecordBox',
             flags=Gio.ApplicationFlags.DEFAULT_FLAGS,
         )
         self.create_action('quit', lambda *_: self.quit(), ['<primary>q'])
@@ -47,15 +47,15 @@ class MusicLibraryApplication(Adw.Application):
         We raise the application's main window, creating it if
         necessary.
         """
-        win = self.props.active_window or MusicLibraryWindow(application=self)
+        win = self.props.active_window or RecordBoxWindow(application=self)
         win.present()
 
     def on_about_action(self, widget, _):
         """Callback for the app.about action."""
         about = Adw.AboutWindow(
             transient_for=self.props.active_window,
-            application_name='musiclibrary',
-            application_icon='ca.edestcroix.MusicLibary',
+            application_name='RecordBox',
+            application_icon='com.github.edestcroix.RecordBox',
             developer_name='Emmett de St. Croix',
             version='0.1.0',
             developers=['Emmett de St. Croix'],
@@ -88,5 +88,5 @@ class MusicLibraryApplication(Adw.Application):
 
 def main(version):
     """The application's entry point."""
-    app = MusicLibraryApplication()
+    app = RecordBoxApplication()
     return app.run(sys.argv)

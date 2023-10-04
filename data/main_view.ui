@@ -117,7 +117,7 @@
                   </object>
                 </property>
                 <property name="content">
-                  <object class="MusicLibraryAlbumView" id="album_overview">
+                  <object class="RecordBoxAlbumView" id="album_overview">
                   </object>
                 </property>
               </object>

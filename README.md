@@ -1,4 +1,4 @@
-# Music Library
+# RecordBox
 
 A work-in-progress application to browse and play music from your local music library. Name and most functionality subject to change.
 

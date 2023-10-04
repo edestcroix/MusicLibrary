@@ -26,9 +26,9 @@ gi.require_version('Gtk', '4.0')
 from .musicdb import MusicDB, Album
 
 
-@Gtk.Template(resource_path='/ca/edestcroix/MusicLibary/album_view.ui')
-class MusicLibraryAlbumView(Adw.Bin):
-    __gtype_name__ = 'MusicLibraryAlbumView'
+@Gtk.Template(resource_path='/com/github/edestcroix/RecordBox/album_view.ui')
+class RecordBoxAlbumView(Adw.Bin):
+    __gtype_name__ = 'RecordBoxAlbumView'
 
     cover_image = Gtk.Template.Child()
 

@@ -1,9 +1,9 @@
 {
-  "app-id": "ca.edestcroix.MusicLibary",
+  "app-id": "com.github.edestcroix.RecordBox",
   "runtime": "org.gnome.Platform",
   "runtime-version": "45",
   "sdk": "org.gnome.Sdk",
-  "command": "musiclibrary",
+  "command": "recordbox",
   "finish-args": [
     "--share=network",
     "--share=ipc",

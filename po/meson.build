@@ -1,1 +1,1 @@
-i18n.gettext('musiclibrary', preset: 'glib')
+i18n.gettext('recordbox', preset: 'glib')

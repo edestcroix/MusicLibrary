@@ -1,6 +1,6 @@
 #!@PYTHON@
 
-# musiclibrary.in
+# recordbox.in
 #
 # Copyright 2023 Emmett de St. Croix
 #
@@ -31,16 +31,16 @@ localedir = '@localedir@'
 
 sys.path.insert(1, pkgdatadir)
 signal.signal(signal.SIGINT, signal.SIG_DFL)
-locale.bindtextdomain('musiclibrary', localedir)
-locale.textdomain('musiclibrary')
-gettext.install('musiclibrary', localedir)
+locale.bindtextdomain('recordbox', localedir)
+locale.textdomain('recordbox')
+gettext.install('recordbox', localedir)
 
 if __name__ == '__main__':
     import gi
 
     from gi.repository import Gio
-    resource = Gio.Resource.load(os.path.join(pkgdatadir, 'musiclibrary.gresource'))
+    resource = Gio.Resource.load(os.path.join(pkgdatadir, 'recordbox.gresource'))
     resource._register()
 
-    from musiclibrary import main
+    from recordbox import main
     sys.exit(main.main(VERSION))

@@ -1,7 +1,7 @@
 [Desktop Entry]
-Name=MusicLibrary
-Exec=musiclibrary
-Icon=ca.edestcroix.MusicLibary
+Name=RecordBox
+Exec=recordbox
+Icon=com.github.edestcroix.RecordBox
 Terminal=false
 Type=Application
 Categories=GTK;

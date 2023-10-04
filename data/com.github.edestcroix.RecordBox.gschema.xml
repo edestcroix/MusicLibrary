@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist gettext-domain="recordbox">
+  <schema id="com.github.edestcroix.recordbox" path="/com/github/edestcroix/RecordBox">
+  </schema>
+</schemalist>

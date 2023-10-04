@@ -24,14 +24,14 @@ gi.require_version('Gtk', '4.0')
 gi.require_version('Gst', '1.0')
 
 from .musicdb import MusicDB, Album
-from .album_view import MusicLibraryAlbumView
+from .album_view import RecordBoxAlbumView
 from .player import Player
 
 import threading
 import time
 
 
-@Gtk.Template(resource_path='/ca/edestcroix/MusicLibary/main_view.ui')
+@Gtk.Template(resource_path='/com/github/edestcroix/RecordBox/main_view.ui')
 class MainView(Adw.Bin):
     __gtype_name__ = 'MainView'
 

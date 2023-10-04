@@ -6,8 +6,8 @@ gi.require_version('Gtk', '4.0')
 from .musicrow import MusicRow
 
 
-class MusicLibraryList(Gtk.ListBox):
-    __gtype_name__ = 'MusicLibraryList'
+class RecordBoxList(Gtk.ListBox):
+    __gtype_name__ = 'RecordBoxList'
 
     def __filter(self, row, user_data):
         return row.filter_key == user_data

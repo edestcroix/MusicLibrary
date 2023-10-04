@@ -1,4 +1,4 @@
-application_id = 'ca.edestcroix.MusicLibary'
+application_id = 'com.github.edestcroix.RecordBox'
 
 scalable_dir = join_paths('hicolor', 'scalable', 'apps')
 install_data(

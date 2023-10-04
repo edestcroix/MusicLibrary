@@ -22,7 +22,7 @@ import gi
 import threading
 from .musicdb import Album, MusicDB
 from .musicrow import MusicRow
-from .library_list import MusicLibraryList
+from .library_list import RecordBoxList
 from .play_queue import PlayQueue
 from .player import Player
 from .main_view import MainView
@@ -30,9 +30,9 @@ from .main_view import MainView
 gi.require_version('Gtk', '4.0')
 
 
-@Gtk.Template(resource_path='/ca/edestcroix/MusicLibary/window.ui')
-class MusicLibraryWindow(Adw.ApplicationWindow):
-    __gtype_name__ = 'MusicLibraryWindow'
+@Gtk.Template(resource_path='/com/github/edestcroix/RecordBox/window.ui')
+class RecordBoxWindow(Adw.ApplicationWindow):
+    __gtype_name__ = 'RecordBoxWindow'
 
     # outer_split is the AdwOverlaySplitView with the artist/album lists as it's sidebar
     outer_split = Gtk.Template.Child()
@@ -83,7 +83,7 @@ class MusicLibraryWindow(Adw.ApplicationWindow):
             ),
         )
 
-        # Connect breakpoint signals to functions so that the breakpoint signal can be propagated to child widgets,
+        # Connect breakpoint signals to functions so that the breakpoint signal can be propagated to child widgets.
         self._connect_breakpoint(self.breakpoint1, 1)
         self._connect_breakpoint(self.breakpoint2, 2)
         self._connect_breakpoint(self.breakpoint3, 3)

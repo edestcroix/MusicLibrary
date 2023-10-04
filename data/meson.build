@@ -1,17 +1,17 @@
 pkgdatadir = join_paths(get_option('prefix'), get_option('datadir'), meson.project_name())
-moduledir = join_paths(pkgdatadir, 'musiclibrary')
+moduledir = join_paths(pkgdatadir, 'recordbox')
 gnome = import('gnome')
 
-gnome.compile_resources('musiclibrary',
-  'musiclibrary.gresource.xml',
+gnome.compile_resources('recordbox',
+  'recordbox.gresource.xml',
   gresource_bundle: true,
   install: true,
   install_dir: pkgdatadir,
 )
 
 desktop_file = i18n.merge_file(
-        input: 'ca.edestcroix.MusicLibary.desktop.in',
-       output: 'ca.edestcroix.MusicLibary.desktop',
+        input: 'com.github.edestcroix.RecordBox.desktop.in',
+       output: 'com.github.edestcroix.RecordBox.desktop',
          type: 'desktop',
        po_dir: '../po',
       install: true,
@@ -24,8 +24,8 @@ if desktop_utils.found()
 endif
 
 appstream_file = i18n.merge_file(
-        input: 'ca.edestcroix.MusicLibary.appdata.xml.in',
-       output: 'ca.edestcroix.MusicLibary.appdata.xml',
+        input: 'com.github.edestcroix.RecordBox.appdata.xml.in',
+       output: 'com.github.edestcroix.RecordBox.appdata.xml',
        po_dir: '../po',
       install: true,
   install_dir: join_paths(get_option('datadir'), 'appdata')
@@ -36,7 +36,7 @@ if appstream_util.found()
   test('Validate appstream file', appstream_util, args: ['validate', appstream_file])
 endif
 
-install_data('ca.edestcroix.MusicLibary.gschema.xml',
+install_data('com.github.edestcroix.RecordBox.gschema.xml',
   install_dir: join_paths(get_option('datadir'), 'glib-2.0/schemas')
 )
 
