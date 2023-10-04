@@ -30,10 +30,6 @@ from .main_view import MainView
 gi.require_version('Gtk', '4.0')
 
 
-# TODO: (Probably not in this file) Implement a player interface in the bottom bar of the AdwToolbarView that holds
-# the album overview. (Play/pause, loop, shuffle, progress bar.)
-
-
 @Gtk.Template(resource_path='/ca/edestcroix/MusicLibary/window.ui')
 class MusicLibraryWindow(Adw.ApplicationWindow):
     __gtype_name__ = 'MusicLibraryWindow'

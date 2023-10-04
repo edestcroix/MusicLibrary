@@ -11,13 +11,6 @@ from .musicrow import MusicRow
 # global signal that is emitted on track change.
 
 
-# TODO: get_next_track() Returns the next track in the queue, None if not.
-# Then, im the window, when the player emits about-to-finish, get the next track,
-# set it up to play, play it (blah blah). Once it's playing the window will
-# call back to the PlayQueue. For this use function update_queue() which
-# will set up the next track and highlight the playing one.
-
-
 class PlayQueue(Gtk.ListBox):
     __gtype_name__ = 'PlayQueue'
 

@@ -16,14 +16,9 @@ from gi.repository import GLib, Gst
 
 Gst.init(None)
 
-# TODO: Improved playy queue. This will mostly be implementened in play_queue.py, because
-# all the player needs to do is get the next track out of it.
-
 
 class Player:
     def __init__(self, play_queue):
-        """Initialize the player."""
-        # self._player = Gst.ElementFactory.make('playbin', 'player')
         self._player = Gst.parse_launch(
             'playbin audio-sink="rgvolume album-mode=\\"true\\" ! autoaudiosink"'
         )
@@ -35,7 +30,6 @@ class Player:
         self.state = 'stopped'
 
     def play(self):
-        """Start playback."""
         url = self._prepare_url(self._play_queue.get_current_track())
         self._player.set_state(Gst.State.NULL)
         time.sleep(0.1)
@@ -52,7 +46,6 @@ class Player:
             self.state = 'playing'
 
     def get_progress(self):
-        """Get the current progress of the track."""
         return self._player.query_position(Gst.Format.TIME)[1]
 
     def get_duration(self):
@@ -62,9 +55,6 @@ class Player:
     # seeking caused by the scale being scrolled too fast (because it makes
     # awful noises)
     def seek(self, position):
-        """Seek to a position in the current track."""
-        # first check status of player so two seeks aren't sent at once
-
         duration = self._player.query_duration(Gst.Format.TIME)[1]
         if position > duration:
             return
