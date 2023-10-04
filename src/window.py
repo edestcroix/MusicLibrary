@@ -107,8 +107,8 @@ class MusicLibraryWindow(Adw.ApplicationWindow):
 
     def update_db(self):
         db = MusicDB()
-        db.parse_library()
         self.create_toast('Done!', 2)
+        db.sync_library()
         GLib.MainContext.default().invoke_full(1, self.refresh_lists)
 
     def create_toast(self, title, timeout):
