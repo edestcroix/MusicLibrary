@@ -49,7 +49,7 @@
                 <property name="sidebar">
                   <!-- sidebar -->
                   <object class="AdwNavigationPage">
-                    <property name="title" translatable="yes">Artist</property>
+                    <property name="title" translatable="yes">Artists</property>
                     <property name="child">
                       <object class="AdwToolbarView">
                         <child type="top">
@@ -87,7 +87,7 @@
                 <property name="content">
                   <!-- middle pane -->
                   <object class="AdwNavigationPage" id="album_list_page">
-                    <property name="title" translatable="yes">Album</property>
+                    <property name="title" translatable="yes">Albums</property>
                     <property name="tag">album-view</property>
                     <property name="child">
                       <object class="AdwToolbarView">
