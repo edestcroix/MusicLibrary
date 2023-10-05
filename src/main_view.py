@@ -37,6 +37,8 @@ class MainView(Adw.Bin):
 
     album_overview = Gtk.Template.Child()
 
+    toolbar_view = Gtk.Template.Child()
+
     queue_toggle = Gtk.Template.Child()
     queue_panel_split_view = Gtk.Template.Child()
     queue_add = Gtk.Template.Child()
@@ -53,8 +55,11 @@ class MainView(Adw.Bin):
     stop = Gtk.Template.Child()
 
     playing_song = Gtk.Template.Child()
+    playing_artist = Gtk.Template.Child()
 
     progress = Gtk.Template.Child()
+    start_label = Gtk.Template.Child()
+    end_label = Gtk.Template.Child()
 
     toast = Gtk.Template.Child()
 
@@ -62,9 +67,13 @@ class MainView(Adw.Bin):
         super().__init__(**kwargs)
         self.player = Player(self.play_queue)
         self.monitor_thread_id = 0
-        self._build_seek_scale()
         self._setup_actions()
         self.queue_toggle.set_sensitive(False)
+        self.progress.set_slider_size_fixed(True)
+        self.progress.set_size_request(100, 0)
+        self.playing_song.set_justify(Gtk.Justification.LEFT)
+        self.playing_artist.set_justify(Gtk.Justification.LEFT)
+        self._set_controls_stopped()
 
     def set_breakpoint(self, _, breakpoint_num):
         self.album_overview.set_breakpoint(None)
@@ -79,31 +88,11 @@ class MainView(Adw.Bin):
     def update_album(self, album: Album):
         self.album_overview.update_album(album)
 
-    def send_toast(self, title, timeout):
+    def send_toast(self, title, timeout=2):
         toast = Adw.Toast()
         toast.set_title(title)
         toast.set_timeout(timeout)
         self.toast.add_toast(toast)
-
-    def _build_seek_scale(self):
-        popup = Gtk.Popover.new()
-        box = Gtk.Box.new(Gtk.Orientation.HORIZONTAL, 0)
-        box.append(start_label := Gtk.Label.new('Seek'))
-        box.set_homogeneous(False)
-        self.start_label = start_label
-        box.append(
-            scale := Gtk.Scale.new_with_range(
-                Gtk.Orientation.HORIZONTAL, 0, 100, 1
-            )
-        )
-        box.append(end_label := Gtk.Label.new('Seek'))
-        self.end_label = end_label
-        popup.set_child(box)
-        scale.set_slider_size_fixed(True)
-        scale.set_size_request(200, 0)
-        self.seek_scale = scale
-        self.progress.set_popover(popup)
-        self.progress.set_direction(Gtk.ArrowType.UP)
 
     def _setup_actions(self):
         self.queue_add.connect('clicked', self._on_queue_add_clicked)
@@ -115,7 +104,7 @@ class MainView(Adw.Bin):
         self.skip_backward.connect('clicked', self._skip_backward)
         self.stop.connect('clicked', self._on_stop_clicked)
 
-        self.seek_scale.connect('change-value', self._on_seek)
+        self.progress.connect('change-value', self._on_seek)
 
         self.player.bus.connect('message', self._on_message)
 
@@ -133,6 +122,7 @@ class MainView(Adw.Bin):
             self._set_controls_active()
             if self.player.state == 'stopped':
                 self.player.ready()
+            self.send_toast('Queue Updated')
 
     def _on_queue_toggle_clicked(self, _):
         self.queue_panel_split_view.set_show_sidebar(
@@ -142,7 +132,7 @@ class MainView(Adw.Bin):
     def _on_play_pause(self, button):
         if self.player.state == 'ready' and self.play_queue.current_track:
             self._start_monitor_thread()
-            button.set_icon_name('media-playback-pause-symbolic')
+            self._set_controls_active(playing=True)
         self.player.toggle()
         button.set_icon_name(
             'media-playback-pause-symbolic'
@@ -156,14 +146,16 @@ class MainView(Adw.Bin):
 
     def _set_controls_stopped(self):
         self.play_pause.set_icon_name('media-playback-start-symbolic')
-        self.player_controls.set_revealed(False)
+        self.toolbar_view.set_reveal_bottom_bars(False)
         self.queue_toggle.set_sensitive(False)
+        self.progress.set_sensitive(False)
         self.play_queue.clear()
 
     def _set_controls_active(self, playing=False):
-        self.player_controls.set_revealed(True)
+        self.toolbar_view.set_reveal_bottom_bars(True)
         self.queue_toggle.set_sensitive(True)
         if playing:
+            self.progress.set_sensitive(True)
             self.play_pause.set_icon_name('media-playback-pause-symbolic')
 
     def _start_monitor_thread(self):
@@ -183,26 +175,24 @@ class MainView(Adw.Bin):
             time_str = f'{int(progress // 60):02}:{int(progress % 60):02}'
             duration_str = f'{int(duration // 60):02}:{int(duration % 60):02}'
             if progress < duration:
-                self.seek_scale.set_range(0, duration)
-            self.seek_scale.set_value(progress)
+                self.progress.set_range(0, duration)
             self.start_label.set_text(time_str)
             self.end_label.set_text(duration_str)
-            GLib.idle_add(
-                self.progress.set_label, f'{time_str} / {duration_str}'
-            )
-            time.sleep(0.5)
-        self.progress.set_label('')
+            GLib.idle_add(self.progress.set_value, progress)
+            time.sleep(0.2)
         self.start_label.set_text('')
         self.end_label.set_text('')
 
     def _on_message(self, _, message):
         if message.type == Gst.MessageType.STREAM_START:
             if current_track := self.play_queue.get_current_track():
-                self.playing_song.set_text(
-                    f'{current_track.title} - {current_track.album.artist}'
+                self.playing_song.set_text(current_track.title)
+                self.playing_artist.set_markup(
+                    f'<span size="small">{GLib.markup_escape_text(current_track.album.artist)}</span>'
                 )
             else:
                 self.playing_song.set_text('')
+                self.playing_artist.set_text('')
 
         if message.type == Gst.MessageType.EOS:
             self._set_controls_stopped()
