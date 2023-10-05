@@ -1,12 +1,11 @@
-# RecordBox
+# ![logo](data/icons/hicolor/scalable/apps/com.github.edestcroix.RecordBox.svg) RecordBox
 A relatively simple, opinionated music player.
 
 ![Screenshot of main window](screenshot.png)
 
 ## What is it?
 RecordBox is a music player designed around listening to music as albums. To this end, it facilitates a paned navigation view to select and filter albums by artist,
-as well as a play queue that albums can be added to. It is not meant to be a full music library manager like Rhythmbox, Quod Libet, or Lollypop are, but to offer a simple
-method of browsing and playing albums in your music library
+as well as a play queue that albums can be added to. It is not meant to be a full music library manager like Rhythmbox, Quod Libet, or Lollypop are. Rather, it is meant to offer a simple method of browsing and playing albums in your music library.
 
 ## Why use it?
 Well you don't have to. RecordBox was designed specifically to have the bare minimum amount of features needed to support the way I listen to music,
