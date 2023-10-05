@@ -68,11 +68,6 @@ class MainView(Adw.Bin):
         self.player = Player(self.play_queue)
         self.monitor_thread_id = 0
         self._setup_actions()
-        self.queue_toggle.set_sensitive(False)
-        self.progress.set_slider_size_fixed(True)
-        self.progress.set_size_request(100, 0)
-        self.playing_song.set_justify(Gtk.Justification.LEFT)
-        self.playing_artist.set_justify(Gtk.Justification.LEFT)
         self._set_controls_stopped()
 
     def set_breakpoint(self, _, breakpoint_num):
