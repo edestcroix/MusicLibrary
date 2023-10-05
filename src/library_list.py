@@ -15,8 +15,15 @@ class RecordBoxList(Gtk.ListBox):
     def filter_on_key(self, artist):
         self.set_filter_func(self.__filter, artist)
 
-    def sort(self):
-        self.set_sort_func(lambda row1, row2: row1.sort_key > row2.sort_key)
+    def sort(self, accending=True):
+        if accending:
+            self.set_sort_func(
+                lambda row1, row2: row1.sort_key < row2.sort_key
+            )
+        else:
+            self.set_sort_func(
+                lambda row1, row2: row1.sort_key > row2.sort_key
+            )
         self.invalidate_sort()
 
     def filter_all(self):
