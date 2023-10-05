@@ -30,36 +30,18 @@ class PlayQueue(Gtk.ListBox):
         self.current_track = None
 
     def get_next_track(self):
-        self.move_current('next', allow_none=True)
+        self._move_current('next', allow_none=True)
         return self.get_current_track()
 
     def get_current_track(self):
         return self.current_track.track if self.current_track else None
 
     def next(self):
-        self.move_current('next')
+        self._move_current('next')
         return self.current_track is not None
 
-    def move_current(self, direction, allow_none=False):
-        if direction == 'next' and self.current_track:
-            if self.current_track.next:
-                self._move_track_indicator(
-                    self.current_track, self.current_track.next
-                )
-                self.current_track = self.current_track.next
-            elif allow_none:
-                self.current_track = None
-        elif direction == 'prev' and self.current_track:
-            if self.current_track.prev:
-                self._move_track_indicator(
-                    self.current_track, self.current_track.prev
-                )
-                self.current_track = self.current_track.prev
-            elif allow_none:
-                self.current_track = None
-
     def previous(self):
-        self.move_current('prev')
+        self._move_current('prev')
         return self.current_track is not None
 
     def add_album(self, album):
@@ -104,6 +86,24 @@ class PlayQueue(Gtk.ListBox):
         self.end = row
 
         self.append(album_row)
+
+    def _move_current(self, direction, allow_none=False):
+        if direction == 'next' and self.current_track:
+            if self.current_track.next:
+                self._move_track_indicator(
+                    self.current_track, self.current_track.next
+                )
+                self.current_track = self.current_track.next
+            elif allow_none:
+                self.current_track = None
+        elif direction == 'prev' and self.current_track:
+            if self.current_track.prev:
+                self._move_track_indicator(
+                    self.current_track, self.current_track.prev
+                )
+                self.current_track = self.current_track.prev
+            elif allow_none:
+                self.current_track = None
 
     def _setup_row(self, row, album_row, prev):
         row.set_prev(prev)

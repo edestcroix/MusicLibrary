@@ -116,6 +116,7 @@ class RecordBoxWindow(Adw.ApplicationWindow):
             self.artist_list.append(*artist.to_row())
         for album in self.db.get_albums():
             self.album_list.append(*album.to_row())
+            # NOTE: The direction of the sort here should be a preference.
             self.album_list.sort()
 
     def select_album(self, _, clicked_row):

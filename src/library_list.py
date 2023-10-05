@@ -9,11 +9,8 @@ from .musicrow import MusicRow
 class RecordBoxList(Gtk.ListBox):
     __gtype_name__ = 'RecordBoxList'
 
-    def __filter(self, row, user_data):
-        return row.filter_key == user_data
-
-    def filter_on_key(self, artist):
-        self.set_filter_func(self.__filter, artist)
+    def filter_on_key(self, key):
+        self.set_filter_func(lambda r: r.filter_key == key)
 
     def sort(self, accending=True):
         if accending:
