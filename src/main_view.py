@@ -179,7 +179,7 @@ class MainView(Adw.Bin):
             self.start_label.set_text(time_str)
             self.end_label.set_text(duration_str)
             GLib.idle_add(self.progress.set_value, progress)
-            time.sleep(0.2)
+            time.sleep(0.5)
         self.start_label.set_text('')
         self.end_label.set_text('')
 
