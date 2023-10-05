@@ -5,7 +5,3 @@
 .album-view {
   padding: 20px;
 }
-
-.play_controls {
-  border-top: 1px solid @borders;
-}
