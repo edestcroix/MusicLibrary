@@ -48,6 +48,7 @@ class RecordBoxApplication(Adw.Application):
         necessary.
         """
         win = self.props.active_window or RecordBoxWindow(application=self)
+        win.set_title("RecordBox")
         win.present()
 
     def on_about_action(self, widget, _):
