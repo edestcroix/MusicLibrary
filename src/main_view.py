@@ -17,7 +17,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from gi.repository import Adw, Gtk, Gdk, GLib, Pango, Gst
+from gi.repository import Adw, Gtk, GLib, Gst
 import gi
 
 gi.require_version('Gtk', '4.0')
@@ -68,12 +68,12 @@ class MainView(Adw.Bin):
 
     def set_breakpoint(self, _, breakpoint_num):
         self.album_overview.set_breakpoint(None)
-        if breakpoint_num > 1:
+        if breakpoint_num > 2:
             self.lists_toggle.set_visible(True)
 
     def unset_breakpoint(self, _, breakpoint_num):
         self.album_overview.unset_breakpoint(None)
-        if breakpoint_num > 1:
+        if breakpoint_num > 2:
             self.lists_toggle.set_visible(False)
 
     def update_album(self, album: Album):
