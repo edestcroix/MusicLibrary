@@ -19,7 +19,6 @@
 
 from gi.repository import Adw, Gtk, GLib
 import gi
-import re
 
 gi.require_version('Gtk', '4.0')
 
@@ -41,7 +40,7 @@ class RecordBoxAlbumView(Adw.Bin):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.track_list.set_sort_func(self._track_sort_func)
+        # self.track_list.set_sort_func(self._track_sort_func)
 
     def set_breakpoint(self, _):
         self.album_box.set_orientation(Gtk.Orientation.VERTICAL)
@@ -64,43 +63,32 @@ class RecordBoxAlbumView(Adw.Bin):
         self.stack.set_visible_child_name('album_view')
 
     def update_tracks(self, tracks):
+        current_disc, disc_row = 0, None
         for track in tracks:
-            track_num = re.sub(r'/.*', '', track.track)
-            disc_num = (
-                re.sub(r'/.*', '', track.discnumber) + '/'
-                if track.discnumber
-                else ''
-            )
-            if disc_num:
-                title = f'{disc_num:0>2}{track_num:0>2} - {track.title}'
-            else:
-                title = f'{track_num:0>2} - {track.title}'
+            if track.disc_num() != current_disc:
+                current_disc = track.disc_num()
+                disc_row = Adw.ExpanderRow(
+                    title=f'Disc {current_disc}',
+                    selectable=False,
+                    # NOTE: Whether this is expanded or not should be a preference.
+                    expanded=True,
+                )
+                self.track_list.append(disc_row)
             row = self._create_row(
-                title=title,
-                subtitle=f'{int(track.length // 60):02}:{int(track.length % 60):02}',
+                track,
                 icon_name='audio-x-generic-symbolic',
             )
-            self.track_list.append(row)
+            if disc_row:
+                disc_row.add_row(row)
+            else:
+                self.track_list.append(row)
 
     def _track_sort_func(self, row1, row2):
-        # get string inside parentheses
-        seg1 = re.search(r'(.*?)-', row1.get_title())
-        seg2 = re.search(r'(.*?)-', row2.get_title())
+        return row1.sort_key() > row2.sort_key()
 
-        if not seg1 or not seg2:
-            return False
-        num1, num2 = 0, 0
-        if set1 := seg1[1].split('/'):
-            num1 = int(set1[0])
-        if set2 := seg2[1].split('/'):
-            num2 = int(set2[0])
-
-        return num1 > num2
-
-    def _create_row(self, title, subtitle, icon_name, parent_row=None):
-        row = Adw.ActionRow(
-            title=GLib.markup_escape_text(title),
-            subtitle=GLib.markup_escape_text(subtitle),
+    def _create_row(self, track, icon_name, parent_row=None):
+        row = TrackRow(
+            track=track,
             icon_name=icon_name,
         )
         row.set_title_lines(1)
@@ -109,3 +97,15 @@ class RecordBoxAlbumView(Adw.Bin):
             parent_row.add_row(row)
 
         return row
+
+
+class TrackRow(Adw.ActionRow):
+    def __init__(self, track, **kwargs):
+        super().__init__(**kwargs)
+        self.track = track
+        self.set_title_lines(1)
+        track_num = track.track_num()
+        self.set_title(f'{track_num:0>2} - {track.title}')
+
+    def sort_key(self):
+        return (self.track.disc_num(), self.track.track_num())

@@ -7,6 +7,7 @@ import mimetypes
 import mutagen
 import os
 from PIL import Image
+import re
 import sqlite3
 
 
@@ -61,7 +62,7 @@ class Artist:
 
 @dataclass
 class Track:
-    track: int
+    track: str
     discnumber: str
     title: str
     length: int
@@ -70,6 +71,14 @@ class Track:
 
     def to_row(self):
         return (self.track, self.title, self.length, self.path)
+
+    def disc_num(self):
+        return (
+            int(re.sub(r'/.*', '', self.discnumber)) if self.discnumber else 0
+        )
+
+    def track_num(self):
+        return int(re.sub(r'/.*', '', self.track)) if self.track else 0
 
 
 class MusicDB:
