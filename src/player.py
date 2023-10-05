@@ -8,14 +8,15 @@ import urllib.parse
 import gi
 
 gi.require_version('Gst', '1.0')
-from gi.repository import GLib, Gst
+from gi.repository import GLib, Gst, GObject
 
 
 Gst.init(None)
 
 
-class Player:
-    def __init__(self, play_queue):
+class Player(GObject.GObject):
+    def __init__(self, play_queue, **kwargs):
+        super().__init__(**kwargs)
         self._player = Gst.parse_launch(
             'playbin audio-sink="rgvolume album-mode=\\"true\\" ! autoaudiosink"'
         )
@@ -26,13 +27,19 @@ class Player:
         self._play_queue = play_queue
         self.state = 'stopped'
 
+    @GObject.Signal(
+        arg_types=(GObject.TYPE_PYOBJECT,), return_type=GObject.TYPE_NONE
+    )
+    def state_changed(self, state):
+        self.state = state
+
     def play(self):
         url = self._prepare_url(self._play_queue.get_current_track())
         self._player.set_state(Gst.State.NULL)
         time.sleep(0.1)
         self._player.set_property('uri', url)
         self._player.set_state(Gst.State.PLAYING)
-        self.state = 'playing'
+        self.emit('state_changed', 'playing')
 
     def ready(self):
         url = self._prepare_url(self._play_queue.get_current_track())
@@ -40,19 +47,20 @@ class Player:
         time.sleep(0.1)
         self._player.set_property('uri', url)
         self._player.set_state(Gst.State.PAUSED)
-        self.state = 'ready'
+        self.emit('state_changed', 'ready')
 
     def toggle(self):
         if self._player.get_state(1 * Gst.SECOND)[1] == Gst.State.PLAYING:
             self._player.set_state(Gst.State.PAUSED)
+            self.emit('state_changed', 'paused')
             self.state = 'paused'
         elif self._player.get_state(1 * Gst.SECOND)[1] == Gst.State.PAUSED:
             self._player.set_state(Gst.State.PLAYING)
-            self.state = 'playing'
+            self.emit('state_changed', 'playing')
 
     def stop(self):
         self._player.set_state(Gst.State.NULL)
-        self.state = 'stopped'
+        self.emit('state_changed', 'stopped')
 
     def get_progress(self):
         return self._player.query_position(Gst.Format.TIME)[1]
@@ -93,7 +101,7 @@ class Player:
         t = message.type
         if t == Gst.MessageType.EOS:
             self._player.set_state(Gst.State.NULL)
-            self.state = 'stopped'
+            self.emit('state_changed', 'stopped')
         elif t == Gst.MessageType.ERROR:
             self._player.set_state(Gst.State.NULL)
             err, debug = message.parse_error()
