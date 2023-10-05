@@ -88,6 +88,13 @@ class RecordBoxWindow(Adw.ApplicationWindow):
             ),
         )
 
+        self.main_view.player.connect(
+            'state-changed',
+            lambda _, state: self.set_hide_on_close(
+                state in ['playing', 'paused']
+            ),
+        )
+
         # Connect breakpoint signals to functions so that the breakpoint signal can be propagated to child widgets.
         self._connect_breakpoint(self.breakpoint1, 1)
         self._connect_breakpoint(self.breakpoint2, 2)
