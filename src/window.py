@@ -58,6 +58,11 @@ class RecordBoxWindow(Adw.ApplicationWindow):
 
         self.db = MusicDB()
 
+        status = Adw.StatusPage(title='Empty Library')
+        status.set_description('Sync library to detect music')
+        status.set_icon_name('emblem-synchronizing-symbolic')
+        self.album_list.set_placeholder(status)
+
         self._setup_actions()
         self.refresh_lists()
 

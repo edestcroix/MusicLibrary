@@ -19,11 +19,13 @@
                 <child type="start">
                   <object class="GtkButton" id="play">
                     <property name="icon-name">media-playback-start-symbolic</property>
+                    <property name="sensitive">false</property>
                   </object>
                 </child>
                 <child type="start">
                   <object class="GtkButton" id="queue_add">
                     <property name="icon-name">list-add-symbolic</property>
+                    <property name="sensitive">false</property>
                   </object>
                 </child>
                 <child type="end">

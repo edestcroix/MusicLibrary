@@ -11,7 +11,9 @@
             <property name="title">Select Album</property>
             <property name="child">
               <object class="AdwStatusPage">
-                <property name="title">Welcome!</property>
+                <property name="title">No Album Selected</property>
+                <property name="description">Select an album from the list to get started</property>
+                <property name="icon-name">emblem-music-symbolic</property>
               </object>
             </property>
           </object>

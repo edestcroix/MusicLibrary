@@ -82,6 +82,8 @@ class MainView(Adw.Bin):
 
     def update_album(self, album: Album):
         self.album_overview.update_album(album)
+        self.play.set_sensitive(True)
+        self.queue_add.set_sensitive(True)
 
     def send_toast(self, title, timeout=2):
         toast = Adw.Toast()
