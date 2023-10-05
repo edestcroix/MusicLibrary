@@ -104,6 +104,7 @@ class MainView(Adw.Bin):
         self.progress.connect('change-value', self._on_seek)
 
         self.player.bus.connect('message', self._on_message)
+        self.player.connect('state-changed', self._on_player_state_changed)
 
     def _on_play_clicked(self, _):
         if album := self.album_overview.current_album:
@@ -111,12 +112,10 @@ class MainView(Adw.Bin):
             self.play_queue.add_album(album)
             self.player.play()
             self._start_monitor_thread()
-            self._set_controls_active(playing=True)
 
     def _on_queue_add_clicked(self, _):
         if album := self.album_overview.current_album:
             self.play_queue.add_album(album)
-            self._set_controls_active()
             if self.player.state == 'stopped':
                 self.player.ready()
             self.send_toast('Queue Updated')
@@ -126,20 +125,21 @@ class MainView(Adw.Bin):
             not self.queue_panel_split_view.get_show_sidebar()
         )
 
-    def _on_play_pause(self, button):
+    def _on_play_pause(self, _):
         if self.player.state == 'ready' and self.play_queue.current_track:
             self._start_monitor_thread()
-            self._set_controls_active(playing=True)
         self.player.toggle()
-        button.set_icon_name(
-            'media-playback-pause-symbolic'
-            if self.player.state == 'playing'
-            else 'media-playback-start-symbolic'
-        )
 
     def _on_stop_clicked(self, _):
         self.player.stop()
-        self._set_controls_stopped()
+
+    def _on_player_state_changed(self, _, state):
+        if state == 'playing':
+            self._set_controls_active(playing=True)
+        elif state in ['paused', 'ready']:
+            self._set_controls_active(playing=False)
+        elif state == 'stopped':
+            self._set_controls_stopped()
 
     def _set_controls_stopped(self):
         self.play_pause.set_icon_name('media-playback-start-symbolic')
@@ -154,6 +154,8 @@ class MainView(Adw.Bin):
         if playing:
             self.progress.set_sensitive(True)
             self.play_pause.set_icon_name('media-playback-pause-symbolic')
+        else:
+            self.play_pause.set_icon_name('media-playback-start-symbolic')
 
     def _start_monitor_thread(self):
         self.monitor_thread_id += 1
