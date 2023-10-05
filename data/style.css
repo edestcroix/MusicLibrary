@@ -11,6 +11,6 @@
   padding-right: 10px;
 }
 
-.progress-bar { color: @dimmed_color; }
+.progress-bar { color: @window_fg_color; }
 .progress-bar > trough highlight { min-height: 9px; min-width: 9px; }
 .progress-bar > trough slider { opacity: 0; }
