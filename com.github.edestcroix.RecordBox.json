@@ -70,13 +70,13 @@
       ]
     },
     {
-      "name": "musiclibrary",
+      "name": "recordbox",
       "builddir": true,
       "buildsystem": "meson",
       "sources": [
         {
           "type": "git",
-          "url": "file:///var/home/yelgo/Projects"
+          "url": "https://github.com/edestcroix/RecordBox/"
         }
       ]
     }
