@@ -105,7 +105,9 @@ class TrackRow(Adw.ActionRow):
         self.track = track
         self.set_title_lines(1)
         track_num = track.track_num()
-        self.set_title(f'{track_num:0>2} - {track.title}')
+        self.set_title(
+            GLib.markup_escape_text(f'{track_num:0>2} - {track.title}')
+        )
 
     def sort_key(self):
         return (self.track.disc_num(), self.track.track_num())
