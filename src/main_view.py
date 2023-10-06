@@ -17,7 +17,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from gi.repository import Adw, Gtk, GLib, Gst
+from gi.repository import Adw, Gtk, GLib, Gst, Gio, GObject
 import gi
 
 gi.require_version('Gtk', '4.0')
@@ -63,12 +63,22 @@ class MainView(Adw.Bin):
 
     toast = Gtk.Template.Child()
 
+    _clear_queue = False
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.player = Player(self.play_queue)
         self.monitor_thread_id = 0
         self._setup_actions()
         self._set_controls_stopped()
+
+    @GObject.Property(type=bool, default=False)
+    def clear_queue(self):
+        return self._clear_queue
+
+    @clear_queue.setter
+    def set_clear_queue(self, value):
+        self._clear_queue = value
 
     def set_breakpoint(self, _, breakpoint_num):
         self.album_overview.set_breakpoint(None)
@@ -143,10 +153,14 @@ class MainView(Adw.Bin):
 
     def _set_controls_stopped(self):
         self.play_pause.set_icon_name('media-playback-start-symbolic')
-        self.toolbar_view.set_reveal_bottom_bars(False)
-        self.queue_toggle.set_sensitive(False)
         self.progress.set_sensitive(False)
-        self.play_queue.clear()
+        if self.clear_queue:
+            self.toolbar_view.set_reveal_bottom_bars(False)
+            self.queue_toggle.set_sensitive(False)
+            self.play_queue.clear()
+        elif not self.play_queue.empty():
+            self.play_queue.restart()
+            self.player.ready()
 
     def _set_controls_active(self, playing=False):
         self.toolbar_view.set_reveal_bottom_bars(True)

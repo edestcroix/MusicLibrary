@@ -82,6 +82,14 @@ class RecordBoxWindow(Adw.ApplicationWindow):
             'sort',
             Gio.SettingsBindFlags.DEFAULT,
         )
+
+        self.app.settings.bind(
+            'clear-queue',
+            self.main_view,
+            'clear_queue',
+            Gio.SettingsBindFlags.DEFAULT,
+        )
+
     def _setup_actions(self):
         self.artist_list.connect('row-activated', self.select_artist)
         self.album_list.connect('row-activated', self.select_album)
