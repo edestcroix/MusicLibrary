@@ -9,7 +9,7 @@
         <property name="use-underline">True</property>
         <child>
           <object class="AdwPreferencesGroup">
-            <property name="title" translatable="yes">Player</property>
+            <property name="title" translatable="yes">Playback</property>
             <child>
               <object class="AdwSwitchRow" id="background_playback">
                 <property name="title" translatable="yes">Play in _Background</property>
@@ -17,6 +17,21 @@
                 <property name="use_underline">True</property>
               </object>
             </child>
+            <!-- <child> -->
+            <!--   <object class="AdwComboRow" id="rg_mode"> -->
+            <!--     <property name="title" translatable="yes">ReplayGain</property> -->
+            <!--     <property name="subtitle" translatable="yes">Configure ReplayGain mode</property> -->
+            <!--     <property name="model"> -->
+            <!--       <object class="GtkStringList"> -->
+            <!--         <items> -->
+            <!--           <item translatable="yes">None</item> -->
+            <!--           <item translatable="yes">Track</item> -->
+            <!--           <item translatable="yes">Album</item> -->
+            <!--         </items> -->
+            <!--       </object> -->
+            <!--     </property> -->
+            <!--   </object> -->
+            <!-- </child> -->
           </object>
         </child>
         <child>
@@ -29,15 +44,22 @@
                 <property name="use_underline">True</property>
               </object>
             </child>
-            <child>
-              <object class="AdwSwitchRow" id="expand_playing_album">
-                <property name="title" translatable="yes">_Expand Playing Album</property>
-                <property name="subtitle" translatable="yes">Expand the album of the currently playing track in the play queue</property>
-                <property name="use_underline">True</property>
-              </object>
-            </child>
+            <!-- <child> -->
+            <!--   <object class="AdwSwitchRow" id="expand_playing_album"> -->
+            <!--     <property name="title" translatable="yes">_Expand Playing Album</property> -->
+            <!--     <property name="subtitle" translatable="yes">Expand the album of the currently playing track in the play queue</property> -->
+            <!--     <property name="use_underline">True</property> -->
+            <!--   </object> -->
+            <!-- </child> -->
           </object>
         </child>
+        </object>
+      </child>
+      <child>
+        <object class="AdwPreferencesPage">
+        <property name="icon_name">media-optical-symbolic</property>
+        <property name="title">Library</property>
+        <property name="use-underline">True</property>
         <child>
           <object class="AdwPreferencesGroup">
             <property name="title" translatable="yes">Library</property>
@@ -47,6 +69,17 @@
                 <property name="subtitle" translatable="yes">Expand discs in the track view by default</property>
               </object>
             </child>
+            <!-- <child> -->
+            <!--   <object class="AdwSwitchRow" id="show_images"> -->
+            <!--     <property name="title" translatable="yes">Show Images</property> -->
+            <!--     <property name="subtitle" translatable="yes">Show album images in the library</property> -->
+            <!--   </object> -->
+            <!-- </child> -->
+          </object>
+        </child>
+        <child>
+          <object class="AdwPreferencesGroup">
+            <property name="title" translatable="yes">Sorting</property>
             <child>
               <object class="AdwComboRow" id="artist_sort">
                 <property name="title" translatable="yes">Artist Sort</property>
