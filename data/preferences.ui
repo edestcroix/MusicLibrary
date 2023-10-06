@@ -1,0 +1,85 @@
+<interface>
+  <requires lib="gtk" version="4.0" />
+  <requires lib="libadwaita" version="1.0" />
+  <template class="RecordBoxPreferencesWindow" parent="AdwPreferencesWindow">
+    <child>
+      <object class="AdwPreferencesPage">
+        <property name="icon_name">media-playback-start-symbolic</property>
+        <property name="title">Player</property>
+        <property name="use-underline">True</property>
+        <child>
+          <object class="AdwPreferencesGroup">
+            <property name="title" translatable="yes">Player</property>
+            <child>
+              <object class="AdwSwitchRow" id="background_playback">
+                <property name="title" translatable="yes">Play in _Background</property>
+                <property name="subtitle" translatable="yes">Keep playing in the background when the window is closed</property>
+                <property name="use_underline">True</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="AdwPreferencesGroup">
+            <property name="title" translatable="yes">Play Queue</property>
+            <child>
+              <object class="AdwSwitchRow" id="clear_queue">
+                <property name="title" translatable="yes">_Clear Queue at End</property>
+                <property name="subtitle" translatable="yes">Clear the play queue of tracks when playback finishes</property>
+                <property name="use_underline">True</property>
+              </object>
+            </child>
+            <child>
+              <object class="AdwSwitchRow" id="expand_playing_album">
+                <property name="title" translatable="yes">_Expand Playing Album</property>
+                <property name="subtitle" translatable="yes">Expand the album of the currently playing track in the play queue</property>
+                <property name="use_underline">True</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="AdwPreferencesGroup">
+            <property name="title" translatable="yes">Library</property>
+            <child>
+              <object class="AdwSwitchRow" id="expand_discs">
+                <property name="title" translatable="yes">Expand discs</property>
+                <property name="subtitle" translatable="yes">Expand discs in the track view by default</property>
+              </object>
+            </child>
+            <child>
+              <object class="AdwComboRow" id="artist_sort">
+                <property name="title" translatable="yes">Artist Sort</property>
+                <property name="subtitle" translatable="yes">The default sort for the artist list</property>
+                <property name="model">
+                  <object class="GtkStringList">
+                    <items>
+                      <item translatable="yes">Name (A-Z)</item>
+                      <item translatable="yes">Name (Z-A)</item>
+                    </items>
+                  </object>
+                </property>
+              </object>
+            </child>
+            <child>
+              <object class="AdwComboRow" id="album_sort">
+                <property name="title" translatable="yes">Album Sort</property>
+                <property name="subtitle" translatable="yes">The default sort for the album list</property>
+                <property name="model">
+                  <object class="GtkStringList">
+                    <items>
+                      <item translatable="yes">Name (A-Z)</item>
+                      <item translatable="yes">Name (Z-A)</item>
+                      <item translatable="yes">Date (Most Recent)</item>
+                      <item translatable="yes">Date (Least Recent)</item>
+                    </items>
+                  </object>
+                </property>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+  </template>
+</interface>

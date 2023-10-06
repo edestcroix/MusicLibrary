@@ -26,6 +26,7 @@ gi.require_version('Adw', '1')
 from gi.repository import Gtk, Gio, Adw
 
 from .window import RecordBoxWindow
+from .preferences import RecordBoxPreferencesWindow
 
 
 class RecordBoxApplication(Adw.Application):
@@ -40,6 +41,8 @@ class RecordBoxApplication(Adw.Application):
         self.create_action('about', self.on_about_action)
         self.create_action('preferences', self.on_preferences_action)
         self.create_action('refresh', self.on_refresh_action, ['<primary>r'])
+
+        self.settings = Gio.Settings.new('com.github.edestcroix.RecordBox')
 
     def do_activate(self):
         """Called when the application is activated.
@@ -67,6 +70,12 @@ class RecordBoxApplication(Adw.Application):
     def on_preferences_action(self, widget, _):
         """Callback for the app.preferences action."""
         print('app.preferences action activated')
+        preferences = RecordBoxPreferencesWindow(
+            transient_for=self.props.active_window,
+            application=self,
+        )
+        preferences.bind_settings(self.settings)
+        preferences.present()
 
     def on_refresh_action(self, widget, _):
         self.props.active_window.sync_library(_)

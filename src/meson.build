@@ -27,6 +27,7 @@ recordbox_sources = [
   'player.py',
   'play_queue.py',
   'main_view.py',
+  'preferences.py'
 ]
 
 install_data(recordbox_sources, install_dir: moduledir)
