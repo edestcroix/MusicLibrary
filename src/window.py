@@ -22,7 +22,7 @@ import gi
 import threading
 from .musicdb import Album, MusicDB
 from .musicrow import MusicRow
-from .library_list import RecordBoxList
+from .library_list import RecordBoxArtistList, RecordBoxAlbumList
 from .play_queue import PlayQueue
 from .player import Player
 from .main_view import MainView
@@ -65,13 +65,27 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         self.album_list.set_placeholder(status)
 
         self._setup_actions()
+        self._bind_settings()
         self.refresh_lists()
 
+    def _bind_settings(self):
+        self.app.settings.bind(
+            'artist-sort',
+            self.artist_list,
+            'sort',
+            Gio.SettingsBindFlags.DEFAULT,
+        )
+
+        self.app.settings.bind(
+            'album-sort',
+            self.album_list,
+            'sort',
+            Gio.SettingsBindFlags.DEFAULT,
+        )
     def _setup_actions(self):
         self.artist_list.connect('row-activated', self.select_artist)
         self.album_list.connect('row-activated', self.select_album)
         self.album_list.filter_all()
-        self.artist_list.filter_all()
 
         self.artist_return.connect(
             'clicked',
@@ -127,11 +141,9 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         print('Populating lists')
 
         for artist in self.db.get_artists():
-            self.artist_list.append(*artist.to_row())
+            self.artist_list.append(artist)
         for album in self.db.get_albums():
-            self.album_list.append(*album.to_row())
-            # NOTE: The direction of the sort here should be a preference.
-            self.album_list.sort()
+            self.album_list.append(album)
 
     def select_album(self, _, clicked_row):
         album = self.db.get_album(clicked_row.raw_title)
