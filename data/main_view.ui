@@ -8,6 +8,7 @@
         <child>
           <object class="AdwToolbarView" id="toolbar_view">
             <property name="reveal-bottom-bars">false</property>
+            <property name="bottom-bar-style">ADW_TOOLBAR_RAISED_BORDER</property>
             <child type="top">
               <object class="AdwHeaderBar">
                 <child type="start">

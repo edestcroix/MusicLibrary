@@ -185,7 +185,9 @@ class MainView(Adw.Bin):
     def _on_message(self, _, message):
         if message.type == Gst.MessageType.STREAM_START:
             if current_track := self.play_queue.get_current_track():
-                self.playing_song.set_text(current_track.title)
+                self.playing_song.set_markup(
+                    f'<span size="large">{GLib.markup_escape_text(current_track.title)}</span>'
+                )
                 self.playing_artist.set_markup(
                     f'<span size="small">{GLib.markup_escape_text(current_track.album.artist)}</span>'
                 )
