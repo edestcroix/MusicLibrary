@@ -17,7 +17,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from gi.repository import Adw, Gtk, GLib
+from gi.repository import Adw, Gtk, GLib, Gio
 import gi
 import threading
 from .musicdb import Album, MusicDB
@@ -55,6 +55,7 @@ class RecordBoxWindow(Adw.ApplicationWindow):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.app = kwargs['application']
 
         self.db = MusicDB()
 
@@ -91,7 +92,8 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         self.main_view.player.connect(
             'state-changed',
             lambda _, state: self.set_hide_on_close(
-                state in ['playing', 'paused']
+                self.app.settings.get_boolean('background-playback')
+                and state in ['playing', 'paused']
             ),
         )
 

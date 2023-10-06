@@ -50,8 +50,11 @@ class RecordBoxApplication(Adw.Application):
         We raise the application's main window, creating it if
         necessary.
         """
-        win = self.props.active_window or RecordBoxWindow(application=self)
-        win.set_title("RecordBox")
+        if self.props.active_window:
+            win = self.props.active_window
+        else:
+            win = RecordBoxWindow(application=self)
+            win.set_title('RecordBox')
         win.present()
 
     def on_about_action(self, widget, _):
@@ -64,6 +67,7 @@ class RecordBoxApplication(Adw.Application):
             version='0.1.0',
             developers=['Emmett de St. Croix'],
             copyright='© 2023 Emmett de St. Croix',
+            website='https://github.com/edestcroix/RecordBox/',
         )
         about.present()
 
