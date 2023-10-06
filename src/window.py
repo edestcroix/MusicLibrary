@@ -69,25 +69,16 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         self.refresh_lists()
 
     def _bind_settings(self):
-        self.app.settings.bind(
-            'artist-sort',
-            self.artist_list,
-            'sort',
-            Gio.SettingsBindFlags.DEFAULT,
+        self._bind('artist-sort', self.artist_list, 'sort')
+        self._bind('album-sort', self.album_list, 'sort')
+        self._bind('clear-queue', self.main_view, 'clear_queue')
+        self._bind(
+            'expand-discs', self.main_view.album_overview, 'expand_discs'
         )
 
+    def _bind(self, key, obj, property):
         self.app.settings.bind(
-            'album-sort',
-            self.album_list,
-            'sort',
-            Gio.SettingsBindFlags.DEFAULT,
-        )
-
-        self.app.settings.bind(
-            'clear-queue',
-            self.main_view,
-            'clear_queue',
-            Gio.SettingsBindFlags.DEFAULT,
+            key, obj, property, Gio.SettingsBindFlags.DEFAULT
         )
 
     def _setup_actions(self):

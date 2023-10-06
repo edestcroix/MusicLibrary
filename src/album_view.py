@@ -17,7 +17,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from gi.repository import Adw, Gtk, GLib
+from gi.repository import Adw, Gtk, GLib, GObject
 import gi
 
 gi.require_version('Gtk', '4.0')
@@ -38,9 +38,15 @@ class RecordBoxAlbumView(Adw.Bin):
     stack = Gtk.Template.Child()
     current_album = None
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        # self.track_list.set_sort_func(self._track_sort_func)
+    _expand_discs = False
+
+    @GObject.Property(type=bool, default=False)
+    def expand_discs(self):
+        return self._collapse_discs
+
+    @expand_discs.setter
+    def set_expand_discs(self, value):
+        self._collapse_discs = value
 
     def set_breakpoint(self, _):
         self.album_box.set_orientation(Gtk.Orientation.VERTICAL)
@@ -70,8 +76,7 @@ class RecordBoxAlbumView(Adw.Bin):
                 disc_row = Adw.ExpanderRow(
                     title=f'Disc {current_disc}',
                     selectable=False,
-                    # NOTE: Whether this is expanded or not should be a preference.
-                    expanded=True,
+                    expanded=self.expand_discs,
                 )
                 self.track_list.append(disc_row)
             row = self._create_row(
