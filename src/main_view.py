@@ -43,6 +43,8 @@ class MainView(Adw.Bin):
     queue_add = Gtk.Template.Child()
     play_queue = Gtk.Template.Child()
 
+    return_to_album = Gtk.Template.Child()
+
     lists_toggle = Gtk.Template.Child()
 
     player_controls = Gtk.Template.Child()
@@ -71,6 +73,12 @@ class MainView(Adw.Bin):
         self.monitor_thread_id = 0
         self._setup_actions()
         self._set_controls_stopped()
+
+    @GObject.Signal(
+        arg_types=(GObject.TYPE_PYOBJECT,), return_type=GObject.TYPE_NONE
+    )
+    def album_changed(self, album):
+        self.update_album(album)
 
     @GObject.Property(type=bool, default=False)
     def clear_queue(self):
@@ -105,6 +113,11 @@ class MainView(Adw.Bin):
         self.queue_add.connect('clicked', self._on_queue_add_clicked)
         self.queue_toggle.connect('clicked', self._on_queue_toggle_clicked)
 
+        self.return_to_album.connect(
+            'clicked',
+            self._on_return_to_album_clicked,
+        )
+
         self.play.connect('clicked', self._on_play_clicked)
         self.play_pause.connect('clicked', self._on_play_pause)
         self.skip_forward.connect('clicked', self._skip_forward)
@@ -135,6 +148,11 @@ class MainView(Adw.Bin):
             not self.queue_panel_split_view.get_show_sidebar()
         )
 
+    def _on_return_to_album_clicked(self, _):
+        if self.play_queue.current_track:
+            current_album = self.play_queue.get_current_track().album
+            self.emit('album_changed', current_album)
+
     def _on_play_pause(self, _):
         if self.player.state == 'ready' and self.play_queue.current_track:
             self._start_monitor_thread()
@@ -145,9 +163,9 @@ class MainView(Adw.Bin):
 
     def _on_player_state_changed(self, _, state):
         if state == 'playing':
-            self._set_controls_active(playing=True)
+            self._set_controls_ready(playing=True)
         elif state in ['paused', 'ready']:
-            self._set_controls_active(playing=False)
+            self._set_controls_ready(playing=False)
         elif state == 'stopped':
             self._set_controls_stopped()
 
@@ -155,21 +173,24 @@ class MainView(Adw.Bin):
         self.play_pause.set_icon_name('media-playback-start-symbolic')
         self.progress.set_sensitive(False)
         if self.clear_queue:
-            self.toolbar_view.set_reveal_bottom_bars(False)
-            self.queue_toggle.set_sensitive(False)
+            self._set_controls_active(False)
             self.play_queue.clear()
         elif not self.play_queue.empty():
             self.play_queue.restart()
             self.player.ready()
 
-    def _set_controls_active(self, playing=False):
-        self.toolbar_view.set_reveal_bottom_bars(True)
-        self.queue_toggle.set_sensitive(True)
+    def _set_controls_ready(self, playing=False):
+        self._set_controls_active(True)
         if playing:
             self.progress.set_sensitive(True)
             self.play_pause.set_icon_name('media-playback-pause-symbolic')
         else:
             self.play_pause.set_icon_name('media-playback-start-symbolic')
+
+    def _set_controls_active(self, active):
+        self.toolbar_view.set_reveal_bottom_bars(active)
+        self.queue_toggle.set_sensitive(active)
+        self.return_to_album.set_sensitive(active)
 
     def _start_monitor_thread(self):
         self.monitor_thread_id += 1

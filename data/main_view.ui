@@ -35,6 +35,13 @@
                     <property name="sensitive">false</property>
                   </object>
                 </child>
+                <child type="end">
+                  <object class="GtkButton" id="return_to_album">
+                    <property name="icon-name">document-revert-symbolic</property>
+                    <property name="sensitive">false</property>
+                    <property name="tooltip-text" translatable="yes">Return to playing album</property>
+                  </object>
+                </child>
               </object>
             </child>
             <child type="bottom">

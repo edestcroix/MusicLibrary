@@ -113,6 +113,8 @@ class RecordBoxWindow(Adw.ApplicationWindow):
             ),
         )
 
+        self.main_view.connect('album_changed', self._goto_album)
+
         # Connect breakpoint signals to functions so that the breakpoint signal can be propagated to child widgets.
         self._connect_breakpoint(self.breakpoint1, 1)
         self._connect_breakpoint(self.breakpoint2, 2)
@@ -167,3 +169,24 @@ class RecordBoxWindow(Adw.ApplicationWindow):
     def _connect_breakpoint(self, breakpoint, num):
         breakpoint.connect('apply', self.main_view.set_breakpoint, num)
         breakpoint.connect('unapply', self.main_view.unset_breakpoint, num)
+
+    def _goto_album(self, _, album):
+        self.album_list.filter_on_key(album.artist)
+        self.album_list_page.set_title(album.artist)
+        self.main_page.set_title(album.name)
+        self.inner_split.set_show_content('album_view')
+
+        self.album_list.unselect_all()
+        self.artist_list.unselect_all()
+
+        self._select_row_with_title(self.album_list, album.name)
+        self._select_row_with_title(self.artist_list, album.artist)
+
+    def _select_row_with_title(self, slist, title):
+        i = 0
+        cur = slist.get_row_at_index(i)
+        while cur and cur.raw_title != title:
+            i += 1
+            cur = slist.get_row_at_index(i)
+        if cur:
+            self.artist_list.select_row(cur)
