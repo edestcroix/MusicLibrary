@@ -175,6 +175,7 @@ class MainView(Adw.Bin):
         if self.clear_queue:
             self._set_controls_active(False)
             self.play_queue.clear()
+            self.queue_panel_split_view.set_show_sidebar(False)
         elif not self.play_queue.empty():
             self.play_queue.restart()
             self.player.ready()
