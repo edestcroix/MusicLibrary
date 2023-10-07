@@ -36,6 +36,8 @@ class PlayQueue(Gtk.ListBox):
     def clear(self):
         self.remove_all()
         self.current_track = None
+        self.start = None
+        self.end = None
 
     def restart(self):
         self.current_track = self.start
