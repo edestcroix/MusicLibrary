@@ -1,11 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <schemalist gettext-domain="recordbox">
-
-  <enum id="com.github.edestcroix.RecordBox.artistsort">
-    <value nick="name-desc" value="0" />
-    <value nick="name-asc" value="1" />
-  </enum>
-
   <schema id="com.github.edestcroix.RecordBox" path="/com/github/edestcroix/recordbox/">
     <key name="loop" type="b">
       <default>false</default>
@@ -14,6 +8,7 @@
         Control if playback should restart at beginning
       </description>
     </key>
+
     <key name="clear-queue" type="b">
       <default>true</default>
       <summary>Control queue clear</summary>
@@ -38,10 +33,18 @@
     <key name="artist-sort" type="i">
       <default>0</default>
       <range min="0" max="3" />
+      <summary>Artist sort</summary>
+      <description>
+        Control how artists are sorted in the library
+      </description>
     </key>
     <key name="album-sort" type="i">
       <default>2</default>
       <range min="0" max="3" />
+      <summary>Album sort</summary>
+      <description>
+        Control how albums are sorted in the library
+      </description>
     </key>
   </schema>
 </schemalist>
