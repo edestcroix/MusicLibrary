@@ -13,7 +13,7 @@
             <child>
               <object class="AdwSwitchRow" id="background_playback">
                 <property name="title" translatable="yes">Play in _Background</property>
-                <property name="subtitle" translatable="yes">Keep playing in the background when the window is closed</property>
+                <property name="subtitle" translatable="yes">Keep playing in the background when the window is closed.</property>
                 <property name="use_underline">True</property>
               </object>
             </child>
@@ -39,8 +39,8 @@
             <property name="title" translatable="yes">Play Queue</property>
             <child>
               <object class="AdwSwitchRow" id="clear_queue">
-                <property name="title" translatable="yes">_Clear Queue at End</property>
-                <property name="subtitle" translatable="yes">Clear the play queue of tracks when playback finishes</property>
+                <property name="title" translatable="yes">_Clear Queue</property>
+                <property name="subtitle" translatable="yes">Stopping playback or reaching the end of the queue clears the play queue.</property>
                 <property name="use_underline">True</property>
               </object>
             </child>
@@ -66,7 +66,7 @@
             <child>
               <object class="AdwSwitchRow" id="expand_discs">
                 <property name="title" translatable="yes">Expand discs</property>
-                <property name="subtitle" translatable="yes">Expand discs in the track view by default</property>
+                <property name="subtitle" translatable="yes">Expand discs in the track view by default.</property>
               </object>
             </child>
             <!-- <child> -->
@@ -83,7 +83,7 @@
             <child>
               <object class="AdwComboRow" id="artist_sort">
                 <property name="title" translatable="yes">Artist Sort</property>
-                <property name="subtitle" translatable="yes">The default sort for the artist list</property>
+                <property name="subtitle" translatable="yes">The default sort for the artist list.</property>
                 <property name="model">
                   <object class="GtkStringList">
                     <items>
@@ -97,7 +97,7 @@
             <child>
               <object class="AdwComboRow" id="album_sort">
                 <property name="title" translatable="yes">Album Sort</property>
-                <property name="subtitle" translatable="yes">The default sort for the album list</property>
+                <property name="subtitle" translatable="yes">The default sort for the album list.</property>
                 <property name="model">
                   <object class="GtkStringList">
                     <items>
