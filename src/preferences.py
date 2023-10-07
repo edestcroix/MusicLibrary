@@ -17,37 +17,15 @@ class RecordBoxPreferencesWindow(Adw.PreferencesWindow):
     def bind_settings(self, settings: Gio.Settings):
         self.settings = settings
 
-        self.settings.bind(
-            'clear-queue',
-            self.clear_queue,
-            'active',
-            Gio.SettingsBindFlags.DEFAULT,
-        )
+        self._bind('clear-queue', self.clear_queue, 'active')
 
-        self.settings.bind(
-            'background-playback',
-            self.background_playback,
-            'active',
-            Gio.SettingsBindFlags.DEFAULT,
-        )
+        self._bind('background-playback', self.background_playback, 'active')
 
-        self.settings.bind(
-            'expand-discs',
-            self.expand_discs,
-            'active',
-            Gio.SettingsBindFlags.DEFAULT,
-        )
+        self._bind('expand-discs', self.expand_discs, 'active')
 
-        self.settings.bind(
-            'artist-sort',
-            self.artist_sort,
-            'selected',
-            Gio.SettingsBindFlags.DEFAULT,
-        )
+        self._bind('artist-sort', self.artist_sort, 'selected')
 
-        self.settings.bind(
-            'album-sort',
-            self.album_sort,
-            'selected',
-            Gio.SettingsBindFlags.DEFAULT,
-        )
+        self._bind('album-sort', self.album_sort, 'selected')
+
+    def _bind(self, key, obj, prop):
+        self.settings.bind(key, obj, prop, Gio.SettingsBindFlags.DEFAULT)
