@@ -93,6 +93,12 @@
                       <object class="AdwToolbarView">
                         <child type="top">
                           <object class="AdwHeaderBar">
+                            <child type="start">
+                              <object class="GtkButton" id="filter_all">
+                                <property name="icon-name">view-list-bullet-symbolic</property>
+                                <property name="sensitive">false</property>
+                              </object>
+                            </child>
                             <child type="end">
                               <object class="GtkButton" id="album_return">
                                 <property name="visible">False</property>

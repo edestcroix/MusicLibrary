@@ -53,6 +53,8 @@ class RecordBoxWindow(Adw.ApplicationWindow):
     breakpoint2 = Gtk.Template.Child()
     breakpoint3 = Gtk.Template.Child()
 
+    filter_all = Gtk.Template.Child()
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.app = kwargs['application']
@@ -113,17 +115,14 @@ class RecordBoxWindow(Adw.ApplicationWindow):
             ),
         )
 
+        self.filter_all.connect('clicked', self._show_all_albums)
+
         self.main_view.connect('album_changed', self._goto_album)
 
         # Connect breakpoint signals to functions so that the breakpoint signal can be propagated to child widgets.
         self._connect_breakpoint(self.breakpoint1, 1)
         self._connect_breakpoint(self.breakpoint2, 2)
         self._connect_breakpoint(self.breakpoint3, 3)
-
-    def toggle_album_info(self, _):
-        self.queue_panel_split_view.set_show_sidebar(
-            not self.queue_panel_split_view.get_show_sidebar()
-        )
 
     def sync_library(self, _):
         self.thread = threading.Thread(target=self.update_db)
@@ -165,10 +164,17 @@ class RecordBoxWindow(Adw.ApplicationWindow):
             self.album_list.filter_on_key(clicked_row.raw_title)
             self.album_list_page.set_title(clicked_row.raw_title)
             self.inner_split.set_show_content('album_view')
+            self.filter_all.set_sensitive(True)
 
     def _connect_breakpoint(self, breakpoint, num):
         breakpoint.connect('apply', self.main_view.set_breakpoint, num)
         breakpoint.connect('unapply', self.main_view.unset_breakpoint, num)
+
+    def _show_all_albums(self, _):
+        self.album_list.filter_all()
+        self.filter_all.set_sensitive(False)
+        self.album_list_page.set_title('Artists')
+        self.artist_list.unselect_all()
 
     def _goto_album(self, _, album):
         self.album_list.filter_on_key(album.artist)
