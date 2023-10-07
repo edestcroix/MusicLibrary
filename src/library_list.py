@@ -72,7 +72,7 @@ class RecordBoxAlbumList(Gtk.ListBox):
             subtitle=f'{album.length_str()} - {album.num_tracks} tracks',
         )
         row.set_data(album)
-        row.set_title(album.name)
+        row.set_title(album.name, date=album.date)
         row.set_title_lines(1)
 
         row.set_filter_key(album.artist)
