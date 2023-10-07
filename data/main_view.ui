@@ -32,6 +32,7 @@
                 <child type="end">
                   <object class="GtkButton" id="queue_toggle">
                     <property name="icon-name">view-list-symbolic</property>
+                    <property name="sensitive">false</property>
                   </object>
                 </child>
               </object>
