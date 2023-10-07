@@ -40,6 +40,7 @@ class PlayQueue(Gtk.ListBox):
         self.end = None
 
     def restart(self):
+        self._move_track_indicator(self.current_track, self.start)
         self.current_track = self.start
 
     def empty(self):
