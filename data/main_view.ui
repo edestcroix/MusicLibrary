@@ -99,7 +99,7 @@
                           <class name="linked" />
                         </style>
                         <child>
-                          <object class="GtkButton" id="loop">
+                          <object class="GtkToggleButton" id="loop">
                             <property name="icon-name">emblem-synchronizing-symbolic</property>
                           </object>
                         </child>

@@ -7,6 +7,13 @@
   </enum>
 
   <schema id="com.github.edestcroix.RecordBox" path="/com/github/edestcroix/recordbox/">
+    <key name="loop" type="b">
+      <default>false</default>
+      <summary>Toggle loop</summary>
+      <description>
+        Control if playback should restart at beginning
+      </description>
+    </key>
     <key name="clear-queue" type="b">
       <default>true</default>
       <summary>Control queue clear</summary>

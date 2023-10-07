@@ -1,12 +1,10 @@
-from gi.repository import Adw, Gtk, GLib
+from gi.repository import Adw, Gtk, GLib, GObject
 import gi
 
 gi.require_version('Gtk', '4.0')
 
 
 # TODO: Allow adding lone tracks to the queue. (Then allow for that in the UI)
-# Highlight the current song in the queue. Connect this highlight function to some
-# global signal that is emitted on track change.
 
 
 class PlayQueue(Gtk.ListBox):
@@ -17,6 +15,8 @@ class PlayQueue(Gtk.ListBox):
     end = None
     start = None
 
+    _loop = False
+
     # Since AdwExpanderRows don't index their children, all the track rows
     # maintain a linked list of themselves so they when albums or tracks are removed
     # the continuity of the current track in the queue is maintained. New tracks
@@ -24,6 +24,14 @@ class PlayQueue(Gtk.ListBox):
     # to point around them. Deleting an album preforms the track delete operations
     # on every track in the album starting at the first (Album ExpanderRows point
     # to first track in the album).
+
+    @GObject.Property(type=bool, default=False)
+    def loop(self):
+        return self._loop
+
+    @loop.setter
+    def set_loop(self, value):
+        self._loop = value
 
     def clear(self):
         self.remove_all()
@@ -100,6 +108,9 @@ class PlayQueue(Gtk.ListBox):
                     self.current_track, self.current_track.next
                 )
                 self.current_track = self.current_track.next
+            elif self._loop:
+                self._move_track_indicator(self.current_track, self.start)
+                self.current_track = self.start
             elif allow_none:
                 self.current_track = None
         elif direction == 'prev' and self.current_track:

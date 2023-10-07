@@ -20,9 +20,9 @@
 from gi.repository import Adw, Gtk, GLib, Gio
 import gi
 import threading
-from .musicdb import Album, MusicDB
 from .musicrow import MusicRow
 from .library_list import RecordBoxArtistList, RecordBoxAlbumList
+from .musicdb import Album, MusicDB
 from .play_queue import PlayQueue
 from .player import Player
 from .main_view import MainView
@@ -75,6 +75,9 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         self._bind(
             'expand-discs', self.main_view.album_overview, 'expand_discs'
         )
+
+        self._bind('loop', self.main_view.play_queue, 'loop')
+        self._bind('loop', self.main_view.loop, 'active')
 
     def _bind(self, key, obj, property):
         self.app.settings.bind(

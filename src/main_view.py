@@ -19,16 +19,15 @@
 
 from gi.repository import Adw, Gtk, GLib, Gst, Gio, GObject
 import gi
-
-gi.require_version('Gtk', '4.0')
-gi.require_version('Gst', '1.0')
-
 from .musicdb import MusicDB, Album
 from .album_view import RecordBoxAlbumView
 from .player import Player
 
 import threading
 import time
+
+gi.require_version('Gtk', '4.0')
+gi.require_version('Gst', '1.0')
 
 
 @Gtk.Template(resource_path='/com/github/edestcroix/RecordBox/main_view.ui')
@@ -53,6 +52,7 @@ class MainView(Adw.Bin):
     skip_backward = Gtk.Template.Child()
 
     stop = Gtk.Template.Child()
+    loop = Gtk.Template.Child()
 
     playing_song = Gtk.Template.Child()
     playing_artist = Gtk.Template.Child()
