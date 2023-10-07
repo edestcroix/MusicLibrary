@@ -209,13 +209,13 @@ class MainView(Adw.Bin):
             time_str = f'{int(progress // 60):02}:{int(progress % 60):02}'
             duration_str = f'{int(duration // 60):02}:{int(duration % 60):02}'
             if progress < duration:
-                self.progress.set_range(0, duration)
-            self.start_label.set_text(time_str)
-            self.end_label.set_text(duration_str)
+                GLib.idle_add(self.progress.set_range, 0, duration)
+            GLib.idle_add(self.start_label.set_text, time_str)
+            GLib.idle_add(self.end_label.set_text, duration_str)
             GLib.idle_add(self.progress.set_value, progress)
             time.sleep(0.5)
-        self.start_label.set_text('')
-        self.end_label.set_text('')
+        GLib.idle_add(self.start_label.set_text, '')
+        GLib.idle_add(self.end_label.set_text, '')
 
     def _on_message(self, _, message):
         if message.type == Gst.MessageType.STREAM_START:
