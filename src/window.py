@@ -81,6 +81,8 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         self._bind('loop', self.main_view.play_queue, 'loop')
         self._bind('loop', self.main_view.loop, 'active')
 
+        self._bind('confirm-play', self.main_view, 'confirm_play')
+
     def _bind(self, key, obj, property):
         self.app.settings.bind(
             key, obj, property, Gio.SettingsBindFlags.DEFAULT

@@ -66,6 +66,7 @@ class MainView(Adw.Bin):
     toast = Gtk.Template.Child()
 
     _clear_queue = False
+    _confirm_play = True
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -87,6 +88,14 @@ class MainView(Adw.Bin):
     @clear_queue.setter
     def set_clear_queue(self, value):
         self._clear_queue = value
+
+    @GObject.Property(type=bool, default=True)
+    def confirm_play(self):
+        return self._confirm_play
+
+    @confirm_play.setter
+    def set_confirm_play(self, value):
+        self._confirm_play = value
 
     def set_breakpoint(self, _, breakpoint_num):
         self.album_overview.set_breakpoint(None)
@@ -130,11 +139,48 @@ class MainView(Adw.Bin):
         self.player.connect('state-changed', self._on_player_state_changed)
 
     def _on_play_clicked(self, _):
-        if album := self.album_overview.current_album:
-            self.play_queue.clear()
+        if not (album := self.album_overview.current_album):
+            return
+        if self.player.state == 'stopped' or not self.confirm_play:
+            self._play_album(album)
+        else:
+            self._confirm_album_play(album)
+
+    def _confirm_album_play(self, album):
+        dialog = Adw.MessageDialog(
+            heading='Album(s) Already in Queue',
+            # body_use_markup=True,
+            body=f'The play queue is not empty, playing "{album.name.strip()}" will clear it.',
+            transient_for=Gio.Application.get_default().props.active_window,
+        )
+        self.cancellable = Gio.Cancellable()
+
+        # dialog.set_body_use_markup(True)
+        dialog.add_response('cancel', 'Cancel')
+        dialog.set_default_response('cancel')
+        dialog.add_response('append', 'Append to Queue')
+        dialog.add_response('accept', 'Clear Queue and Play')
+        dialog.set_response_appearance(
+            'accept', Adw.ResponseAppearance.DESTRUCTIVE
+        )
+        dialog.set_response_appearance(
+            'append', Adw.ResponseAppearance.SUGGESTED
+        )
+        dialog.choose(self.cancellable, self._on_dialog_response, album)
+
+    def _on_dialog_response(self, dialog, response, album):
+        result = dialog.choose_finish(response)
+        if result == 'accept':
+            self._play_album(album)
+        elif result == 'append':
             self.play_queue.add_album(album)
-            self.player.play()
-            self._start_monitor_thread()
+            self.send_toast('Queue Updated')
+
+    def _play_album(self, album):
+        self.play_queue.clear()
+        self.play_queue.add_album(album)
+        self.player.play()
+        self._start_monitor_thread()
 
     def _on_queue_add_clicked(self, _):
         if album := self.album_overview.current_album:

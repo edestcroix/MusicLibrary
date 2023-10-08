@@ -13,6 +13,7 @@ class RecordBoxPreferencesWindow(Adw.PreferencesWindow):
     expand_discs = Gtk.Template.Child()
     artist_sort = Gtk.Template.Child()
     album_sort = Gtk.Template.Child()
+    confirm_play = Gtk.Template.Child()
 
     def bind_settings(self, settings: Gio.Settings):
         self.settings = settings
@@ -26,6 +27,8 @@ class RecordBoxPreferencesWindow(Adw.PreferencesWindow):
         self._bind('artist-sort', self.artist_sort, 'selected')
 
         self._bind('album-sort', self.album_sort, 'selected')
+
+        self._bind('confirm-play', self.confirm_play, 'active')
 
     def _bind(self, key, obj, prop):
         self.settings.bind(key, obj, prop, Gio.SettingsBindFlags.DEFAULT)

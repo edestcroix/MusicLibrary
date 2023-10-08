@@ -8,7 +8,13 @@
         Control if playback should restart at beginning
       </description>
     </key>
-
+    <key name="confirm-play" type="b">
+      <default>true</default>
+      <summary>Confirm play</summary>
+      <description>
+        Control if play should be confirmed
+      </description>
+    </key>
     <key name="clear-queue" type="b">
       <default>true</default>
       <summary>Control queue clear</summary>
