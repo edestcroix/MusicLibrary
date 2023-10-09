@@ -226,6 +226,7 @@ class PlayQueueTrackRow(Adw.ActionRow):
         super().__init__()
 
         self.set_title(GLib.markup_escape_text(track.title))
+        self.set_subtitle(track.length_str())
         self.remove_button = Gtk.Button()
         self.remove_button.get_style_context().add_class('flat')
         self.remove_button.set_icon_name('list-remove-symbolic')

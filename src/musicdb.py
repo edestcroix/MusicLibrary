@@ -80,6 +80,9 @@ class Track:
     def track_num(self):
         return int(re.sub(r'/.*', '', self.track)) if self.track else 0
 
+    def length_str(self):
+        return f'{int(self.length // 60):02}:{int(self.length % 60):02}'
+
 
 class MusicDB:
     def __init__(self):
