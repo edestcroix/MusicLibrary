@@ -253,9 +253,11 @@ class MainView(Adw.Bin):
                 self.playing_artist.set_markup(
                     f'<span size="small">{GLib.markup_escape_text(current_track.album.artist)}</span>'
                 )
+                self.end_label.set_text(current_track.length_str())
             else:
                 self.playing_song.set_text('')
                 self.playing_artist.set_text('')
+                self.end_label.set_text('0:00')
 
         if message.type == Gst.MessageType.EOS:
             self._set_controls_stopped()
