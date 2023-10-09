@@ -79,9 +79,7 @@ class RecordBoxAlbumView(Adw.Bin):
                     expanded=self.expand_discs,
                 )
                 self.track_list.append(disc_row)
-            row = self._create_row(
-                track,
-                icon_name='audio-x-generic-symbolic',
+            row = self._create_row(track)
             )
             if disc_row:
                 disc_row.add_row(row)
@@ -91,11 +89,8 @@ class RecordBoxAlbumView(Adw.Bin):
     def _track_sort_func(self, row1, row2):
         return row1.sort_key() > row2.sort_key()
 
-    def _create_row(self, track, icon_name, parent_row=None):
-        row = TrackRow(
-            track=track,
-            icon_name=icon_name,
-        )
+    def _create_row(self, track, parent_row=None):
+        row = TrackRow(track=track)
         row.set_title_lines(1)
         if parent_row:
             row.get_style_context().add_class('property')
@@ -108,12 +103,13 @@ class TrackRow(Adw.ActionRow):
     def __init__(self, track, **kwargs):
         super().__init__(**kwargs)
         self.track = track
-        self.set_title_lines(1)
         track_num = track.track_num()
-        self.set_title(
-            GLib.markup_escape_text(f'{track_num:0>2} - {track.title}')
+        self.set_title_lines(1)
+        self.set_title(GLib.markup_escape_text(track.title))
+        self.set_subtitle(
+            GLib.markup_escape_text(f'{track_num:0>2} - {track.length_str()}')
         )
-        self.set_subtitle(track.length_str())
+        self.set_tooltip_text(track.title)
 
     def sort_key(self):
         return (self.track.disc_num(), self.track.track_num())
