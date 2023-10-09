@@ -22,6 +22,7 @@ import gi
 from .musicdb import MusicDB, Album
 from .album_view import RecordBoxAlbumView
 from .player import Player
+from .monitor import ProgressMonitor
 
 import threading
 import time
@@ -71,6 +72,9 @@ class MainView(Adw.Bin):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.player = Player(self.play_queue)
+        self.monitor = ProgressMonitor(
+            self.player, self.progress, self.start_label, self.end_label
+        )
         self.monitor_thread_id = 0
         self._setup_actions()
         self._set_controls_stopped()
@@ -133,7 +137,7 @@ class MainView(Adw.Bin):
         self.skip_backward.connect('clicked', self._skip_backward)
         self.stop.connect('clicked', self._on_stop_clicked)
 
-        self.progress.connect('change-value', self._on_seek)
+        self.progress.connect('change-value', self.monitor.seek_event)
 
         self.player.bus.connect('message', self._on_message)
         self.player.connect('state-changed', self._on_player_state_changed)
@@ -180,7 +184,7 @@ class MainView(Adw.Bin):
         self.play_queue.clear()
         self.play_queue.add_album(album)
         self.player.play()
-        self._start_monitor_thread()
+        self.monitor.start_thread()
 
     def _on_queue_add_clicked(self, _):
         if album := self.album_overview.current_album:
@@ -201,7 +205,7 @@ class MainView(Adw.Bin):
 
     def _on_play_pause(self, _):
         if self.player.state == 'ready' and self.play_queue.current_track:
-            self._start_monitor_thread()
+            self.monitor.start_thread()
         self.player.toggle()
 
     def _on_stop_clicked(self, _):
@@ -214,6 +218,7 @@ class MainView(Adw.Bin):
             self._set_controls_ready(playing=False)
         elif state == 'stopped':
             self._set_controls_stopped()
+            self.monitor.stop_thread()
 
     def _set_controls_stopped(self):
         self.play_pause.set_icon_name('media-playback-start-symbolic')
@@ -239,31 +244,6 @@ class MainView(Adw.Bin):
         self.queue_toggle.set_sensitive(active)
         self.return_to_album.set_sensitive(active)
 
-    def _start_monitor_thread(self):
-        self.monitor_thread_id += 1
-        progress_thread = threading.Thread(
-            target=self._monitor_progress,
-            daemon=True,
-            args=(self.monitor_thread_id,),
-        )
-        progress_thread.daemon = True
-        progress_thread.start()
-
-    def _monitor_progress(self, num):
-        while self.player.state != 'stopped' and self.monitor_thread_id == num:
-            duration = self.player.get_duration() / 1000000000
-            progress = self.player.get_progress() / 1000000000
-            time_str = f'{int(progress // 60):02}:{int(progress % 60):02}'
-            duration_str = f'{int(duration // 60):02}:{int(duration % 60):02}'
-            if progress < duration:
-                GLib.idle_add(self.progress.set_range, 0, duration)
-            GLib.idle_add(self.start_label.set_text, time_str)
-            GLib.idle_add(self.end_label.set_text, duration_str)
-            GLib.idle_add(self.progress.set_value, progress)
-            time.sleep(0.5)
-        GLib.idle_add(self.start_label.set_text, '')
-        GLib.idle_add(self.end_label.set_text, '')
-
     def _on_message(self, _, message):
         if message.type == Gst.MessageType.STREAM_START:
             if current_track := self.play_queue.get_current_track():
@@ -279,9 +259,7 @@ class MainView(Adw.Bin):
 
         if message.type == Gst.MessageType.EOS:
             self._set_controls_stopped()
-
-    def _on_seek(self, _, __, value):
-        self.player.seek(value * 1000000000)
+            self.monitor.stop_thread()
 
     def _skip_forward(self, _):
         if self.play_queue.next():
