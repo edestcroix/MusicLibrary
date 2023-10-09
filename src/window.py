@@ -20,8 +20,7 @@
 from gi.repository import Adw, Gtk, GLib, Gio
 import gi
 import threading
-from .musicrow import MusicRow
-from .library_list import RecordBoxArtistList, RecordBoxAlbumList
+from .library import RecordBoxArtistList, RecordBoxAlbumList
 from .musicdb import Album, MusicDB
 from .play_queue import PlayQueue
 from .player import Player

@@ -45,7 +45,10 @@ class Album:
         )
 
     def length_str(self):
-        return f'{int(self.length // 3600):02}:{int(self.length // 60 % 60):02}:{int(self.length % 60):02}'
+        if hours := int(self.length // 3600):
+            return f'{hours}:{int(self.length // 60 % 60):02}:{int(self.length % 60):02}'
+        else:
+            return f'{int(self.length // 60):02}:{int(self.length % 60):02}'
 
 
 @dataclass
