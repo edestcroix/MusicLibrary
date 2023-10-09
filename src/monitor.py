@@ -35,8 +35,6 @@ class ProgressMonitor:
             self._thread = None
 
     def seek_event(self, _, __, value):
-        print(value)
-        GLib.idle_add(self._scale.set_value, value)
         self._player.seek(value * TIME_DIVISOR)
 
     def _run(self):
