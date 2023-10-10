@@ -17,15 +17,13 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from copy import copy
 from gi.repository import Adw, Gtk, GLib, Gst, Gio, GObject
 import gi
 from .musicdb import MusicDB, Album
 from .album_view import RecordBoxAlbumView
 from .player import Player
 from .monitor import ProgressMonitor
-
-import threading
-import time
 
 gi.require_version('Gtk', '4.0')
 gi.require_version('Gst', '1.0')
@@ -141,6 +139,9 @@ class MainView(Adw.Bin):
 
         self.player.bus.connect('message', self._on_message)
         self.player.connect('state-changed', self._on_player_state_changed)
+
+        self.album_overview.connect('play_track', self._on_play_track)
+        self.album_overview.connect('add_track', self._on_add_track)
 
     def _on_play_clicked(self, _):
         if not (album := self.album_overview.current_album):
@@ -273,3 +274,21 @@ class MainView(Adw.Bin):
         if self.play_queue.previous():
             self.player.play()
             self.play_pause.set_icon_name('media-playback-pause-symbolic')
+
+    def _on_play_track(self, _, track):
+        self.play_queue.clear()
+        album = self._get_album_from_track(track)
+        self._play_album(album)
+
+    def _on_add_track(self, _, track):
+        album = self._get_album_from_track(track)
+        self.play_queue.add_album(album)
+        if self.play_queue.empty():
+            self.player.ready()
+        self.send_toast('Queue Updated')
+
+    def _get_album_from_track(self, track):
+        result = copy(track.album)
+        result.tracks = [track]
+        result.artists = track.artists
+        return result

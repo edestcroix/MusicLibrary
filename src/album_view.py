@@ -17,7 +17,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from gi.repository import Adw, Gtk, GLib, GObject
+from gi.repository import Adw, Gtk, GLib, GObject, Gdk
 import gi
 
 gi.require_version('Gtk', '4.0')
@@ -48,6 +48,18 @@ class RecordBoxAlbumView(Adw.Bin):
     def set_expand_discs(self, value):
         self._collapse_discs = value
 
+    @GObject.Signal(
+        arg_types=(GObject.TYPE_PYOBJECT,), return_type=GObject.TYPE_NONE
+    )
+    def play_track(self, _):
+        pass
+
+    @GObject.Signal(
+        arg_types=(GObject.TYPE_PYOBJECT,), return_type=GObject.TYPE_NONE
+    )
+    def add_track(self, _):
+        pass
+
     def set_breakpoint(self, _):
         self.album_box.set_orientation(Gtk.Orientation.VERTICAL)
 
@@ -65,36 +77,40 @@ class RecordBoxAlbumView(Adw.Bin):
         self.clear_all()
         self.update_cover(album.cover)
         self.update_tracks(album.get_tracks())
-
         self.stack.set_visible_child_name('album_view')
 
     def update_tracks(self, tracks):
         current_disc, disc_row = 0, None
         for track in tracks:
             if track.disc_num() != current_disc:
-                current_disc = track.disc_num()
-                disc_row = Adw.ExpanderRow(
-                    title=f'Disc {current_disc}',
-                    selectable=False,
-                    expanded=self.expand_discs,
-                )
-                self.track_list.append(disc_row)
-            row = self._create_row(track)
-            if disc_row:
-                disc_row.add_row(row)
-            else:
-                self.track_list.append(row)
+                disc_row = self._disc_row(current_disc := track.disc_num())
+            self._setup_row(track, disc_row)
 
-    def _track_sort_func(self, row1, row2):
-        return row1.sort_key() > row2.sort_key()
+    def _disc_row(self, current_disc):
+        disc_row = Adw.ExpanderRow(
+            title=f'Disc {current_disc}',
+            selectable=False,
+            expanded=self.expand_discs,
+        )
+        self.track_list.append(disc_row)
+        return disc_row
+
+    def _setup_row(self, track, disc_row):
+        row = self._create_row(track)
+        row.connect('play_track', lambda *_: self.emit('play_track', track))
+        row.connect('add_track', lambda *_: self.emit('add_track', track))
+        if disc_row:
+            disc_row.add_row(row)
+        else:
+            self.track_list.append(row)
 
     def _create_row(self, track, parent_row=None):
         row = TrackRow(track=track)
         row.set_title_lines(1)
+        row.set_selectable(False)
         if parent_row:
             row.get_style_context().add_class('property')
             parent_row.add_row(row)
-
         return row
 
 
@@ -109,6 +125,68 @@ class TrackRow(Adw.ActionRow):
             GLib.markup_escape_text(f'{track_num:0>2} - {track.length_str()}')
         )
         self.set_tooltip_text(track.title)
+        btn = self._create_button(
+            'view-more-symbolic', lambda _: self.popover.popup()
+        )
+        self.popover = self._create_popover(btn)
+        self.add_suffix(btn)
+
+    @GObject.Signal(
+        arg_types=(GObject.TYPE_PYOBJECT,), return_type=GObject.TYPE_NONE
+    )
+    def play_track(self, _):
+        pass
+
+    @GObject.Signal(
+        arg_types=(GObject.TYPE_PYOBJECT,), return_type=GObject.TYPE_NONE
+    )
+    def add_track(self, _):
+        pass
 
     def sort_key(self):
         return (self.track.disc_num(), self.track.track_num())
+
+    def _create_button(self, icon_name, callback, title=None, args=None):
+        if title:
+            button, content = Gtk.Button(), Adw.ButtonContent()
+            content.set_label(title)
+            content.set_icon_name(icon_name)
+            button.set_child(content)
+        else:
+            button = Gtk.Button.new_from_icon_name(icon_name)
+        button.set_css_classes(['flat'])
+        button.set_valign(Gtk.Align.CENTER)
+        if args:
+            button.connect('clicked', callback, args)
+        else:
+            button.connect('clicked', callback)
+        return button
+
+    def _create_popover(self, parent):
+        popover = Gtk.Popover.new()
+        popover.set_parent(parent)
+        popover.set_position(Gtk.PositionType.BOTTOM)
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        box.append(
+            self._create_button(
+                'media-playback-start-symbolic',
+                self._popover_selected,
+                'Play track',
+                'play_track',
+            )
+        )
+        box.append(
+            self._create_button(
+                'list-add-symbolic',
+                self._popover_selected,
+                'Add to queue',
+                'add_track',
+            )
+        )
+        popover.set_child(box)
+        popover.present()
+        return popover
+
+    def _popover_selected(self, _, action):
+        self.popover.popdown()
+        self.emit(action, self.track)
