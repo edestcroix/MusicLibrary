@@ -80,7 +80,6 @@ class RecordBoxAlbumView(Adw.Bin):
                 )
                 self.track_list.append(disc_row)
             row = self._create_row(track)
-            )
             if disc_row:
                 disc_row.add_row(row)
             else:
