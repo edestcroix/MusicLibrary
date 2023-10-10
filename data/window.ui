@@ -95,7 +95,7 @@
                           <object class="AdwHeaderBar">
                             <child type="start">
                               <object class="GtkButton" id="filter_all">
-                                <property name="icon-name">view-list-bullet-symbolic</property>
+                                <property name="icon-name">edit-select-all-symbolic</property>
                                 <property name="sensitive">false</property>
                               </object>
                             </child>
