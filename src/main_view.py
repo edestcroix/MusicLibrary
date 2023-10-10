@@ -121,19 +121,17 @@ class MainView(Adw.Bin):
         self.toast.add_toast(toast)
 
     def _setup_actions(self):
-        self.queue_add.connect('clicked', self._on_queue_add_clicked)
-        self.queue_toggle.connect('clicked', self._on_queue_toggle_clicked)
-
-        self.return_to_album.connect(
-            'clicked',
-            self._on_return_to_album_clicked,
-        )
-
         self.play.connect('clicked', self._on_play_clicked)
+        self.queue_add.connect('clicked', self._on_queue_add)
+
         self.play_pause.connect('clicked', self._on_play_pause)
         self.skip_forward.connect('clicked', self._skip_forward)
         self.skip_backward.connect('clicked', self._skip_backward)
+
         self.stop.connect('clicked', self._on_stop_clicked)
+
+        self.return_to_album.connect('clicked', self._on_return_to_album)
+        self.queue_toggle.connect('clicked', self._on_queue_toggle)
 
         self.progress.connect('change-value', self.monitor.seek_event)
 
@@ -187,19 +185,19 @@ class MainView(Adw.Bin):
         self.player.play()
         self.monitor.start_thread()
 
-    def _on_queue_add_clicked(self, _):
+    def _on_queue_add(self, _):
         if album := self.album_overview.current_album:
             self.play_queue.add_album(album)
             if self.player.state == 'stopped':
                 self.player.ready()
             self.send_toast('Queue Updated')
 
-    def _on_queue_toggle_clicked(self, _):
+    def _on_queue_toggle(self, _):
         self.queue_panel_split_view.set_show_sidebar(
             not self.queue_panel_split_view.get_show_sidebar()
         )
 
-    def _on_return_to_album_clicked(self, _):
+    def _on_return_to_album(self, _):
         if self.play_queue.current_track:
             current_album = self.play_queue.get_current_track().album
             self.emit('album_changed', current_album)
