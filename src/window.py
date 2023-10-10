@@ -178,8 +178,8 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         self.artist_list.unselect_all()
 
     def _goto_album(self, _, album):
-        self.album_list.filter_on_key(album.artist)
-        self.album_list_page.set_title(album.artist)
+        self.album_list.filter_on_key(album.artists[0])
+        self.album_list_page.set_title(album.artists[0])
         self.main_page.set_title(album.name)
         self.inner_split.set_show_content('album_view')
 
@@ -187,7 +187,7 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         self.artist_list.unselect_all()
 
         self._select_row_with_title(self.album_list, album.name)
-        self._select_row_with_title(self.artist_list, album.artist)
+        self._select_row_with_title(self.artist_list, album.artists[0])
 
     def _select_row_with_title(self, slist, title):
         i = 0

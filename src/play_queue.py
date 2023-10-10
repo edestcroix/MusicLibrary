@@ -62,7 +62,9 @@ class PlayQueue(Gtk.ListBox):
         return self.current_track is not None
 
     def add_album(self, album):
-        album_row = PlayQueueAlbumRow(album.name, album.artist, album.cover)
+        album_row = PlayQueueAlbumRow(
+            album.name, ', '.join(album.artists), album.cover
+        )
         album_row.set_tracks(album.tracks)
         album_row.remove_button.connect(
             'clicked',

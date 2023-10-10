@@ -250,8 +250,9 @@ class MainView(Adw.Bin):
                 self.playing_song.set_markup(
                     f'<span size="large">{GLib.markup_escape_text(current_track.title)}</span>'
                 )
+                artists = map(GLib.markup_escape_text, current_track.artists)
                 self.playing_artist.set_markup(
-                    f'<span size="small">{GLib.markup_escape_text(current_track.album.artist)}</span>'
+                    f'<span size="small">{", ".join(artists)}</span>'
                 )
                 self.end_label.set_text(current_track.length_str())
             else:

@@ -100,7 +100,7 @@ class RecordBoxAlbumList(Gtk.ListBox):
         row.set_title(album.name)
         row.set_title_lines(1)
 
-        row.set_filter_key(album.artist)
+        row.set_filter_key(album.artists)
         if cover := album.cover:
             image = Gtk.Image.new_from_file(cover)
             image.set_pixel_size(64)
@@ -108,7 +108,7 @@ class RecordBoxAlbumList(Gtk.ListBox):
         super().append(row)
 
     def filter_on_key(self, key):
-        self.set_filter_func(lambda r: r.filter_key == key)
+        self.set_filter_func(lambda r: key in r.filter_key)
 
     def filter_all(self):
         self.set_filter_func(lambda _: True)

@@ -17,8 +17,8 @@ class Album:
     num_tracks: int
     length: int
     date: str
-    artist: str
     cover: str
+    artists: str
 
     def get_tracks(self):
         return self.tracks
@@ -35,15 +35,6 @@ class Album:
         tracknum = int(t.track.split('/')[0])
         return discnum * 100 + tracknum
 
-    def to_row(self):
-        return (
-            self.name,
-            f'{self.length_str()} - {self.num_tracks} tracks',
-            self.artist,
-            self.cover,
-            str(self.date),
-        )
-
     def length_str(self):
         if hours := int(self.length // 3600):
             return f'{hours}:{int(self.length // 60 % 60):02}:{int(self.length % 60):02}'
@@ -56,12 +47,6 @@ class Artist:
     name: str
     num_albums: int
 
-    def to_row(self):
-        return (
-            self.name,
-            f'{self.num_albums} albums',
-        )
-
 
 @dataclass
 class Track:
@@ -71,6 +56,7 @@ class Track:
     length: int
     path: str
     album: str
+    artists: list[str]
 
     def to_row(self):
         return (self.track, self.title, self.length, self.path)
@@ -102,8 +88,13 @@ class MusicDB:
         self.c = self.conn.cursor()
 
         self.c.execute(
+            """CREATE TABLE IF NOT EXISTS artists
+                (name text, album text, track_title text, UNIQUE(name, album, track_title) ON CONFLICT IGNORE)"""
+        )
+
+        self.c.execute(
             """CREATE TABLE IF NOT EXISTS albums
-                (name text, artist text, year date, cover text, UNIQUE(name, artist) ON CONFLICT REPLACE)
+                (name text, year date, cover text, UNIQUE(name, year) ON CONFLICT REPLACE)
                 """
         )
         self.c.execute(
@@ -115,29 +106,51 @@ class MusicDB:
 
     def get_artists(self):
         self.c.execute(
-            'SELECT DISTINCT artist, COUNT(DISTINCT name) FROM albums GROUP BY artist'
+            'SELECT name, COUNT(DISTINCT album) FROM artists GROUP BY name ORDER BY name'
         )
-        return [Artist(*a) for a in self.c.fetchall()]
+        for artist in self.c.fetchall():
+            yield Artist(*artist)
 
     def get_albums(self):
         self.c.execute(
-            'SELECT DISTINCT name, COUNT(title), SUM(length), year, artist, cover FROM albums JOIN tracks ON albums.name = tracks.album GROUP BY name ORDER BY year',
+            'SELECT DISTINCT name, COUNT(title), SUM(length), year, cover FROM albums JOIN tracks ON albums.name = tracks.album GROUP BY name ORDER BY year',
         )
-        return [Album(*a) for a in self.c.fetchall()]
+        for album in self.c.fetchall():
+            self.c.execute(
+                'SELECT DISTINCT name FROM artists WHERE album = ? ORDER BY name',
+                (album[0],),
+            )
+            artists = [a[0] for a in self.c.fetchall()]
+            yield Album(*(album + (artists,)))
 
     def get_album(self, album):
         self.c.execute(
-            'SELECT name, COUNT(title), SUM(length), year, artist, cover FROM albums JOIN tracks ON albums.name = tracks.album WHERE name = ? GROUP BY name',
+            'SELECT name, COUNT(title), SUM(length), year, cover FROM albums JOIN tracks ON albums.name = tracks.album WHERE name = ? GROUP BY name',
             (album,),
         )
-        return Album(*self.c.fetchone())
+        result = self.c.fetchone()
+        self.c.execute(
+            'SELECT DISTINCT name FROM artists WHERE album = ? ORDER BY name',
+            (album,),
+        )
+        artists = [a[0] for a in self.c.fetchall()]
+        return Album(*(result + (artists,)))
 
     def get_tracks(self, album):
         self.c.execute(
             'SELECT track, discnumber, title, length, path FROM tracks WHERE album = ? ORDER BY discnumber, track',
             (album.name,),
         )
-        return [Track(*(t + (album,))) for t in self.c.fetchall()]
+        tracks = []
+        for track in self.c.fetchall():
+            self.c.execute(
+                'SELECT name FROM artists WHERE track_title = ? AND album = ?',
+                (track[2], album.name),
+            )
+            artists = [a[0] for a in self.c.fetchall()]
+            tracks.append(Track(*(track + (album, artists))))
+
+        return tracks
 
     def sync_library(self, path='~/Music'):
         self._remove_missing(self._find_missing())
@@ -239,10 +252,14 @@ class MusicDB:
 
     def _insert_to_db(self, to_insert, cover):
         for (entry, audio) in to_insert:
+            for artist in audio['artist']:
+                self._insert(
+                    'artists', artist, audio['album'][0], audio['title'][0]
+                )
             self._insert(
                 'albums',
                 self._try_key(audio, 'album'),
-                self._try_key(audio, 'artist'),
+                # self._try_key(audio, 'artist'),
                 self._try_key(audio, 'date') or self._try_key(audio, 'year'),
                 cover,
             )
