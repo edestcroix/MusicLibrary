@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <requires lib="gtk" version="4.0" />
+  <requires lib="Adw" version="1.0" />
+  <template class="RecordBoxPlayerControls" parent="GtkBox">
+    <property name="homogeneous">false</property>
+    <property name="orientation">vertical</property>
+    <property name="spacing">0</property>
+    <child>
+      <object class="GtkBox">
+        <style>
+          <class name="toolbar" />
+        </style>
+        <child>
+          <object class="GtkBox">
+            <property name="orientation">horizontal</property>
+            <property name="spacing">0</property>
+            <style>
+              <class name="linked" />
+            </style>
+            <child>
+              <object class="GtkButton" id="skip_backward">
+                <property name="icon-name">media-skip-backward-symbolic</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkButton" id="play_pause">
+                <property name="icon-name">media-playback-start-symbolic</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkButton" id="skip_forward">
+                <property name="icon-name">media-skip-forward-symbolic</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkBox">
+            <property name="orientation">vertical</property>
+            <property name="homogeneous">false</property>
+            <child>
+              <object class="GtkLabel" id="playing_song">
+                <property name="ellipsize">end</property>
+                <property name="hexpand">true</property>
+                <attributes>
+                  <attribute name="weight" value="PANGO_WEIGHT_BOLD" />
+                </attributes>
+              </object>
+            </child>
+            <child>
+              <object class="GtkLabel" id="playing_artist">
+                <property name="ellipsize">end</property>
+                <property name="hexpand">true</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkBox">
+            <property name="orientation">horizontal</property>
+            <property name="spacing">0</property>
+            <style>
+              <class name="linked" />
+            </style>
+            <child>
+              <object class="GtkToggleButton" id="loop">
+                <property name="icon-name">media-playlist-repeat-symbolic</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkButton" id="stop">
+                <property name="icon-name">media-playback-stop-symbolic</property>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+    <child>
+      <object class="GtkBox">
+        <property name="orientation">horizontal</property>
+        <property name="homogeneous">false</property>
+        <style>
+          <class name="progress-box" />
+        </style>
+        <child>
+          <object class="GtkLabel" id="start_label" />
+        </child>
+        <child>
+          <object class="GtkScale" id="progress">
+            <property name="hexpand">true</property>
+            <style>
+              <class name="progress-bar" />
+            </style>
+          </object>
+        </child>
+        <child>
+          <object class="GtkLabel" id="end_label" />
+        </child>
+      </object>
+    </child>
+  </template>
+</interface>

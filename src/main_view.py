@@ -22,6 +22,7 @@ from gi.repository import Adw, Gtk, GLib, Gst, Gio, GObject
 import gi
 from .musicdb import MusicDB, Album
 from .album_view import RecordBoxAlbumView
+from .player_controls import RecordBoxPlayerControls
 from .player import Player
 from .monitor import ProgressMonitor
 
@@ -37,6 +38,7 @@ class MainView(Adw.Bin):
 
     toolbar_view = Gtk.Template.Child()
 
+    play = Gtk.Template.Child()
     queue_toggle = Gtk.Template.Child()
     queue_panel_split_view = Gtk.Template.Child()
     queue_add = Gtk.Template.Child()
@@ -47,20 +49,6 @@ class MainView(Adw.Bin):
     lists_toggle = Gtk.Template.Child()
 
     player_controls = Gtk.Template.Child()
-    play = Gtk.Template.Child()
-    play_pause = Gtk.Template.Child()
-    skip_forward = Gtk.Template.Child()
-    skip_backward = Gtk.Template.Child()
-
-    stop = Gtk.Template.Child()
-    loop = Gtk.Template.Child()
-
-    playing_song = Gtk.Template.Child()
-    playing_artist = Gtk.Template.Child()
-
-    progress = Gtk.Template.Child()
-    start_label = Gtk.Template.Child()
-    end_label = Gtk.Template.Child()
 
     toast = Gtk.Template.Child()
 
@@ -70,10 +58,7 @@ class MainView(Adw.Bin):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.player = Player(self.play_queue)
-        self.monitor = ProgressMonitor(
-            self.player, self.progress, self.start_label, self.end_label
-        )
-        self.monitor_thread_id = 0
+        self.player_controls.attach_to_player(self.player)
         self._setup_actions()
         self._set_controls_stopped()
 
@@ -124,16 +109,15 @@ class MainView(Adw.Bin):
         self.play.connect('clicked', self._on_play_clicked)
         self.queue_add.connect('clicked', self._on_queue_add)
 
-        self.play_pause.connect('clicked', self._on_play_pause)
-        self.skip_forward.connect('clicked', self._skip_forward)
-        self.skip_backward.connect('clicked', self._skip_backward)
-
-        self.stop.connect('clicked', self._on_stop_clicked)
+        self.player_controls.connect(
+            'play_toggle', lambda _: self.player.toggle()
+        )
+        self.player_controls.connect('play_skip_forward', self._skip_forward)
+        self.player_controls.connect('play_skip_backward', self._skip_backward)
+        self.player_controls.connect('play_stop', lambda _: self.player.stop())
 
         self.return_to_album.connect('clicked', self._on_return_to_album)
         self.queue_toggle.connect('clicked', self._on_queue_toggle)
-
-        self.progress.connect('change-value', self.monitor.seek_event)
 
         self.player.bus.connect('message', self._on_message)
         self.player.connect('state-changed', self._on_player_state_changed)
@@ -182,7 +166,6 @@ class MainView(Adw.Bin):
         self.play_queue.clear()
         self.play_queue.add_album(album)
         self.player.play()
-        self.monitor.start_thread()
 
     def _on_queue_add(self, _):
         if album := self.album_overview.current_album:
@@ -201,26 +184,15 @@ class MainView(Adw.Bin):
             current_album = self.play_queue.get_current_track().album
             self.emit('album_changed', current_album)
 
-    def _on_play_pause(self, _):
-        if self.player.state == 'ready' and self.play_queue.current_track:
-            self.monitor.start_thread()
-        self.player.toggle()
-
-    def _on_stop_clicked(self, _):
-        self.player.stop()
-
     def _on_player_state_changed(self, _, state):
         if state == 'playing':
-            self._set_controls_ready(playing=True)
+            self._set_controls_active(True, playing=True)
         elif state in ['paused', 'ready']:
-            self._set_controls_ready(playing=False)
+            self._set_controls_active(True, playing=False)
         elif state == 'stopped':
             self._set_controls_stopped()
-            self.monitor.stop_thread()
 
     def _set_controls_stopped(self):
-        self.play_pause.set_icon_name('media-playback-start-symbolic')
-        self.progress.set_sensitive(False)
         if self.clear_queue:
             self._set_controls_active(False)
             self.play_queue.clear()
@@ -228,49 +200,29 @@ class MainView(Adw.Bin):
         elif not self.play_queue.empty():
             self.play_queue.restart()
             self.player.ready()
+        self.player_controls.deactivate()
 
-    def _set_controls_ready(self, playing=False):
-        self._set_controls_active(True)
-        if playing:
-            self.progress.set_sensitive(True)
-            self.play_pause.set_icon_name('media-playback-pause-symbolic')
-        else:
-            self.play_pause.set_icon_name('media-playback-start-symbolic')
-
-    def _set_controls_active(self, active):
+    def _set_controls_active(self, active, playing=False):
         self.toolbar_view.set_reveal_bottom_bars(active)
         self.queue_toggle.set_sensitive(active)
         self.return_to_album.set_sensitive(active)
+        self.player_controls.activate(active and playing)
 
     def _on_message(self, _, message):
         if message.type == Gst.MessageType.STREAM_START:
-            if current_track := self.play_queue.get_current_track():
-                self.playing_song.set_markup(
-                    f'<span size="large">{GLib.markup_escape_text(current_track.title)}</span>'
-                )
-                artists = map(GLib.markup_escape_text, current_track.artists)
-                self.playing_artist.set_markup(
-                    f'<span size="small">{", ".join(artists)}</span>'
-                )
-                self.end_label.set_text(current_track.length_str())
-            else:
-                self.playing_song.set_text('')
-                self.playing_artist.set_text('')
-                self.end_label.set_text('0:00')
-
-        if message.type == Gst.MessageType.EOS:
+            self.player_controls.set_current_track(
+                self.play_queue.get_current_track()
+            )
+        elif message.type == Gst.MessageType.EOS:
             self._set_controls_stopped()
-            self.monitor.stop_thread()
 
     def _skip_forward(self, _):
         if self.play_queue.next():
             self.player.play()
-            self.play_pause.set_icon_name('media-playback-pause-symbolic')
 
     def _skip_backward(self, _):
         if self.play_queue.previous():
             self.player.play()
-            self.play_pause.set_icon_name('media-playback-pause-symbolic')
 
     def _on_play_track(self, _, track):
         album = self._get_album_from_track(track)
