@@ -153,8 +153,8 @@ class MusicDB:
         return tracks
 
     def sync_library(self, path='~/Music'):
-        self._remove_missing(self._find_missing())
         self._parse_library(path)
+        self._remove_missing(self._find_missing())
 
     def _parse_library(self, path='~/Music'):
 
@@ -302,5 +302,8 @@ class MusicDB:
 
         self.c.execute(
             'DELETE FROM albums WHERE name NOT IN (SELECT DISTINCT album FROM tracks)'
+        )
+        self.c.execute(
+            'DELETE FROM artists WHERE album NOT IN (SELECT DISTINCT album FROM tracks)'
         )
         self.conn.commit()
