@@ -147,13 +147,12 @@ class MainView(Adw.Bin):
         if self.player.state == 'stopped' or not self.confirm_play:
             self._play_album(album)
         else:
-            self._confirm_album_play(album)
+            self._confirm_album_play(album, album.name)
 
-    def _confirm_album_play(self, album):
+    def _confirm_album_play(self, album, name):
         dialog = Adw.MessageDialog(
-            heading='Album(s) Already in Queue',
-            # body_use_markup=True,
-            body=f'The play queue is not empty, playing "{album.name.strip()}" will clear it.',
+            heading='Queue Not Empty',
+            body=f'The play queue is not empty, playing "{name}" will clear it.',
             transient_for=Gio.Application.get_default().props.active_window,
         )
         self.cancellable = Gio.Cancellable()
@@ -161,7 +160,7 @@ class MainView(Adw.Bin):
         # dialog.set_body_use_markup(True)
         dialog.add_response('cancel', 'Cancel')
         dialog.set_default_response('cancel')
-        dialog.add_response('append', 'Append to Queue')
+        dialog.add_response('append', 'Add at End')
         dialog.add_response('accept', 'Clear Queue and Play')
         dialog.set_response_appearance(
             'accept', Adw.ResponseAppearance.DESTRUCTIVE
@@ -274,9 +273,11 @@ class MainView(Adw.Bin):
             self.play_pause.set_icon_name('media-playback-pause-symbolic')
 
     def _on_play_track(self, _, track):
-        self.play_queue.clear()
         album = self._get_album_from_track(track)
-        self._play_album(album)
+        if self.player.state == 'stopped' or not self.confirm_play:
+            self._play_album(album)
+        else:
+            self._confirm_album_play(album, track.title)
 
     def _on_add_track(self, _, track):
         album = self._get_album_from_track(track)
