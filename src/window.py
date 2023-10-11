@@ -182,6 +182,7 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         self.album_list_page.set_title(album.artists[0])
         self.main_page.set_title(album.name)
         self.inner_split.set_show_content('album_view')
+        self.album_return.set_sensitive(True)
 
         self.album_list.unselect_all()
         self.artist_list.unselect_all()
