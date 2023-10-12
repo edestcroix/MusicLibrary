@@ -72,19 +72,19 @@ class RecordBoxAlbumView(Adw.Bin):
     def clear_all(self):
         self.track_list.remove_all()
 
-    def update_album(self, album: Album):
+    def update_album(self, album: Album, current_artist=None):
         self.current_album = album
         self.clear_all()
         self.update_cover(album.cover)
-        self.update_tracks(album.get_tracks())
+        self.update_tracks(album.get_tracks(), current_artist)
         self.stack.set_visible_child_name('album_view')
 
-    def update_tracks(self, tracks):
+    def update_tracks(self, tracks, current_artist):
         current_disc, disc_row = 0, None
         for track in tracks:
             if track.disc_num() != current_disc:
                 disc_row = self._disc_row(current_disc := track.disc_num())
-            self._setup_row(track, disc_row)
+            self._setup_row(track, disc_row, current_artist)
 
     def _disc_row(self, current_disc):
         disc_row = Adw.ExpanderRow(
@@ -95,8 +95,8 @@ class RecordBoxAlbumView(Adw.Bin):
         self.track_list.append(disc_row)
         return disc_row
 
-    def _setup_row(self, track, disc_row):
-        row = self._create_row(track)
+    def _setup_row(self, track, disc_row, current_artist):
+        row = self._create_row(track, current_artist)
         row.connect('play_track', lambda *_: self.emit('play_track', track))
         row.connect('add_track', lambda *_: self.emit('add_track', track))
         if disc_row:
@@ -104,8 +104,8 @@ class RecordBoxAlbumView(Adw.Bin):
         else:
             self.track_list.append(row)
 
-    def _create_row(self, track, parent_row=None):
-        row = TrackRow(track=track)
+    def _create_row(self, track, current_artist, parent_row=None):
+        row = TrackRow(track=track, current_artist=current_artist)
         row.set_title_lines(1)
         row.set_selectable(False)
         if parent_row:
@@ -115,14 +115,23 @@ class RecordBoxAlbumView(Adw.Bin):
 
 
 class TrackRow(Adw.ActionRow):
-    def __init__(self, track, **kwargs):
+    def __init__(self, track, current_artist, **kwargs):
         super().__init__(**kwargs)
         self.track = track
         track_num = track.track_num()
         self.set_title_lines(1)
         self.set_title(GLib.markup_escape_text(track.title))
+
+        if track.albumartist != current_artist:
+            artists = f"\n{', '.join([track.albumartist] + track.artists)}"
+        elif artists := track.artists:
+            artists = f"\n{', '.join(artists)}"
+        else:
+            artists = ''
         self.set_subtitle(
-            GLib.markup_escape_text(f'{track_num:0>2} - {track.length_str()}')
+            GLib.markup_escape_text(
+                f'{track_num:0>2} - {track.length_str()}{artists}'
+            )
         )
         self.set_tooltip_text(track.title)
         btn = self._create_button(

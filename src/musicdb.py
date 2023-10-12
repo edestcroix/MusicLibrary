@@ -63,6 +63,9 @@ class Track:
     path: str
     album: str
     artists: list[str]
+    # albumartist is the primary artist for the album. It is set to the value of the albumartist tag
+    # if it exists, otherwise it is set to the first artist tag value found. It should never be empty.
+    albumartist: str
 
     def to_row(self):
         return (self.track, self.title, self.length, self.path)
@@ -95,7 +98,7 @@ class MusicDB:
 
         self.c.execute(
             """CREATE TABLE IF NOT EXISTS artists
-                (name text, sort text, album text, track_title text, UNIQUE(name, album, track_title) ON CONFLICT REPLACE)"""
+                (name text, sort text, album text, track_title text, albumartist bool, UNIQUE(name, album, track_title) ON CONFLICT REPLACE)"""
         )
 
         self.c.execute(
@@ -110,9 +113,10 @@ class MusicDB:
                 """
         )
 
-    def get_artists(self):
+    def get_artists(self, only_albumartists=False):
+        albumartist = ' WHERE albumartist = true' if only_albumartists else ''
         self.c.execute(
-            'SELECT name, sort, COUNT(DISTINCT album) FROM artists GROUP BY name ORDER BY name'
+            f'SELECT name, sort, COUNT(DISTINCT album) FROM artists{albumartist} GROUP BY name ORDER BY name'
         )
         for artist in self.c.fetchall():
             yield Artist(*artist)
@@ -121,6 +125,9 @@ class MusicDB:
         self.c.execute(
             'SELECT DISTINCT name, COUNT(title), SUM(length), year, cover FROM albums JOIN tracks ON albums.name = tracks.album GROUP BY name ORDER BY year',
         )
+        # Albums do not need to consider albumartist/artists, as they are only used to display the album list.
+        # The library needs to have albums returned with all artists in the album's 'artist' field, because selecting
+        # an artist will filter through the albums that have that artist in the 'artist' field.
         for album in self.c.fetchall():
             self.c.execute(
                 'SELECT DISTINCT name FROM artists WHERE album = ? ORDER BY name',
@@ -148,13 +155,21 @@ class MusicDB:
             (album.name,),
         )
         tracks = []
+        # Tracks need to distinguish between artists and albumartists, so that additional artists can be displayed
+        # in the track list. When fetching tracks from the DB the albumartist is therefore stored separately from the artists.
         for track in self.c.fetchall():
             self.c.execute(
-                'SELECT name FROM artists WHERE track_title = ? AND album = ?',
+                'SELECT name FROM artists WHERE track_title = ? AND album = ? AND albumartist = false',
                 (track[2], album.name),
             )
             artists = [a[0] for a in self.c.fetchall()]
-            tracks.append(Track(*(track + (album, artists))))
+            self.c.execute(
+                'SELECT name FROM artists WHERE track_title = ? AND album = ? AND albumartist = true',
+                (track[2], album.name),
+            )
+            albumartist = self.c.fetchone()
+            albumartist = albumartist[0] if albumartist else None
+            tracks.append(Track(*(track + (album, artists, albumartist))))
 
         return tracks
 
@@ -258,6 +273,9 @@ class MusicDB:
 
     def _insert_to_db(self, to_insert, cover):
         for (entry, audio) in to_insert:
+            albumartist = self._try_key(audio, 'albumartist') or self._try_key(
+                audio, 'artist'
+            )
             for artist in audio['artist']:
                 self._insert(
                     'artists',
@@ -265,6 +283,16 @@ class MusicDB:
                     self._try_key(audio, 'artistsort'),
                     audio['album'][0],
                     audio['title'][0],
+                    artist == albumartist,
+                )
+            if albumartist not in audio['artist']:
+                self._insert(
+                    'artists',
+                    albumartist,
+                    self._try_key(audio, 'artistsort'),
+                    audio['album'][0],
+                    audio['title'][0],
+                    True,
                 )
             self._insert(
                 'albums',

@@ -154,12 +154,13 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         self.main_page.set_title(album.name)
         tracks = self.db.get_tracks(album)
         album.set_tracks(tracks)
-        self.main_view.update_album(album)
+        self.main_view.update_album(album, self.selected_artist)
         self.outer_split.set_show_sidebar(
             self.outer_split.get_collapsed() == False
         )
 
     def select_artist(self, _, clicked_row):
+        self.selected_artist = clicked_row.raw_title
         if clicked_row:
             self.album_list.filter_on_key(clicked_row.raw_title)
             self.album_list_page.set_title(clicked_row.raw_title)
