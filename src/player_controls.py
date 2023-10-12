@@ -63,7 +63,6 @@ class RecordBoxPlayerControls(Gtk.Box):
         self._monitor.stop_thread()
         self.play_pause.set_icon_name('media-playback-start-symbolic')
         self.progress.set_sensitive(False)
-        self._playing = False
         self.progress.set_value(0)
 
     def set_current_track(self, current_track):

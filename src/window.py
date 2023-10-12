@@ -56,7 +56,7 @@ class RecordBoxWindow(Adw.ApplicationWindow):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.app = kwargs['application']
+        self.app = kwargs.get('application', None)
 
         self.db = MusicDB()
 
@@ -138,7 +138,6 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         GLib.MainContext.default().invoke_full(1, self.refresh_lists)
 
     def refresh_lists(self):
-        # Clear the lists
         self.artist_list.remove_all()
         self.album_list.remove_all()
 
@@ -167,10 +166,6 @@ class RecordBoxWindow(Adw.ApplicationWindow):
             self.inner_split.set_show_content('album_view')
             self.filter_all.set_sensitive(True)
 
-    def _connect_breakpoint(self, breakpoint, num):
-        breakpoint.connect('apply', self.main_view.set_breakpoint, num)
-        breakpoint.connect('unapply', self.main_view.unset_breakpoint, num)
-
     def _show_all_albums(self, _):
         self.album_list.filter_all()
         self.filter_all.set_sensitive(False)
@@ -190,11 +185,15 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         self._select_row_with_title(self.album_list, album.name)
         self._select_row_with_title(self.artist_list, album.artists[0])
 
-    def _select_row_with_title(self, slist, title):
+    def _select_row_with_title(self, row_list, title):
         i = 0
-        cur = slist.get_row_at_index(i)
+        cur = row_list.get_row_at_index(i)
         while cur and cur.raw_title != title:
             i += 1
-            cur = slist.get_row_at_index(i)
+            cur = row_list.get_row_at_index(i)
         if cur:
             self.artist_list.select_row(cur)
+
+    def _connect_breakpoint(self, breakpoint, num):
+        breakpoint.connect('apply', self.main_view.set_breakpoint, num)
+        breakpoint.connect('unapply', self.main_view.unset_breakpoint, num)
