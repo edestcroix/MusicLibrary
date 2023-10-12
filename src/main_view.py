@@ -94,7 +94,7 @@ class MainView(Adw.Bin):
         if breakpoint_num > 2:
             self.lists_toggle.set_visible(False)
 
-    def update_album(self, album: Album, current_artist):
+    def update_album(self, album: Album, current_artist=None):
         self.album_overview.update_album(album, current_artist)
         self.play.set_sensitive(True)
         self.queue_add.set_sensitive(True)

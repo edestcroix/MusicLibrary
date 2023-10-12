@@ -122,7 +122,7 @@ class TrackRow(Adw.ActionRow):
         self.set_title_lines(1)
         self.set_title(GLib.markup_escape_text(track.title))
 
-        if track.albumartist != current_artist:
+        if current_artist and track.albumartist != current_artist:
             artists = f"\n{', '.join([track.albumartist] + track.artists)}"
         elif artists := track.artists:
             artists = f"\n{', '.join(artists)}"

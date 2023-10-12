@@ -76,6 +76,8 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         status.set_icon_name('emblem-synchronizing-symbolic')
         self.album_list.set_placeholder(status)
 
+        self.selected_artist = None
+
         self._setup_actions()
         self._bind_settings()
 
