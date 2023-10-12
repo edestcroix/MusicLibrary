@@ -89,7 +89,7 @@ class MusicDB:
 
         self.c.execute(
             """CREATE TABLE IF NOT EXISTS artists
-                (name text, album text, track_title text, UNIQUE(name, album, track_title) ON CONFLICT IGNORE)"""
+                (name text, sort text, album text, track_title text, UNIQUE(name, album, track_title) ON CONFLICT REPLACE)"""
         )
 
         self.c.execute(
