@@ -71,6 +71,12 @@
           <object class="AdwPreferencesGroup">
             <property name="title" translatable="yes">Library</property>
             <child>
+              <object class="AdwSwitchRow" id="use_album_artists">
+                <property name="title" translatable="yes">Album Artists</property>
+                <property name="subtitle" translatable="yes">Use album artists instead of track artists in the library when possible.</property>
+              </object>
+            </child>
+            <child>
               <object class="AdwSwitchRow" id="expand_discs">
                 <property name="title" translatable="yes">Expand discs</property>
                 <property name="subtitle" translatable="yes">Expand discs in the track view by default.</property>

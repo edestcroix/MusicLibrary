@@ -17,7 +17,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from gi.repository import Adw, Gtk, GLib, Gio
+from gi.repository import Adw, Gtk, GLib, Gio, GObject
 import gi
 import threading
 from .library import RecordBoxArtistList, RecordBoxAlbumList
@@ -54,6 +54,17 @@ class RecordBoxWindow(Adw.ApplicationWindow):
 
     filter_all = Gtk.Template.Child()
 
+    _use_album_artists = False
+
+    @GObject.Property(type=bool, default=False)
+    def use_album_artists(self):
+        return self._use_album_artists
+
+    @use_album_artists.setter
+    def set_use_album_artists(self, value):
+        self._use_album_artists = value
+        self.refresh_lists()
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.app = kwargs.get('application', None)
@@ -67,7 +78,6 @@ class RecordBoxWindow(Adw.ApplicationWindow):
 
         self._setup_actions()
         self._bind_settings()
-        self.refresh_lists()
 
     def _bind_settings(self):
         self._bind('artist-sort', self.artist_list, 'sort')
@@ -81,6 +91,9 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         self._bind('loop', self.main_view.player_controls.loop, 'active')
 
         self._bind('confirm-play', self.main_view, 'confirm_play')
+
+        # binding this refreshes the lists on initial startup, so it doesn't have to be done on init.
+        self._bind('use-album-artists', self, 'use_album_artists')
 
     def _bind(self, key, obj, property):
         self.app.settings.bind(
@@ -143,7 +156,7 @@ class RecordBoxWindow(Adw.ApplicationWindow):
 
         print('Populating lists')
 
-        for artist in self.db.get_artists():
+        for artist in self.db.get_artists(self._use_album_artists):
             self.artist_list.append(artist)
         for album in self.db.get_albums():
             self.album_list.append(album)
