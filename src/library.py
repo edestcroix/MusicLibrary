@@ -47,9 +47,9 @@ class RecordBoxArtistList(Gtk.ListBox):
 
     def _update_sort(self):
         if self._sort_type == 0:
-            self.set_sort_func(lambda a, b: a.data.name > b.data.name)
+            self.set_sort_func(lambda a, b: a.data.sort > b.data.sort)
         elif self._sort_type == 1:
-            self.set_sort_func(lambda a, b: a.data.name < b.data.name)
+            self.set_sort_func(lambda a, b: a.data.sort < b.data.sort)
         self.invalidate_sort()
 
     def append(self, artist):

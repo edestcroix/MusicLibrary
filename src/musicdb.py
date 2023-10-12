@@ -45,7 +45,13 @@ class Album:
 @dataclass
 class Artist:
     name: str
+    sort: str
     num_albums: int
+
+    def __init__(self, name, sort, num_albums):
+        self.name = name
+        self.sort = sort or name
+        self.num_albums = num_albums
 
 
 @dataclass
@@ -106,7 +112,7 @@ class MusicDB:
 
     def get_artists(self):
         self.c.execute(
-            'SELECT name, COUNT(DISTINCT album) FROM artists GROUP BY name ORDER BY name'
+            'SELECT name, sort, COUNT(DISTINCT album) FROM artists GROUP BY name ORDER BY name'
         )
         for artist in self.c.fetchall():
             yield Artist(*artist)
@@ -254,7 +260,11 @@ class MusicDB:
         for (entry, audio) in to_insert:
             for artist in audio['artist']:
                 self._insert(
-                    'artists', artist, audio['album'][0], audio['title'][0]
+                    'artists',
+                    artist,
+                    self._try_key(audio, 'artistsort'),
+                    audio['album'][0],
+                    audio['title'][0],
                 )
             self._insert(
                 'albums',
