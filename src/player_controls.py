@@ -29,6 +29,7 @@ class RecordBoxPlayerControls(Gtk.Box):
         super().__init__(**kwargs)
         self._setup_actions()
 
+    play_toggle = GObject.Signal(return_type=GObject.TYPE_NONE)
     @GObject.Signal(return_type=GObject.TYPE_NONE)
     def play_skip_forward(self):
         self.play_pause.set_icon_name('media-playback-pause-symbolic')
@@ -36,10 +37,6 @@ class RecordBoxPlayerControls(Gtk.Box):
     @GObject.Signal(return_type=GObject.TYPE_NONE)
     def play_skip_backward(self):
         self.play_pause.set_icon_name('media-playback-pause-symbolic')
-
-    @GObject.Signal(return_type=GObject.TYPE_NONE)
-    def play_toggle(self):
-        pass
 
     @GObject.Signal(return_type=GObject.TYPE_NONE)
     def play_stop(self):
