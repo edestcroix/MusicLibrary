@@ -71,9 +71,9 @@
           <object class="AdwPreferencesGroup">
             <property name="title" translatable="yes">Library</property>
             <child>
-              <object class="AdwSwitchRow" id="use_album_artists">
-                <property name="title" translatable="yes">Album Artists</property>
-                <property name="subtitle" translatable="yes">Use album artists instead of track artists in the library when possible.</property>
+              <object class="AdwSwitchRow" id="show_all_artists">
+                <property name="title" translatable="yes">Show All Artists</property>
+                <property name="subtitle" translatable="yes">Show all artists in the artist list.</property>
               </object>
             </child>
             <child>

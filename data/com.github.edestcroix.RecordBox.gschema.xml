@@ -36,11 +36,11 @@
         Control if discs should be expanded in the library
       </description>
     </key>
-    <key name="use-album-artists" type="b">
+    <key name="show-all-artists" type="b">
       <default>false</default>
       <summary>Album artists</summary>
       <description>
-        Control if album artists should be used in the library
+        Show all artists in the library, not just album-artists
       </description>
     </key>
     <key name="artist-sort" type="i">

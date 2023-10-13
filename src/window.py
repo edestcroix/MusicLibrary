@@ -54,15 +54,15 @@ class RecordBoxWindow(Adw.ApplicationWindow):
 
     filter_all = Gtk.Template.Child()
 
-    _use_album_artists = False
+    _show_all_artists = False
 
     @GObject.Property(type=bool, default=False)
-    def use_album_artists(self):
-        return self._use_album_artists
+    def show_all_artists(self):
+        return self._show_all_artists
 
-    @use_album_artists.setter
-    def set_use_album_artists(self, value):
-        self._use_album_artists = value
+    @show_all_artists.setter
+    def set_show_all_artists(self, value):
+        self._show_all_artists = value
         self.refresh_lists()
 
     def __init__(self, **kwargs):
@@ -95,7 +95,7 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         self._bind('confirm-play', self.main_view, 'confirm_play')
 
         # binding this refreshes the lists on initial startup, so it doesn't have to be done on init.
-        self._bind('use-album-artists', self, 'use_album_artists')
+        self._bind('show-all-artists', self, 'show_all_artists')
 
     def _bind(self, key, obj, property):
         self.app.settings.bind(
@@ -158,7 +158,7 @@ class RecordBoxWindow(Adw.ApplicationWindow):
 
         print('Populating lists')
 
-        for artist in self.db.get_artists(self._use_album_artists):
+        for artist in self.db.get_artists(self._show_all_artists):
             self.artist_list.append(artist)
         for album in self.db.get_albums():
             self.album_list.append(album)

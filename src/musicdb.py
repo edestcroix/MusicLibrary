@@ -113,8 +113,8 @@ class MusicDB:
                 """
         )
 
-    def get_artists(self, only_albumartists=False):
-        albumartist = ' WHERE albumartist = true' if only_albumartists else ''
+    def get_artists(self, all_artists=False):
+        albumartist = '' if all_artists else ' WHERE albumartist = true'
         self.c.execute(
             f'SELECT name, sort, COUNT(DISTINCT album) FROM artists{albumartist} GROUP BY name ORDER BY name'
         )
