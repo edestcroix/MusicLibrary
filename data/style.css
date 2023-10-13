@@ -7,8 +7,8 @@
 }
 
 .progress-box {
-  padding-left: 5px;
-  padding-right: 5px;
+  padding: 5px;
+  padding-top: 0px;
 }
 
 .progress-bar { color: @window_fg_color; }
@@ -16,4 +16,5 @@
 .progress-bar > trough slider { opacity: 0; }
 .progress-bar {
   margin: 0px;
+  padding: 0px;
 }
