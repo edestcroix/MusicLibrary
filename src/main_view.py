@@ -241,5 +241,5 @@ class MainView(Adw.Bin):
     def _get_album_from_track(self, track):
         result = copy(track.album)
         result.tracks = [track]
-        result.artists = track.artists
+        result.artists = [track.albumartist] + track.artists
         return result

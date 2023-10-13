@@ -72,7 +72,7 @@ class RecordBoxPlayerControls(Gtk.Box):
             )
             artists = map(
                 GLib.markup_escape_text,
-                current_track.artists + [current_track.albumartist],
+                [current_track.albumartist] + current_track.artists,
             )
             self.playing_artist.set_markup(
                 f'<span size="small">{", ".join(artists)}</span>'
