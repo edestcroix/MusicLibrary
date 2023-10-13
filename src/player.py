@@ -21,11 +21,20 @@ class Player(GObject.GObject):
             'playbin audio-sink="rgvolume album-mode=\\"true\\" ! autoaudiosink"'
         )
         self._player.connect('about-to-finish', self._on_about_to_finish)
+        self._player.bind_property(
+            'volume', self, 'volume', GObject.BindingFlags.BIDIRECTIONAL
+        )
+        self._player.bind_property(
+            'mute', self, 'muted', GObject.BindingFlags.BIDIRECTIONAL
+        )
         self.bus = self._player.get_bus()
         self.bus.add_signal_watch()
         self.bus.connect('message', self._on_message)
         self._play_queue = play_queue
         self.state = 'stopped'
+
+    volume = GObject.Property(type=float, default=1.0)
+    muted = GObject.Property(type=bool, default=False)
 
     @GObject.Signal(
         arg_types=(GObject.TYPE_PYOBJECT,), return_type=GObject.TYPE_NONE
@@ -57,6 +66,11 @@ class Player(GObject.GObject):
         elif self._player.get_state(1 * Gst.SECOND)[1] == Gst.State.PAUSED:
             self._player.set_state(Gst.State.PLAYING)
             self.emit('state_changed', 'playing')
+
+    def toggle_mute(self):
+        mute_state = self._player.get_property('mute')
+        print(mute_state)
+        self._player.set_property('mute', not mute_state)
 
     def stop(self):
         self._player.set_state(Gst.State.NULL)

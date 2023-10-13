@@ -81,6 +81,7 @@
       <object class="GtkBox">
         <property name="orientation">horizontal</property>
         <property name="homogeneous">false</property>
+        <property name="spacing">5</property>
         <style>
           <class name="progress-box" />
         </style>
@@ -97,6 +98,44 @@
         </child>
         <child>
           <object class="GtkLabel" id="end_label" />
+        </child>
+        <child>
+          <object class="AdwSplitButton" id="volume_toggle">
+            <property name="icon-name">audio-volume-high-symbolic</property>
+            <property name="direction">up</property>
+            <property name="popover">
+              <object class="GtkPopover">
+                <child>
+                  <object class="GtkBox">
+                    <child>
+                      <object class="GtkImage">
+                        <property name="icon-name">audio-volume-low-symbolic</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkScale" id="volume_slider">
+                        <property name="hexpand">true</property>
+                        <property name="orientation">horizontal</property>
+                        <property name="width-request">200</property>
+                        <style>
+                          <class name="volume-slider" />
+                        </style>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkImage">
+                        <property name="icon-name">audio-volume-high-symbolic</property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+              </object>
+            </property>
+            <style>
+              <class name="flat" />
+              <class name="volume-button" />
+            </style>
+          </object>
         </child>
       </object>
     </child>
