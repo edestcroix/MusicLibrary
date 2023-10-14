@@ -32,6 +32,7 @@ class Player(GObject.GObject):
         self.bus.connect('message', self._on_message)
         self._play_queue = play_queue
         self.state = 'stopped'
+        self._seeking = False
 
     volume = GObject.Property(type=float, default=1.0)
     muted = GObject.Property(type=bool, default=False)
@@ -82,17 +83,17 @@ class Player(GObject.GObject):
     def get_duration(self):
         return self._player.query_duration(Gst.Format.TIME)[1]
 
-    # TODO: Either here or in the main_view, prevent too frequent
-    # seeking caused by the scale being scrolled too fast (because it makes
-    # awful noises)
     def seek(self, position):
         duration = self._player.query_duration(Gst.Format.TIME)[1]
-        if position > duration:
+        if self._seeking or position > duration:
             return
-        else:
-            self._player.seek_simple(
-                Gst.Format.TIME, Gst.SeekFlags.FLUSH, position
-            )
+        # set seeking to True. This will be turned False by the message handler
+        # the next time it receives an ASYNC_DONE message and _seeking is True.
+        # This way, scrolling the seekbar doesn't trigger overlapping seeks.
+        self._seeking = True
+        self._player.seek_simple(
+            Gst.Format.TIME, Gst.SeekFlags.FLUSH, position
+        )
 
     def _on_about_to_finish(self, _):
         if next_track := self._play_queue.get_next_track():
@@ -116,6 +117,9 @@ class Player(GObject.GObject):
         if t == Gst.MessageType.EOS:
             self._player.set_state(Gst.State.NULL)
             self.emit('state_changed', 'stopped')
+        elif t == Gst.MessageType.ASYNC_DONE and self._seeking:
+            self._seeking = False
+
         elif t == Gst.MessageType.ERROR:
             self._player.set_state(Gst.State.NULL)
             err, debug = message.parse_error()
