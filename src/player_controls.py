@@ -34,6 +34,7 @@ class RecordBoxPlayerControls(Gtk.Box):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.volume_slider.set_range(0, 1)
+        self.progress.set_increments(1, 5)
         self._setup_actions()
 
     play_toggle = GObject.Signal(return_type=GObject.TYPE_NONE)
@@ -77,7 +78,6 @@ class RecordBoxPlayerControls(Gtk.Box):
         self._monitor = ProgressMonitor(
             player, self.progress, self.start_label, self.end_label
         )
-        self.progress.connect('change-value', self._monitor.seek_event)
         player.bind_property(
             'volume', self, 'volume', GObject.BindingFlags.BIDIRECTIONAL
         )
@@ -86,7 +86,7 @@ class RecordBoxPlayerControls(Gtk.Box):
         )
 
     def activate(self, playing=True):
-        self._monitor.start_thread()
+        self._monitor.start()
         self.progress.set_sensitive(True)
         if playing:
             self.play_pause.set_icon_name('media-playback-pause-symbolic')
@@ -94,10 +94,8 @@ class RecordBoxPlayerControls(Gtk.Box):
             self.play_pause.set_icon_name('media-playback-start-symbolic')
 
     def deactivate(self):
-        self._monitor.stop_thread()
         self.play_pause.set_icon_name('media-playback-start-symbolic')
         self.progress.set_sensitive(False)
-        self.progress.set_value(0)
 
     def set_current_track(self, current_track):
         if current_track:

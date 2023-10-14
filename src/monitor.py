@@ -1,62 +1,69 @@
 from gi.repository import GLib
 
-import threading
-import time
-
 TIME_DIVISOR = 1000000000
-SLEEP_TIME = 0.1
+TIMEOUT = 100
 
-
-# Class that manages the thread that updates the progress bar and time labels.
+# Class responsible for monitoring the player's progress and updating the
+# progress bar and position label. Also handles seek events. Might roll this
+# into a widget subclass for the progress bar later.
 class ProgressMonitor:
     def __init__(self, player, scale, start_label, end_label):
         self._player = player
         self._scale = scale
         self._start_label = start_label
         self._end_label = end_label
-        self._thread = None
-        self._stop_event = threading.Event()
+        self._last_position = 0
+        self._duration = 0
+        self._active = False
 
-    def start_thread(self):
-        # A monitor thread only needs to be started if one isn't already running.
-        # If the user clicks play while an album is already playing, the thread
-        # can be left running and carry over to the new album.
-        if not self._thread:
-            self._stop_event = threading.Event()
-            self._thread = threading.Thread(target=self._run, daemon=True)
-            print('Starting progress monitor thread')
-            self._thread.start()
+    def start(self):
+        if self._active:
+            return
+        self._active = True
+        GLib.timeout_add(TIMEOUT, self._check_state)
 
-    def stop_thread(self):
-        if self._thread:
-            print('Stopping progress monitor thread')
-            self._stop_event.set()
-            self._thread.join()
-            self._thread = None
+    def _check_state(self):
+        if self._player.state != 'stopped':
+            return self._update_state()
+        self._update_widgets(0)
+        self._active = False
+        return False
 
-    def seek_event(self, _, __, value):
-        self._player.seek(value * TIME_DIVISOR)
+    def _update_state(self):
+        if self._need_seek():
+            value = self._scale.get_value()
+            self._last_position = value
+            self._player.seek(value * TIME_DIVISOR)
+            return True
 
-    def _run(self):
-        while not self._stop_event.is_set():
-            time.sleep(SLEEP_TIME)
-            self._update_scale()
-        self._update_widgets(0, '0:00')
+        progress, duration = self._get_player_state()
+        if duration != self._duration:
+            # depending on when the duration is queried, the pipeline might return -1 if it
+            # hasn't finished loading the track yet, so the abs() prevents range errors.
+            self._scale.set_range(0, abs(duration))
+            self._duration = duration
+        self._update_widgets(progress)
+        self._last_position = progress
+        return True
 
-    def _update_scale(self):
-        if self._player.state == 'playing':
-            duration = self._player.get_duration() / TIME_DIVISOR
-            progress = self._player.get_progress() / TIME_DIVISOR
-            time_str = self._format_time(progress)
-            # Need to check this because when a track starts these
-            # values are set to 0, which causes an exception in the Gtk.Scale
-            if progress < duration:
-                GLib.idle_add(self._scale.set_range, 0, duration)
-            self._update_widgets(progress, time_str)
+    def _get_player_state(self):
+        return (
+            self._player.get_progress() / TIME_DIVISOR,
+            self._player.get_duration() / TIME_DIVISOR,
+        )
 
-    def _update_widgets(self, value, progress):
-        GLib.idle_add(self._scale.set_value, value)
-        GLib.idle_add(self._start_label.set_text, progress)
+    # check if the player needs to seek to the current position
+    # This is done by checking if the difference between the current position
+    # and the last, rather than connecting to the scale's change-value signal
+    # because that signal sends really inconsistent and sometimes negative values,
+    # which causes the player to seek back to the start of the track.
+    def _need_seek(self):
+        return abs(self._last_position - self._scale.get_value()) > 1
+
+    def _update_widgets(self, value):
+        progress = self._format_time(value)
+        self._scale.set_value(value)
+        self._start_label.set_text(progress)
 
     def _format_time(self, time):
         return f'{int(time // 60)}:{int(time % 60):0>2}'
