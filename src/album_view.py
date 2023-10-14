@@ -17,7 +17,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from gi.repository import Adw, Gtk, GLib, GObject, Gdk
+from gi.repository import Adw, Gtk, GLib, GObject
 import gi
 
 gi.require_version('Gtk', '4.0')
@@ -134,10 +134,12 @@ class TrackRow(Adw.ActionRow):
             )
         )
         self.set_tooltip_text(track.title)
-        btn = self._create_button(
-            'view-more-symbolic', lambda _: self.popover.popup()
-        )
-        self.popover = self._create_popover(btn)
+        btn = Gtk.MenuButton()
+        btn.set_icon_name('view-more-symbolic')
+        btn.set_css_classes(['flat'])
+        btn.set_valign(Gtk.Align.CENTER)
+        self.popover = self._create_popover()
+        btn.set_popover(self.popover)
         self.add_suffix(btn)
 
     @GObject.Signal(
@@ -155,25 +157,20 @@ class TrackRow(Adw.ActionRow):
     def sort_key(self):
         return (self.track.disc_num(), self.track.track_num())
 
-    def _create_button(self, icon_name, callback, title=None, args=None):
-        if title:
-            button, content = Gtk.Button(), Adw.ButtonContent()
-            content.set_label(title)
-            content.set_icon_name(icon_name)
-            button.set_child(content)
-        else:
-            button = Gtk.Button.new_from_icon_name(icon_name)
+    def _create_button(self, icon_name, callback, title, args=None):
+        button, content = Gtk.Button(), Adw.ButtonContent()
+        content.set_label(title)
+        content.set_icon_name(icon_name)
+        button.set_child(content)
         button.set_css_classes(['flat'])
-        button.set_valign(Gtk.Align.CENTER)
         if args:
             button.connect('clicked', callback, args)
         else:
             button.connect('clicked', callback)
         return button
 
-    def _create_popover(self, parent):
+    def _create_popover(self):
         popover = Gtk.Popover.new()
-        popover.set_parent(parent)
         popover.set_position(Gtk.PositionType.BOTTOM)
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         box.append(
@@ -193,7 +190,6 @@ class TrackRow(Adw.ActionRow):
             )
         )
         popover.set_child(box)
-        popover.present()
         return popover
 
     def _popover_selected(self, _, action):
