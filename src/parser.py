@@ -149,8 +149,11 @@ class MusicParser:
 
     def _choose_cover(self, images: list[str]) -> CoverImage | None:
         for image in images:
-            if image.lower().endswith('.jpg') or image.lower().endswith(
-                '.png'
+            # find the image called cover or folder and is a png or jpg
+            if (
+                image.lower().endswith('.png')
+                or image.lower().endswith('.jpg')
+                and ('cover' in image.lower() or 'folder' in image.lower())
             ):
                 return CoverImage(open(image, 'rb').read())
 
