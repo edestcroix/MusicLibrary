@@ -8,6 +8,7 @@ class Album:
     num_tracks: int
     length: int
     date: str
+    thumb: str
     cover: str
     artists: str
 

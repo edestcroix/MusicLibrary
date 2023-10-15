@@ -10,6 +10,8 @@ import contextlib
 
 from .musicdb import MusicDB, AlbumInsert, ArtistInsert, TrackInsert
 
+CoverPaths = Tuple[str, str]
+
 
 class CoverImage:
     def __init__(self, image: bytes):
@@ -25,22 +27,36 @@ class CoverImage:
     def thumbnail(self) -> Image.Image:
         return self._resize(128)
 
-    # For future use
     def large(self) -> Image.Image:
         return self._resize(512)
 
-    def save(self) -> str:
-        cache_dir = f'{GLib.get_user_cache_dir()}/RecordBox'
-        path = f'{cache_dir}/{self.sha256()}.png'
-        if not os.path.exists(cache_dir):
-            os.makedirs(cache_dir, exist_ok=True)
+    def save(self) -> CoverPaths:
+        return (self.save_thumbnail(), self.save_large())
+
+    def save_thumbnail(self) -> str:
+        path = self._save('/RecordBox/thumbnails')
         if not os.path.exists(path):
             image = self.thumbnail()
             image.save(path)
         return path
 
+    def save_large(self) -> str:
+        path = self._save('/RecordBox/large')
+        if not os.path.exists(path):
+            image = self.large()
+            image.save(path)
+        return path
+
+    def _save(self, path):
+        thumb_dir = f'{GLib.get_user_cache_dir()}{path}'
+        result = f'{thumb_dir}/{self.sha256()}.png'
+        if not os.path.exists(thumb_dir):
+            os.makedirs(thumb_dir, exist_ok=True)
+        return result
+
     def _resize(self, size):
         image = Image.open(BytesIO(self.image))
+        image = image.convert('RGB')
         image.thumbnail((size, size))
         return image
 
@@ -55,11 +71,11 @@ class AudioFile:
             return self.audio[key] if all else self.audio[key][0]
         return None
 
-    def album(self, cover_path: str | None) -> AlbumInsert:
+    def album(self, cover_paths: CoverPaths | None) -> AlbumInsert:
         return AlbumInsert(
             self.try_key('album'),
             self.try_key('date'),
-            cover_path or None,
+            cover_paths,
         )
 
     def artists(self) -> list[ArtistInsert]:
@@ -162,8 +178,8 @@ class MusicParser:
     ):
         if track.check_need_update(db.modify_time(track.file)):
             cover = track.embedded_cover() or cover
-            cover_path = cover.save() if cover else None
+            cover_paths = cover.save() if cover else None
             db.insert_track(track.track())
-            db.insert_album(track.album(cover_path))
+            db.insert_album(track.album(cover_paths))
             for artist in track.artists():
                 db.insert_artist(artist)
