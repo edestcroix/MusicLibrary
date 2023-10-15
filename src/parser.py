@@ -1,5 +1,5 @@
 from typing import Tuple
-from gi.repository import GLib
+from gi.repository import GLib, GObject
 from hashlib import sha256
 from io import BytesIO
 import mimetypes
@@ -131,14 +131,21 @@ class AudioFile:
         return os.path.getmtime(self.file) > mod_time
 
 
-class MusicParser:
-    def __init__(self, path=os.path.expanduser('~/Music')):
+class MusicParser(GObject.Object):
+    def __init__(self, path=os.path.expanduser('~/Music'), **kwargs):
+        super().__init__(**kwargs)
         self._path = path
+        self._total_dirs = int(os.popen(f'find {path} -type d | wc -l').read())
+        self._dirs_visited = 0
+        print(f'Found {self._total_dirs} directories')
+
+    progress = GObject.Property(type=float, default=0.0)
 
     def build(self, db: MusicDB):
         db.remove_missing()
         self._parse(db, self._path)
         db.commit()
+        self._dirs_visited = 0
         print('Done!')
 
     def _parse(self, db: MusicDB, path: str):
@@ -148,9 +155,18 @@ class MusicParser:
                 if track := self._parse_file(f'{root}/{file}', db):
                     tracks.append(track)
 
+            self._update_progress()
             if tracks:
                 external_cover = self._pick_cover(root)
                 self._send_to_db(db, tracks, external_cover)
+
+    def _update_progress(self):
+        self._dirs_visited += 1
+        GLib.idle_add(
+            self.set_property,
+            'progress',
+            self._dirs_visited / self._total_dirs,
+        )
 
     def _parse_file(self, file: str, db: MusicDB) -> AudioFile | None:
         if (mod_time := db.modify_time(file)) and (
