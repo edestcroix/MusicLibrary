@@ -37,7 +37,6 @@ class MusicDB:
                 artist.albumartist,
             ),
         )
-        self.db.commit()
 
     def insert_album(self, album):
         self.cursor.execute(
@@ -49,7 +48,6 @@ class MusicDB:
                 album.covers[1] if album.covers else None,
             ),
         )
-        self.db.commit()
 
     def insert_track(self, track):
         self.cursor.execute(
@@ -64,6 +62,8 @@ class MusicDB:
                 track.modified,
             ),
         )
+
+    def commit(self):
         self.db.commit()
 
     def remove_missing(self):
@@ -82,7 +82,7 @@ class MusicDB:
         self.cursor.execute(
             'SELECT modified FROM tracks WHERE path=?', (path,)
         )
-        return result[0] if (result := self.cursor.fetchone()) else 0
+        return result[0] if (result := self.cursor.fetchone()) else None
 
     def get_artists(self, all_artists=False):
         albumartist = '' if all_artists else ' WHERE albumartist = true'
