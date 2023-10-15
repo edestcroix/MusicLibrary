@@ -138,21 +138,40 @@ class MusicParser:
     def build(self, db: MusicDB):
         db.remove_missing()
         self._parse(db, self._path)
+        db.commit()
         print('Done!')
 
     def _parse(self, db: MusicDB, path: str):
         for root, _, files in os.walk(path):
-            tracks, possible_covers = [], []
+            tracks = []
             for file in files:
-                if audio := self._parse_audio(os.path.join(root, file)):
-                    print(file)
-                    tracks.append(audio)
-                else:
-                    possible_covers.append(os.path.join(root, file))
+                if track := self._parse_file(f'{root}/{file}', db):
+                    tracks.append(track)
 
-            external_cover = self._choose_cover(possible_covers)
-            for track in tracks:
-                self._send_to_db(db, track, external_cover)
+            if tracks:
+                external_cover = self._pick_cover(root)
+                self._send_to_db(db, tracks, external_cover)
+
+    def _parse_file(self, file: str, db: MusicDB) -> AudioFile | None:
+        if (mod_time := db.modify_time(file)) and (
+            mod_time >= os.path.getmtime(file)
+        ):
+            return None
+        elif audio := self._parse_audio(file):
+            return audio
+
+    def _pick_cover(self, root: str) -> CoverImage | None:
+        possible_covers = [
+            f'{root}/{file}'
+            for file in os.listdir(root)
+            if file.lower().endswith(('.png', '.jpg', '.jpeg'))
+            and file.lower().startswith(('cover', 'folder'))
+        ]
+        return (
+            CoverImage(open(possible_covers[0], 'rb').read())
+            if possible_covers
+            else None
+        )
 
     def _parse_audio(self, file: str) -> AudioFile | None:
         if (mime := self._mime_type(file)) and not mime.startswith('audio'):
@@ -163,22 +182,12 @@ class MusicParser:
     def _mime_type(self, file: str) -> str | None:
         return mimetypes.guess_type(file)[0]
 
-    def _choose_cover(self, images: list[str]) -> CoverImage | None:
-        for image in images:
-            # find the image called cover or folder and is a png or jpg
-            if (
-                image.lower().endswith('.png')
-                or image.lower().endswith('.jpg')
-                and ('cover' in image.lower() or 'folder' in image.lower())
-            ):
-                return CoverImage(open(image, 'rb').read())
-
     def _send_to_db(
-        self, db: MusicDB, track: AudioFile, cover: CoverImage | None
+        self, db: MusicDB, tracks: list[AudioFile], cover: CoverImage | None
     ):
-        if track.check_need_update(db.modify_time(track.file)):
-            cover = track.embedded_cover() or cover
-            cover_paths = cover.save() if cover else None
+        cover = tracks[0].embedded_cover() or cover
+        cover_paths = cover.save() if cover else None
+        for track in tracks:
             db.insert_track(track.track())
             db.insert_album(track.album(cover_paths))
             for artist in track.artists():
