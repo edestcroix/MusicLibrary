@@ -26,9 +26,13 @@ recordbox_sources = [
   'player_controls.py',
   'play_queue.py',
   'preferences.py',
-  'musicdb.py',
   'player.py',
   'monitor.py',
+  'musicdb.py',
+  'parser.py',
+  'music_types.py'
 ]
+
+
 
 install_data(recordbox_sources, install_dir: moduledir)

@@ -21,7 +21,8 @@ from gi.repository import Adw, Gtk, GLib, Gio, GObject
 import gi
 import threading
 from .library import RecordBoxArtistList, RecordBoxAlbumList
-from .musicdb import Album, MusicDB
+from .musicdb import MusicDB
+from .parser import MusicParser
 from .play_queue import PlayQueue
 from .player import Player
 from .main_view import MainView
@@ -70,6 +71,7 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         self.app = kwargs.get('application', None)
 
         self.db = MusicDB()
+        self.parser = MusicParser()
 
         status = Adw.StatusPage(title='Empty Library')
         status.set_description('Sync library to detect music')
@@ -148,7 +150,7 @@ class RecordBoxWindow(Adw.ApplicationWindow):
 
     def update_db(self):
         db = MusicDB()
-        db.sync_library()
+        self.parser.build(db)
         self.main_view.send_toast('Done!', 2)
         GLib.MainContext.default().invoke_full(1, self.refresh_lists)
 
