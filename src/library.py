@@ -101,7 +101,7 @@ class RecordBoxAlbumList(Gtk.ListBox):
         row.set_title_lines(1)
 
         row.set_filter_key(album.artists)
-        if cover := album.cover:
+        if cover := album.thumb:
             image = Gtk.Image.new_from_file(cover)
             image.set_pixel_size(64)
             row.add_prefix(image)

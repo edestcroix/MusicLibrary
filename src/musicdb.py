@@ -5,7 +5,7 @@ from collections import namedtuple
 
 from .music_types import Album, Artist, Track
 
-AlbumInsert = namedtuple('AlbumInsert', ['name', 'year', 'cover'])
+AlbumInsert = namedtuple('AlbumInsert', ['name', 'year', 'covers'])
 ArtistInsert = namedtuple(
     'ArtistInsert', ['name', 'sort', 'album', 'track_title', 'albumartist']
 )
@@ -41,8 +41,13 @@ class MusicDB:
 
     def insert_album(self, album):
         self.cursor.execute(
-            'INSERT INTO albums VALUES (?, ?, ?)',
-            (album.name, album.year, album.cover),
+            'INSERT INTO albums VALUES (?, ?, ?, ?)',
+            (
+                album.name,
+                album.year,
+                album.covers[0] if album.covers else None,
+                album.covers[1] if album.covers else None,
+            ),
         )
         self.db.commit()
 
@@ -89,7 +94,7 @@ class MusicDB:
 
     def get_albums(self):
         self.cursor.execute(
-            'SELECT DISTINCT name, COUNT(title), SUM(length), year, cover FROM albums JOIN tracks ON albums.name = tracks.album GROUP BY name ORDER BY year',
+            'SELECT DISTINCT name, COUNT(title), SUM(length), year, thumb, cover FROM albums JOIN tracks ON albums.name = tracks.album GROUP BY name ORDER BY year',
         )
         # Albums do not need to consider albumartist/artists, as they are only used to display the album list.
         # The library needs to have albums returned with all artists in the album's 'artist' field, because selecting
@@ -104,7 +109,7 @@ class MusicDB:
 
     def get_album(self, album):
         self.cursor.execute(
-            'SELECT name, COUNT(title), SUM(length), year, cover FROM albums JOIN tracks ON albums.name = tracks.album WHERE name = ? GROUP BY name',
+            'SELECT name, COUNT(title), SUM(length), year, thumb, cover FROM albums JOIN tracks ON albums.name = tracks.album WHERE name = ? GROUP BY name',
             (album,),
         )
         result = self.cursor.fetchone()
@@ -144,7 +149,7 @@ class MusicDB:
             """CREATE TABLE IF NOT EXISTS artists
                 (name text, sort text, album text, track_title text, albumartist bool, UNIQUE(name, album, track_title) ON CONFLICT REPLACE)""",
             """CREATE TABLE IF NOT EXISTS albums
-                (name text, year date, cover text, UNIQUE(name, year) ON CONFLICT REPLACE)""",
+                (name text, year date, thumb text, cover text, UNIQUE(name, year) ON CONFLICT REPLACE)""",
             """CREATE TABLE IF NOT EXISTS tracks
                 (title text, track text, discnumber text, album text, length real, path text, modified time, UNIQUE(path) ON CONFLICT REPLACE)
                 """,
