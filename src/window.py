@@ -46,6 +46,9 @@ class RecordBoxWindow(Adw.ApplicationWindow):
     album_list = Gtk.Template.Child()
     album_list_page = Gtk.Template.Child()
 
+    progress_bar1 = Gtk.Template.Child()
+    progress_bar2 = Gtk.Template.Child()
+
     main_page = Gtk.Template.Child()
     main_view = Gtk.Template.Child()
 
@@ -80,8 +83,16 @@ class RecordBoxWindow(Adw.ApplicationWindow):
 
         self.selected_artist = None
 
-        self._setup_actions()
+        if self.app.settings.get_boolean('restore-window-state'):
+            self._bind_state()
         self._bind_settings()
+        self._setup_actions()
+
+    def _bind_state(self):
+        self._bind('width', self, 'default-width')
+        self._bind('height', self, 'default-height')
+        self._bind('is-maximized', self, 'maximized')
+        self._bind('is-fullscreen', self, 'fullscreened')
 
     def _bind_settings(self):
         self._bind('artist-sort', self.artist_list, 'sort')
@@ -133,6 +144,19 @@ class RecordBoxWindow(Adw.ApplicationWindow):
             ),
         )
 
+        self.parser.bind_property(
+            'progress',
+            self.progress_bar1,
+            'fraction',
+            GObject.BindingFlags.DEFAULT,
+        )
+        self.parser.bind_property(
+            'progress',
+            self.progress_bar2,
+            'fraction',
+            GObject.BindingFlags.DEFAULT,
+        )
+
         self.filter_all.connect('clicked', self._show_all_albums)
 
         self.main_view.connect('album_changed', self._goto_album)
@@ -145,14 +169,16 @@ class RecordBoxWindow(Adw.ApplicationWindow):
     def sync_library(self, _):
         self.thread = threading.Thread(target=self.update_db)
         self.thread.daemon = True
-        self.main_view.send_toast('Syncronizing music database...', 3)
+        self.progress_bar1.set_visible(True)
+        self.progress_bar2.set_visible(True)
         self.thread.start()
 
     def update_db(self):
         db = MusicDB()
         self.parser.build(db)
-        self.main_view.send_toast('Done!', 2)
-        GLib.MainContext.default().invoke_full(1, self.refresh_lists)
+        GLib.idle_add(self.refresh_lists)
+        GLib.idle_add(self.progress_bar1.set_visible, False)
+        GLib.idle_add(self.progress_bar2.set_visible, False)
 
     def refresh_lists(self):
         self.artist_list.remove_all()
