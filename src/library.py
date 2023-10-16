@@ -99,6 +99,7 @@ class RecordBoxAlbumList(Gtk.ListBox):
         row.set_data(album)
         row.set_title(album.name)
         row.set_title_lines(1)
+        row.set_css_classes(['album-row'])
 
         row.set_filter_key(album.artists)
         if cover := album.thumb:
