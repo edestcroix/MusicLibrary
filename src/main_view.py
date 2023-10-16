@@ -234,7 +234,7 @@ class MainView(Adw.Bin):
     def _on_add_track(self, _, track):
         album = self._get_album_from_track(track)
         self.play_queue.add_album(album)
-        if self.play_queue.empty():
+        if self.player.state == 'stopped':
             self.player.ready()
         self.send_toast('Queue Updated')
 
