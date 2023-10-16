@@ -86,7 +86,11 @@
           <class name="progress-box" />
         </style>
         <child>
-          <object class="GtkLabel" id="start_label" />
+          <object class="GtkLabel" id="start_label">
+            <style>
+              <class name="numeric" />
+            </style>
+          </object>
         </child>
         <child>
           <object class="GtkScale" id="progress">
@@ -97,7 +101,11 @@
           </object>
         </child>
         <child>
-          <object class="GtkLabel" id="end_label" />
+          <object class="GtkLabel" id="end_label">
+            <style>
+              <class name="numeric" />
+            </style>
+          </object>
         </child>
         <child>
           <object class="AdwSplitButton" id="volume_toggle">
