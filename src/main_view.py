@@ -62,9 +62,7 @@ class MainView(Adw.Bin):
         self._setup_actions()
         self._set_controls_stopped()
 
-    @GObject.Signal(
-        arg_types=(GObject.TYPE_PYOBJECT,), return_type=GObject.TYPE_NONE
-    )
+    @GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
     def album_changed(self, album):
         self.update_album(album)
 
@@ -90,32 +88,71 @@ class MainView(Adw.Bin):
         self.toast.add_toast(toast)
 
     def _setup_actions(self):
-        self.play.connect('clicked', self._on_play_clicked)
-        self.queue_add.connect('clicked', self._on_queue_add)
-
-        self.player_controls.connect(
-            'play_toggle', lambda _: self.player.toggle()
-        )
-        self.player_controls.connect('play_skip_forward', self._skip_forward)
-        self.player_controls.connect('play_skip_backward', self._skip_backward)
-        self.player_controls.connect('play_stop', lambda _: self.player.stop())
-
-        self.return_to_album.connect('clicked', self._on_return_to_album)
-        self.queue_toggle.connect('clicked', self._on_queue_toggle)
-
-        self.player.bus.connect('message', self._on_message)
+        self.player.connect('stream_start', self._on_stream_start)
         self.player.connect('state-changed', self._on_player_state_changed)
 
-        self.album_overview.connect('play_track', self._on_play_track)
-        self.album_overview.connect('add_track', self._on_add_track)
-
-    def _on_play_clicked(self, _):
+    @Gtk.Template.Callback()
+    def _on_play(self, _):
         if not (album := self.album_overview.current_album):
             return
         if self.player.state == 'stopped' or not self.confirm_play:
             self._play_album(album)
         else:
             self._confirm_album_play(album, album.name)
+
+    @Gtk.Template.Callback()
+    def _on_queue_add(self, _):
+        if album := self.album_overview.current_album:
+            self.play_queue.add_album(album)
+            if self.player.state == 'stopped':
+                self.player.ready()
+            self.send_toast('Queue Updated')
+
+    @Gtk.Template.Callback()
+    def _on_play_track(self, _, track):
+        album = self._get_album_from_track(track)
+        if self.player.state == 'stopped' or not self.confirm_play:
+            self._play_album(album)
+        else:
+            self._confirm_album_play(album, track.title)
+
+    @Gtk.Template.Callback()
+    def _on_add_track(self, _, track):
+        album = self._get_album_from_track(track)
+        self.play_queue.add_album(album)
+        if self.player.state == 'stopped':
+            self.player.ready()
+        self.send_toast('Queue Updated')
+
+    @Gtk.Template.Callback()
+    def _on_queue_toggle(self, _):
+        self.queue_panel_split_view.set_show_sidebar(
+            not self.queue_panel_split_view.get_show_sidebar()
+        )
+
+    @Gtk.Template.Callback()
+    def _on_return_to_album(self, _):
+        if self.play_queue.current_track:
+            current_album = self.play_queue.get_current_track().album
+            self.emit('album_changed', current_album)
+
+    @Gtk.Template.Callback()
+    def _skip_forward(self, _):
+        if self.play_queue.next():
+            self.player.play()
+
+    @Gtk.Template.Callback()
+    def _skip_backward(self, _):
+        if self.play_queue.previous():
+            self.player.play()
+
+    @Gtk.Template.Callback()
+    def _stop(self, _):
+        self.player.stop()
+
+    @Gtk.Template.Callback()
+    def _toggle_play(self, _):
+        self.player.toggle()
 
     def _confirm_album_play(self, album, name):
         dialog = Adw.MessageDialog(
@@ -151,22 +188,16 @@ class MainView(Adw.Bin):
         self.play_queue.add_album(album)
         self.player.play()
 
-    def _on_queue_add(self, _):
-        if album := self.album_overview.current_album:
-            self.play_queue.add_album(album)
-            if self.player.state == 'stopped':
-                self.player.ready()
-            self.send_toast('Queue Updated')
+    def _get_album_from_track(self, track):
+        result = copy(track.album)
+        result.tracks = [track]
+        result.artists = [track.albumartist] + track.artists
+        return result
 
-    def _on_queue_toggle(self, _):
-        self.queue_panel_split_view.set_show_sidebar(
-            not self.queue_panel_split_view.get_show_sidebar()
+    def _on_stream_start(self, _):
+        self.player_controls.set_current_track(
+            self.play_queue.get_current_track()
         )
-
-    def _on_return_to_album(self, _):
-        if self.play_queue.current_track:
-            current_album = self.play_queue.get_current_track().album
-            self.emit('album_changed', current_album)
 
     def _on_player_state_changed(self, _, state):
         if state == 'playing':
@@ -191,39 +222,3 @@ class MainView(Adw.Bin):
         self.queue_toggle.set_sensitive(active)
         self.return_to_album.set_sensitive(active)
         self.player_controls.activate(active and playing)
-
-    def _on_message(self, _, message):
-        if message.type == Gst.MessageType.STREAM_START:
-            self.player_controls.set_current_track(
-                self.play_queue.get_current_track()
-            )
-        elif message.type == Gst.MessageType.EOS:
-            self._set_controls_stopped()
-
-    def _skip_forward(self, _):
-        if self.play_queue.next():
-            self.player.play()
-
-    def _skip_backward(self, _):
-        if self.play_queue.previous():
-            self.player.play()
-
-    def _on_play_track(self, _, track):
-        album = self._get_album_from_track(track)
-        if self.player.state == 'stopped' or not self.confirm_play:
-            self._play_album(album)
-        else:
-            self._confirm_album_play(album, track.title)
-
-    def _on_add_track(self, _, track):
-        album = self._get_album_from_track(track)
-        self.play_queue.add_album(album)
-        if self.player.state == 'stopped':
-            self.player.ready()
-        self.send_toast('Queue Updated')
-
-    def _get_album_from_track(self, track):
-        result = copy(track.album)
-        result.tracks = [track]
-        result.artists = [track.albumartist] + track.artists
-        return result

@@ -21,18 +21,21 @@
                   <object class="GtkButton" id="play">
                     <property name="icon-name">media-playback-start-symbolic</property>
                     <property name="sensitive">false</property>
+                    <signal name="clicked" handler="_on_play" />
                   </object>
                 </child>
                 <child type="start">
                   <object class="GtkButton" id="queue_add">
                     <property name="icon-name">list-add-symbolic</property>
                     <property name="sensitive">false</property>
+                    <signal name="clicked" handler="_on_queue_add" />
                   </object>
                 </child>
                 <child type="end">
                   <object class="GtkButton" id="queue_toggle">
                     <property name="icon-name">view-list-symbolic</property>
                     <property name="sensitive">false</property>
+                    <signal name="clicked" handler="_on_queue_toggle" />
                   </object>
                 </child>
                 <child type="end">
@@ -40,12 +43,17 @@
                     <property name="icon-name">document-revert-symbolic</property>
                     <property name="sensitive">false</property>
                     <property name="tooltip-text" translatable="yes">Return to playing album</property>
+                    <signal name="clicked" handler="_on_return_to_album" />
                   </object>
                 </child>
               </object>
             </child>
             <child type="bottom">
               <object class="RecordBoxPlayerControls" id="player_controls">
+                <signal name="play_skip_forward" handler="_skip_forward" />
+                <signal name="play_skip_backward" handler="_skip_backward" />
+                <signal name="play_stop" handler="_stop" />
+                <signal name="play_toggle" handler="_toggle_play" />
               </object>
             </child>
             <property name="content">
@@ -68,6 +76,8 @@
                 </property>
                 <property name="content">
                   <object class="RecordBoxAlbumView" id="album_overview">
+                    <signal name="play_track" handler="_on_play_track" />
+                    <signal name="add_track" handler="_on_add_track" />
                   </object>
                 </property>
               </object>
