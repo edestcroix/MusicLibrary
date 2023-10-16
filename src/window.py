@@ -76,17 +76,15 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         self.db = MusicDB()
         self.parser = MusicParser()
 
-        status = Adw.StatusPage(title='Empty Library')
-        status.set_description('Sync library to detect music')
-        status.set_icon_name('emblem-synchronizing-symbolic')
-        self.album_list.set_placeholder(status)
-
         self.selected_artist = None
 
         if self.app.settings.get_boolean('restore-window-state'):
             self._bind_state()
         self._bind_settings()
         self._setup_actions()
+
+        if self.app.settings.get_boolean('sync-on-startup'):
+            self.sync_library(None)
 
     def _bind_state(self):
         self._bind('width', self, 'default-width')
