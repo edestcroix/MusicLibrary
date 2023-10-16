@@ -10,14 +10,14 @@
         <child>
           <object class="AdwPreferencesGroup">
             <property name="title" translatable="yes">General</property>
-              <child>
-                <object class="AdwSwitchRow" id="restore_window_state">
-                  <property name="title" translatable="yes">_Restore Window State</property>
-                  <property name="subtitle" translatable="yes">Restore window state on startup. Does not include player state.</property>
-                  <property name="use_underline">True</property>
-                </object>
-              </child>
-            </object>
+            <child>
+              <object class="AdwSwitchRow" id="restore_window_state">
+                <property name="title" translatable="yes">_Restore Window State</property>
+                <property name="subtitle" translatable="yes">Restore window state on startup. Does not include player state.</property>
+                <property name="use_underline">True</property>
+              </object>
+            </child>
+          </object>
         </child>
         <child>
           <object class="AdwPreferencesGroup">
@@ -72,10 +72,10 @@
             <!-- </child> -->
           </object>
         </child>
-        </object>
-      </child>
-      <child>
-        <object class="AdwPreferencesPage">
+      </object>
+    </child>
+    <child>
+      <object class="AdwPreferencesPage">
         <property name="icon_name">media-optical-symbolic</property>
         <property name="title">Library</property>
         <property name="use-underline">True</property>
