@@ -1,6 +1,44 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <schemalist gettext-domain="recordbox">
+
   <schema id="com.github.edestcroix.RecordBox" path="/com/github/edestcroix/recordbox/">
+    <key name="width" type="i">
+      <default>1200</default>
+    </key>
+    <key name="height" type="i">
+      <default>650</default>
+    </key>
+    <key name="is-maximized" type="b">
+      <default>false</default>
+    </key>
+    <key name="is-fullscreen" type="b">
+      <default>false</default>
+    </key>
+
+    <key name="restore-window-state" type="b">
+      <default>true</default>
+      <summary>Restore window state</summary>
+      <description>
+        Control if window state should be restored on startup.
+      </description>
+    </key>
+
+    <key name="sync-on-startup" type="b">
+      <default>true</default>
+      <summary>Sync on startup</summary>
+      <description>
+        Control if library should be synced on startup.
+      </description>
+    </key>
+
+    <!-- <key name="watch-library" type="b"> -->
+    <!--   <default>false</default> -->
+    <!--   <summary>Watch library</summary> -->
+    <!--   <description> -->
+    <!--     Control if library should be watched for changes. -->
+    <!--   </description> -->
+    <!-- </key> -->
+
     <key name="loop" type="b">
       <default>false</default>
       <summary>Toggle loop</summary>
