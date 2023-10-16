@@ -100,9 +100,6 @@ class RecordBoxWindow(Adw.ApplicationWindow):
             'expand-discs', self.main_view.album_overview, 'expand_discs'
         )
 
-        self._bind('loop', self.main_view.play_queue, 'loop')
-        self._bind('loop', self.main_view.player_controls.loop, 'active')
-
         self._bind('confirm-play', self.main_view, 'confirm_play')
 
         # binding this refreshes the lists on initial startup, so it doesn't have to be done on init.

@@ -39,13 +39,6 @@
     <!--   </description> -->
     <!-- </key> -->
 
-    <key name="loop" type="b">
-      <default>false</default>
-      <summary>Toggle loop</summary>
-      <description>
-        Control if playback should restart at beginning
-      </description>
-    </key>
     <key name="confirm-play" type="b">
       <default>true</default>
       <summary>Confirm play</summary>

@@ -57,8 +57,16 @@ class MainView(Adw.Bin):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+
         self.player = Player(self.play_queue)
         self.player_controls.attach_to_player(self.player)
+        self.player_controls.loop.bind_property(
+            'active',
+            self.play_queue,
+            'loop',
+            GObject.BindingFlags.BIDIRECTIONAL,
+        )
+
         self._setup_actions()
         self._set_controls_stopped()
 
