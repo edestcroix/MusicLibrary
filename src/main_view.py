@@ -52,8 +52,8 @@ class MainView(Adw.Bin):
 
     toast = Gtk.Template.Child()
 
-    _clear_queue = False
-    _confirm_play = True
+    confirm_play = GObject.Property(type=bool, default=True)
+    clear_queue = GObject.Property(type=bool, default=False)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -67,22 +67,6 @@ class MainView(Adw.Bin):
     )
     def album_changed(self, album):
         self.update_album(album)
-
-    @GObject.Property(type=bool, default=False)
-    def clear_queue(self):
-        return self._clear_queue
-
-    @clear_queue.setter
-    def set_clear_queue(self, value):
-        self._clear_queue = value
-
-    @GObject.Property(type=bool, default=True)
-    def confirm_play(self):
-        return self._confirm_play
-
-    @confirm_play.setter
-    def set_confirm_play(self, value):
-        self._confirm_play = value
 
     def set_breakpoint(self, _, breakpoint_num):
         self.album_overview.set_breakpoint(None)
