@@ -39,7 +39,7 @@ class RecordBoxApplication(Adw.Application):
         )
         self.create_action('quit', lambda *_: self.quit(), ['<primary>q'])
         self.create_action('about', self.on_about_action)
-        self.create_action('preferences', self.on_preferences_action)
+        self.create_action('preferences', self.on_preferences_action, ['F10'])
         self.create_action('refresh', self.on_refresh_action, ['<primary>r'])
 
         self.settings = Gio.Settings.new('com.github.edestcroix.RecordBox')
