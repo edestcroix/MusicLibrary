@@ -15,6 +15,7 @@
           <object class="GtkBox">
             <property name="orientation">horizontal</property>
             <property name="spacing">0</property>
+            <property name="valign">center</property>
             <style>
               <class name="linked" />
             </style>
@@ -60,6 +61,7 @@
           <object class="GtkBox">
             <property name="orientation">horizontal</property>
             <property name="spacing">0</property>
+            <property name="valign">center</property>
             <style>
               <class name="linked" />
             </style>
