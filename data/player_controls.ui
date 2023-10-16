@@ -22,16 +22,19 @@
             <child>
               <object class="GtkButton" id="skip_backward">
                 <property name="icon-name">media-skip-backward-symbolic</property>
+                <signal name="clicked" handler="_skip_backward" />
               </object>
             </child>
             <child>
               <object class="GtkButton" id="play_pause">
                 <property name="icon-name">media-playback-start-symbolic</property>
+                <signal name="clicked" handler="_play_pause" />
               </object>
             </child>
             <child>
               <object class="GtkButton" id="skip_forward">
                 <property name="icon-name">media-skip-forward-symbolic</property>
+                <signal name="clicked" handler="_skip_forward" />
               </object>
             </child>
           </object>
@@ -73,6 +76,7 @@
             <child>
               <object class="GtkButton" id="stop">
                 <property name="icon-name">media-playback-stop-symbolic</property>
+                <signal name="clicked" handler="_stop" />
               </object>
             </child>
           </object>
@@ -113,6 +117,7 @@
           <object class="AdwSplitButton" id="volume_toggle">
             <property name="icon-name">audio-volume-high-symbolic</property>
             <property name="direction">up</property>
+            <signal name="clicked" handler="_toggle_mute" />
             <property name="popover">
               <object class="GtkPopover">
                 <child>
@@ -127,6 +132,7 @@
                         <property name="hexpand">true</property>
                         <property name="orientation">horizontal</property>
                         <property name="width-request">200</property>
+                        <signal name="change_value" handler="_volume_changed" />
                         <style>
                           <class name="volume-slider" />
                         </style>

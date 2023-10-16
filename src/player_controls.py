@@ -13,14 +13,11 @@ from .monitor import ProgressMonitor
 class RecordBoxPlayerControls(Gtk.Box):
     __gtype_name__ = 'RecordBoxPlayerControls'
     play_pause = Gtk.Template.Child()
-    skip_forward = Gtk.Template.Child()
-    skip_backward = Gtk.Template.Child()
-
-    stop = Gtk.Template.Child()
-    loop = Gtk.Template.Child()
 
     playing_song = Gtk.Template.Child()
     playing_artist = Gtk.Template.Child()
+
+    loop = Gtk.Template.Child()
 
     progress = Gtk.Template.Child()
     start_label = Gtk.Template.Child()
@@ -29,29 +26,17 @@ class RecordBoxPlayerControls(Gtk.Box):
     volume_toggle = Gtk.Template.Child()
     volume_slider = Gtk.Template.Child()
 
-    _muted = False
+    play_toggle = GObject.Signal()
+    play_skip_forward = GObject.Signal()
+    play_skip_backward = GObject.Signal()
+    play_stop = GObject.Signal()
+
+    muted = GObject.Property(type=bool, default=False)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.volume_slider.set_range(0, 1)
         self.progress.set_increments(1, 5)
-        self._setup_actions()
-
-    play_toggle = GObject.Signal()
-
-    @GObject.Signal()
-    def play_skip_forward(self):
-        self.play_pause.set_icon_name('media-playback-pause-symbolic')
-
-    @GObject.Signal()
-    def play_skip_backward(self):
-        self.play_pause.set_icon_name('media-playback-pause-symbolic')
-
-    @GObject.Signal()
-    def play_stop(self):
-        self.play_pause.set_icon_name('media-playback-start-symbolic')
-
-    muted = GObject.Property(type=bool, default=False)
 
     # Create a GObject property for the volume so it can be bidirectionally
     # bound to the player's volume property.
@@ -115,22 +100,28 @@ class RecordBoxPlayerControls(Gtk.Box):
             self.playing_artist.set_text('')
             self.end_label.set_text('0:00')
 
-    def _setup_actions(self):
-        self.play_pause.connect('clicked', lambda *_: self.emit('play_toggle'))
-        self.stop.connect('clicked', lambda *_: self.emit('play_stop'))
-        self.skip_forward.connect(
-            'clicked', lambda *_: self.emit('play_skip_forward')
-        )
-        self.skip_backward.connect(
-            'clicked', lambda *_: self.emit('play_skip_backward')
-        )
-        self.volume_toggle.connect('clicked', self._toggle_mute)
-        self.volume_slider.connect('change-value', self._volume_changed)
+    @Gtk.Template.Callback()
+    def _stop(self, _):
+        self.emit('play_stop')
 
+    @Gtk.Template.Callback()
+    def _play_pause(self, _):
+        self.emit('play_toggle')
+
+    @Gtk.Template.Callback()
+    def _skip_forward(self, _):
+        self.emit('play_skip_forward')
+
+    @Gtk.Template.Callback()
+    def _skip_backward(self, _):
+        self.emit('play_skip_backward')
+
+    @Gtk.Template.Callback()
     def _toggle_mute(self, _):
         self.set_property('muted', not self.muted)
         self._update_volume_icon()
 
+    @Gtk.Template.Callback()
     def _volume_changed(self, _, __, value):
         value = GstAudio.StreamVolume.convert_volume(
             GstAudio.StreamVolumeFormat.CUBIC,
