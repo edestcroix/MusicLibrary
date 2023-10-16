@@ -221,6 +221,8 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         self.inner_split.set_show_content('album_view')
         self.album_return.set_sensitive(True)
 
+        self.selected_artist = album.artists[0]
+
         self.album_list.unselect_all()
         self.artist_list.unselect_all()
 
