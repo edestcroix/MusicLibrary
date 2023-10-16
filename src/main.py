@@ -64,7 +64,7 @@ class RecordBoxApplication(Adw.Application):
             application_name='RecordBox',
             application_icon='com.github.edestcroix.RecordBox',
             developer_name='Emmett de St. Croix',
-            version='0.1.0',
+            version='0.2.1',
             developers=['Emmett de St. Croix'],
             copyright='© 2023 Emmett de St. Croix',
             website='https://github.com/edestcroix/RecordBox/',
