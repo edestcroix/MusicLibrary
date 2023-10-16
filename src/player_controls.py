@@ -37,17 +37,17 @@ class RecordBoxPlayerControls(Gtk.Box):
         self.progress.set_increments(1, 5)
         self._setup_actions()
 
-    play_toggle = GObject.Signal(return_type=GObject.TYPE_NONE)
+    play_toggle = GObject.Signal()
 
-    @GObject.Signal(return_type=GObject.TYPE_NONE)
+    @GObject.Signal()
     def play_skip_forward(self):
         self.play_pause.set_icon_name('media-playback-pause-symbolic')
 
-    @GObject.Signal(return_type=GObject.TYPE_NONE)
+    @GObject.Signal()
     def play_skip_backward(self):
         self.play_pause.set_icon_name('media-playback-pause-symbolic')
 
-    @GObject.Signal(return_type=GObject.TYPE_NONE)
+    @GObject.Signal()
     def play_stop(self):
         self.play_pause.set_icon_name('media-playback-start-symbolic')
 
