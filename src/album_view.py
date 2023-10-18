@@ -38,27 +38,10 @@ class RecordBoxAlbumView(Adw.Bin):
     stack = Gtk.Template.Child()
     current_album = None
 
-    _expand_discs = False
+    expand_discs = GObject.Property(type=bool, default=False)
 
-    @GObject.Property(type=bool, default=False)
-    def expand_discs(self):
-        return self._collapse_discs
-
-    @expand_discs.setter
-    def set_expand_discs(self, value):
-        self._collapse_discs = value
-
-    @GObject.Signal(
-        arg_types=(GObject.TYPE_PYOBJECT,), return_type=GObject.TYPE_NONE
-    )
-    def play_track(self, _):
-        pass
-
-    @GObject.Signal(
-        arg_types=(GObject.TYPE_PYOBJECT,), return_type=GObject.TYPE_NONE
-    )
-    def add_track(self, _):
-        pass
+    play_track = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
+    add_track = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
 
     def set_breakpoint(self, _):
         self.album_box.set_orientation(Gtk.Orientation.VERTICAL)
@@ -115,6 +98,10 @@ class RecordBoxAlbumView(Adw.Bin):
 
 
 class TrackRow(Adw.ActionRow):
+
+    play_track = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
+    add_track = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
+
     def __init__(self, track, current_artist, **kwargs):
         super().__init__(**kwargs)
         self.track = track
@@ -141,18 +128,6 @@ class TrackRow(Adw.ActionRow):
         self.popover = self._create_popover()
         btn.set_popover(self.popover)
         self.add_suffix(btn)
-
-    @GObject.Signal(
-        arg_types=(GObject.TYPE_PYOBJECT,), return_type=GObject.TYPE_NONE
-    )
-    def play_track(self, _):
-        pass
-
-    @GObject.Signal(
-        arg_types=(GObject.TYPE_PYOBJECT,), return_type=GObject.TYPE_NONE
-    )
-    def add_track(self, _):
-        pass
 
     def sort_key(self):
         return (self.track.disc_num(), self.track.track_num())
