@@ -111,19 +111,6 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         )
 
     def _setup_actions(self):
-        self.artist_list.connect('row-activated', self.select_artist)
-        self.album_list.connect('row-activated', self.select_album)
-        self.album_list.filter_all()
-
-        self.artist_return.connect(
-            'clicked',
-            lambda _: self.inner_split.set_show_content('album_view'),
-        )
-
-        self.album_return.connect(
-            'clicked', lambda _: self.outer_split.set_show_sidebar(False)
-        )
-
         self.main_view.lists_toggle.connect(
             'clicked',
             lambda _: self.outer_split.set_show_sidebar(
@@ -151,10 +138,6 @@ class RecordBoxWindow(Adw.ApplicationWindow):
             'fraction',
             GObject.BindingFlags.DEFAULT,
         )
-
-        self.filter_all.connect('clicked', self._show_all_albums)
-
-        self.main_view.connect('album_changed', self._goto_album)
 
         # Connect breakpoint signals to functions so that the breakpoint signal can be propagated to child widgets.
         self._connect_breakpoint(self.breakpoint1, 1)
@@ -186,6 +169,7 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         for album in self.db.get_albums():
             self.album_list.append(album)
 
+    @Gtk.Template.Callback()
     def select_album(self, _, clicked_row):
         album = self.db.get_album(clicked_row.raw_title)
 
@@ -197,6 +181,7 @@ class RecordBoxWindow(Adw.ApplicationWindow):
             self.outer_split.get_collapsed() == False
         )
 
+    @Gtk.Template.Callback()
     def select_artist(self, _, clicked_row):
         self.selected_artist = clicked_row.raw_title
         if clicked_row:
@@ -205,13 +190,23 @@ class RecordBoxWindow(Adw.ApplicationWindow):
             self.inner_split.set_show_content('album_view')
             self.filter_all.set_sensitive(True)
 
-    def _show_all_albums(self, _):
+    @Gtk.Template.Callback()
+    def _on_artist_return(self, _):
+        self.inner_split.set_show_content('album_view')
+
+    @Gtk.Template.Callback()
+    def _on_album_return(self, _):
+        self.outer_split.set_show_sidebar(False)
+
+    @Gtk.Template.Callback()
+    def _on_filter_all(self, _):
         self.album_list.filter_all()
         self.filter_all.set_sensitive(False)
         self.album_list_page.set_title('Artists')
         self.artist_list.unselect_all()
 
-    def _goto_album(self, _, album):
+    @Gtk.Template.Callback()
+    def _on_album_changed(self, _, album):
         self.album_list.filter_on_key(album.artists[0])
         self.album_list_page.set_title(album.artists[0])
         self.main_page.set_title(album.name)

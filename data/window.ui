@@ -70,6 +70,7 @@
                                   <object class="GtkButton" id="artist_return">
                                     <property name="visible">False</property>
                                     <property name="icon-name">go-next-symbolic</property>
+                                    <signal name="clicked" handler="_on_artist_return" />
                                   </object>
                                 </child>
                                 <child type="end">
@@ -87,6 +88,7 @@
                             <property name="hscrollbar-policy">never</property>
                             <child>
                               <object class="RecordBoxArtistList" id="artist_list">
+                                <signal name="row-activated" handler="select_artist" />
                                 <style>
                                   <class name="navigation-sidebar" />
                                 </style>
@@ -123,12 +125,14 @@
                                   <object class="GtkButton" id="filter_all">
                                     <property name="icon-name">edit-select-all-symbolic</property>
                                     <property name="sensitive">false</property>
+                                    <signal name="clicked" handler="_on_filter_all" />
                                   </object>
                                 </child>
                                 <child type="end">
                                   <object class="GtkButton" id="album_return">
                                     <property name="visible">False</property>
                                     <property name="icon-name">go-next-symbolic</property>
+                                    <signal name="clicked" handler="_on_album_return" />
                                   </object>
                                 </child>
                               </object>
@@ -140,6 +144,7 @@
                             <property name="hscrollbar-policy">never</property>
                             <child>
                               <object class="RecordBoxAlbumList" id="album_list">
+                                <signal name="row-activated" handler="select_album" />
                                 <style>
                                   <class name="navigation-sidebar" />
                                 </style>
@@ -161,7 +166,9 @@
             <property name="title" translatable="yes">Tracks</property>
             <property name="tag">track-view</property>
             <property name="child">
-              <object class="MainView" id="main_view" />
+              <object class="MainView" id="main_view">
+                <signal name="album_changed" handler="_on_album_changed" />
+              </object>
             </property>
           </object>
         </property>
