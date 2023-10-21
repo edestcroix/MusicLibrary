@@ -22,7 +22,7 @@ import gi
 
 gi.require_version('Gtk', '4.0')
 
-from .musicdb import MusicDB, Album
+from .library import AlbumItem, TrackItem
 
 
 @Gtk.Template(resource_path='/com/github/edestcroix/RecordBox/album_view.ui')
@@ -55,18 +55,18 @@ class RecordBoxAlbumView(Adw.Bin):
     def clear_all(self):
         self.track_list.remove_all()
 
-    def update_album(self, album: Album, current_artist=None):
+    def update_album(self, album: AlbumItem, current_artist=None):
         self.current_album = album
         self.clear_all()
         self.update_cover(album.cover)
-        self.update_tracks(album.get_tracks(), current_artist)
+        self.update_tracks(album.tracks, current_artist)
         self.stack.set_visible_child_name('album_view')
 
-    def update_tracks(self, tracks, current_artist):
+    def update_tracks(self, tracks: list[TrackItem], current_artist):
         current_disc, disc_row = 0, None
         for track in tracks:
-            if track.disc_num() != current_disc:
-                disc_row = self._disc_row(current_disc := track.disc_num())
+            if track.discnumber != current_disc:
+                disc_row = self._disc_row(current_disc := track.discnumber)
             self._setup_row(track, disc_row, current_artist)
 
     def _disc_row(self, current_disc):
@@ -78,16 +78,16 @@ class RecordBoxAlbumView(Adw.Bin):
         self.track_list.append(disc_row)
         return disc_row
 
-    def _setup_row(self, track, disc_row, current_artist):
+    def _setup_row(self, track: TrackItem, disc_row, current_artist):
         row = self._create_row(track, current_artist)
-        row.connect('play_track', lambda *_: self.emit('play_track', track))
-        row.connect('add_track', lambda *_: self.emit('add_track', track))
+        row.connect('play_track', self._play_track)
+        row.connect('add_track', self._add_track)
         if disc_row:
             disc_row.add_row(row)
         else:
             self.track_list.append(row)
 
-    def _create_row(self, track, current_artist, parent_row=None):
+    def _create_row(self, track: TrackItem, current_artist, parent_row=None):
         row = TrackRow(track=track, current_artist=current_artist)
         row.set_title_lines(1)
         row.set_selectable(False)
@@ -96,28 +96,45 @@ class RecordBoxAlbumView(Adw.Bin):
             parent_row.add_row(row)
         return row
 
+    def _play_track(self, _, track):
+        self._track_signal(track, 'play_track')
+
+    def _add_track(self, _, track):
+        self._track_signal(track, 'add_track')
+
+    def _track_signal(self, track, signal):
+        # Play queue currently can only add albums, not lone tracks,
+        # so we create a new album with only the desired track in it.
+        if self.current_album:
+            new_album = self.current_album.copy()
+            new_album.tracks = [track]
+            self.emit(signal, new_album)
+
 
 class TrackRow(Adw.ActionRow):
 
     play_track = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
     add_track = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
 
-    def __init__(self, track, current_artist, **kwargs):
+    def __init__(self, track: TrackItem, current_artist, **kwargs):
         super().__init__(**kwargs)
         self.track = track
-        track_num = track.track_num()
+        track_num = track.track
         self.set_title_lines(1)
-        self.set_title(GLib.markup_escape_text(track.title))
+        self.set_title(track.title)
 
         if current_artist and track.albumartist != current_artist:
-            artists = f"\n{', '.join([track.albumartist] + track.artists)}"
+            if track.artists:
+                artists = f'\n{track.albumartist}, {track.artists}'
+            else:
+                artists = f'\n{track.albumartist}'
         elif artists := track.artists:
-            artists = f"\n{', '.join(artists)}"
+            artists = f'\n{track.artists}'
         else:
             artists = ''
         self.set_subtitle(
             GLib.markup_escape_text(
-                f'{track_num:0>2} - {track.length_str()}{artists}'
+                f'{track_num:0>2} - {track.length}{artists}'
             )
         )
         self.set_tooltip_text(track.title)

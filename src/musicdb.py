@@ -2,8 +2,7 @@ from gi.repository import GLib
 import os
 import sqlite3
 
-from .music_types import Album, Track
-from .library import ArtistItem
+from .library import AlbumItem, ArtistItem, TrackItem
 
 
 StrOpt = str | None
@@ -40,6 +39,9 @@ class MusicDB:
     def commit(self):
         self.db.commit()
 
+    def close(self):
+        self.db.close()
+
     def remove_missing(self):
         self.cursor.execute('SELECT path FROM tracks')
         for path in self.cursor.fetchall():
@@ -65,13 +67,10 @@ class MusicDB:
         )
         return [ArtistItem(*artist) for artist in self.cursor.fetchall()]
 
-    def get_albums(self) -> list[Album]:
+    def get_albums(self) -> list[AlbumItem]:
         self.cursor.execute(
-            'SELECT DISTINCT name, COUNT(title), SUM(length), year, thumb, cover FROM albums JOIN tracks ON albums.name = tracks.album GROUP BY name ORDER BY year',
+            'SELECT DISTINCT name, SUM(length), year, thumb, cover FROM albums JOIN tracks ON albums.name = tracks.album GROUP BY name ORDER BY year',
         )
-        # Albums do not need to consider albumartist/artists, as they are only used to display the album list.
-        # The library needs to have albums returned with all artists in the album's 'artist' field, because selecting
-        # an artist will filter through the albums that have that artist in the 'artist' field.
         albums = []
         for album in self.cursor.fetchall():
             self.cursor.execute(
@@ -79,44 +78,30 @@ class MusicDB:
                 (album[0],),
             )
             artists = [a[0] for a in self.cursor.fetchall()]
-            albums.append(Album(*(album + (artists,))))
+            tracks = self.get_tracks(album[0])
+            albums.append(AlbumItem(*(album + (artists, tracks))))
         return albums
 
-    def get_album(self, album: str) -> Album:
-        self.cursor.execute(
-            'SELECT name, COUNT(title), SUM(length), year, thumb, cover FROM albums JOIN tracks ON albums.name = tracks.album WHERE name = ? GROUP BY name',
-            (album,),
-        )
-        result = self.cursor.fetchone()
-        self.cursor.execute(
-            'SELECT DISTINCT name FROM artists WHERE album = ? ORDER BY name',
-            (album,),
-        )
-        artists = [a[0] for a in self.cursor.fetchall()]
-        return Album(*(result + (artists,)))
-
-    def get_tracks(self, album: Album) -> list[Track]:
+    def get_tracks(self, album: str) -> list[TrackItem]:
         self.cursor.execute(
             'SELECT track, discnumber, title, length, path FROM tracks WHERE album = ? ORDER BY discnumber, track',
-            (album.name,),
+            (album,),
         )
         tracks = []
-        # Tracks need to distinguish between artists and albumartists, so that additional artists can be displayed
-        # in the track list. When fetching tracks from the DB the albumartist is therefore stored separately from the artists.
         for track in self.cursor.fetchall():
             self.cursor.execute(
                 'SELECT name FROM artists WHERE track_title = ? AND album = ? AND albumartist = false',
-                (track[2], album.name),
+                (track[2], album),
             )
             artists = [a[0] for a in self.cursor.fetchall()]
             self.cursor.execute(
                 'SELECT name FROM artists WHERE track_title = ? AND album = ? AND albumartist = true',
-                (track[2], album.name),
+                (track[2], album),
             )
             albumartist = self.cursor.fetchone()
             albumartist = albumartist[0] if albumartist else None
-            tracks.append(Track(*(track + (album, artists, albumartist))))
-
+            artists = ', '.join(artists)
+            tracks.append(TrackItem(*(track + (album, artists, albumartist))))
         return tracks
 
     def _create_tables(self):

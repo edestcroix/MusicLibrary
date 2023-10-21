@@ -82,19 +82,20 @@ class RecordBoxPlayerControls(Gtk.Box):
         self.play_pause.set_icon_name('media-playback-start-symbolic')
         self.progress.set_sensitive(False)
 
-    def set_current_track(self, current_track):
-        if current_track:
+    def set_current_track(self, track):
+        if track:
             self.playing_song.set_markup(
-                f'<span size="large">{GLib.markup_escape_text(current_track.title)}</span>'
+                f'<span size="large">{track.title}</span>'
             )
-            artists = map(
-                GLib.markup_escape_text,
-                [current_track.albumartist] + current_track.artists,
+            artists = (
+                f'{track.albumartist}, {track.artists}'
+                if track.artists
+                else track.albumartist
             )
             self.playing_artist.set_markup(
-                f'<span size="small">{", ".join(artists)}</span>'
+                f'<span size="small">{GLib.markup_escape_text(artists)}</span>'
             )
-            self.end_label.set_text(current_track.length_str())
+            self.end_label.set_text(track.length)
         else:
             self.playing_song.set_text('')
             self.playing_artist.set_text('')

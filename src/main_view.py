@@ -20,7 +20,7 @@
 from copy import copy
 from gi.repository import Adw, Gtk, GLib, Gst, Gio, GObject
 import gi
-from .musicdb import MusicDB, Album
+from .library import AlbumItem
 from .album_view import RecordBoxAlbumView
 from .player_controls import RecordBoxPlayerControls
 from .player import Player
@@ -84,7 +84,7 @@ class MainView(Adw.Bin):
         if breakpoint_num > 2:
             self.lists_toggle.set_visible(False)
 
-    def update_album(self, album: Album, current_artist=None):
+    def update_album(self, album: AlbumItem, current_artist=None):
         self.album_overview.update_album(album, current_artist)
         self.play.set_sensitive(True)
         self.queue_add.set_sensitive(True)
@@ -121,17 +121,18 @@ class MainView(Adw.Bin):
         self.play_queue.empty_queue()
 
     @Gtk.Template.Callback()
-    def _on_play_track(self, _, track):
-        album = self._get_album_from_track(track)
+    def _on_play_track(self, _, track_album: AlbumItem):
+        # selected track to play is returned in an AlbumItem
+        # containing only that specific track, because play queue currently
+        # doesn't support adding individual tracks.
         if self.player.state == 'stopped' or not self.confirm_play:
-            self._play_album(album)
+            self._play_album(track_album)
         else:
-            self._confirm_album_play(album, track.title)
+            self._confirm_album_play(track_album, track_album.tracks[0].title)
 
     @Gtk.Template.Callback()
-    def _on_add_track(self, _, track):
-        album = self._get_album_from_track(track)
-        self.play_queue.add_album(album)
+    def _on_add_track(self, _, track_album):
+        self.play_queue.add_album(track_album)
         if self.player.state == 'stopped':
             self.player.ready()
         self.send_toast('Queue Updated')
@@ -174,7 +175,6 @@ class MainView(Adw.Bin):
         )
         self.cancellable = Gio.Cancellable()
 
-        # dialog.set_body_use_markup(True)
         dialog.add_response('cancel', 'Cancel')
         dialog.set_default_response('cancel')
         dialog.add_response('append', 'Add at End')
@@ -199,12 +199,6 @@ class MainView(Adw.Bin):
         self.play_queue.clear()
         self.play_queue.add_album(album)
         self.player.play()
-
-    def _get_album_from_track(self, track):
-        result = copy(track.album)
-        result.tracks = [track]
-        result.artists = [track.albumartist] + track.artists
-        return result
 
     def _on_stream_start(self, _):
         self.player_controls.set_current_track(

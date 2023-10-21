@@ -1,5 +1,6 @@
 from gi.repository import Adw, Gtk, GLib, GObject
 import gi
+from .library import TrackItem
 
 gi.require_version('Gtk', '4.0')
 
@@ -230,12 +231,12 @@ class PlayQueueTrackRow(Adw.ActionRow):
     prev = None
     next = None
 
-    def __init__(self, track):
+    def __init__(self, track: TrackItem):
         self.track = track
         super().__init__()
 
-        self.set_title(GLib.markup_escape_text(track.title))
-        self.set_subtitle(track.length_str())
+        self.set_title(track.title)
+        self.set_subtitle(track.length)
         self.remove_button = Gtk.Button()
         self.remove_button.get_style_context().add_class('flat')
         self.remove_button.set_icon_name('list-remove-symbolic')

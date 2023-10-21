@@ -1,0 +1,37 @@
+<interface>
+  <template class="GtkListItem">
+    <property name="child">
+      <!-- Need to wrap the ActionRow in an AdwBin to avoid Gtk assert box != null failed errors  -->
+      <object class="AdwBin">
+        <child>
+          <object class="AdwActionRow">
+            <property name="title-lines">2</property>
+            <binding name="title">
+              <lookup name="name" type="AlbumItem">
+                <lookup name="item">GtkListItem</lookup>
+              </lookup>
+            </binding>
+            <binding name="subtitle">
+              <lookup name="summary" type="AlbumItem">
+                <lookup name="item">GtkListItem</lookup>
+              </lookup>
+            </binding>
+            <child type="prefix">
+              <object class="GtkImage">
+                <property name="pixel-size">64</property>
+                <binding name="file">
+                  <lookup name="thumb" type="AlbumItem">
+                    <lookup name="item">GtkListItem</lookup>
+                  </lookup>
+                </binding>
+              </object>
+            </child>
+            <style>
+              <class name="library-row" />
+            </style>
+          </object>
+        </child>
+      </object>
+    </property>
+  </template>
+</interface>
