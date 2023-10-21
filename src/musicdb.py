@@ -3,7 +3,8 @@ import os
 import sqlite3
 from collections import namedtuple
 
-from .music_types import Album, Artist, Track
+from .music_types import Album, Track
+from .library import ArtistItem
 
 AlbumInsert = namedtuple('AlbumInsert', ['name', 'year', 'covers'])
 ArtistInsert = namedtuple(
@@ -84,13 +85,12 @@ class MusicDB:
         )
         return result[0] if (result := self.cursor.fetchone()) else None
 
-    def get_artists(self, all_artists=False):
+    def get_artists(self, all_artists=False) -> list[ArtistItem]:
         albumartist = '' if all_artists else ' WHERE albumartist = true'
         self.cursor.execute(
-            f'SELECT name, sort, COUNT(DISTINCT album) FROM artists{albumartist} GROUP BY name ORDER BY name'
+            f'SELECT DISTINCT name, sort, COUNT(DISTINCT album) FROM artists{albumartist} GROUP BY name ORDER BY name'
         )
-        for artist in self.cursor.fetchall():
-            yield Artist(*artist)
+        return [ArtistItem(*artist) for artist in self.cursor.fetchall()]
 
     def get_albums(self):
         self.cursor.execute(

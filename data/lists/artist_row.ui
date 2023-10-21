@@ -1,0 +1,27 @@
+<interface>
+  <template class="GtkListItem">
+    <!-- <property name="activatable">True</property> -->
+    <property name="child">
+      <!-- Need to wrap the ActionRow in an AdwBin to avoid Gtk assert box != null failed errors  -->
+      <object class="AdwBin">
+        <child>
+          <object class="AdwActionRow">
+            <binding name="title">
+              <lookup name="name" type="ArtistItem">
+                <lookup name="item">GtkListItem</lookup>
+              </lookup>
+            </binding>
+            <binding name="subtitle">
+              <lookup name="albums" type="ArtistItem">
+                <lookup name="item">GtkListItem</lookup>
+              </lookup>
+            </binding>
+            <style>
+              <class name="library-row" />
+            </style>
+          </object>
+        </child>
+      </object>
+    </property>
+  </template>
+</interface>

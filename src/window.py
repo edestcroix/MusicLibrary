@@ -20,12 +20,13 @@
 from gi.repository import Adw, Gtk, GLib, Gio, GObject
 import gi
 import threading
-from .library import RecordBoxArtistList, RecordBoxAlbumList
-from .musicdb import MusicDB
+from .library import ArtistItem, ArtistList, AlbumList, MusicRow
+from .musicdb import MusicDB, Album
 from .parser import MusicParser
 from .play_queue import PlayQueue
 from .player import Player
 from .main_view import MainView
+from .library import ArtistList
 
 gi.require_version('Gtk', '4.0')
 
@@ -164,8 +165,7 @@ class RecordBoxWindow(Adw.ApplicationWindow):
 
         print('Populating lists')
 
-        for artist in self.db.get_artists(self._show_all_artists):
-            self.artist_list.append(artist)
+        self.artist_list.populate(self.db.get_artists(self._show_all_artists))
         for album in self.db.get_albums():
             self.album_list.append(album)
 
@@ -182,13 +182,11 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         )
 
     @Gtk.Template.Callback()
-    def select_artist(self, _, clicked_row):
-        self.selected_artist = clicked_row.raw_title
-        if clicked_row:
-            self.album_list.filter_on_key(clicked_row.raw_title)
-            self.album_list_page.set_title(clicked_row.raw_title)
-            self.inner_split.set_show_content('album_view')
-            self.filter_all.set_sensitive(True)
+    def select_artist(self, _, selected: ArtistItem):
+        self.album_list.filter_on_key(selected.raw_name)
+        self.album_list_page.set_title(selected.name)
+        self.inner_split.set_show_content('album_view')
+        self.filter_all.set_sensitive(True)
 
     @Gtk.Template.Callback()
     def _on_artist_return(self, _):

@@ -1,7 +1,24 @@
-from gi.repository import Adw, Gtk, GLib, GObject
+from gi.repository import Adw, Gtk, GLib, GObject, Gio
 import gi
+from .music_types import Album
 
 gi.require_version('Gtk', '4.0')
+
+
+class ArtistItem(GObject.Object):
+    __gtype_name__ = 'ArtistItem'
+
+    name = GObject.Property(type=str)
+    raw_name = GObject.Property(type=str)
+    sort = GObject.Property(type=str)
+    albums = GObject.Property(type=str)
+
+    def __init__(self, name, sort, num_albums):
+        super().__init__()
+        self.name = GLib.markup_escape_text(name)
+        self.raw_name = name
+        self.sort = sort or name
+        self.albums = f'{num_albums} albums'
 
 
 class MusicRow(Adw.ActionRow):
@@ -31,30 +48,54 @@ class MusicRow(Adw.ActionRow):
         self.raw_title = title
 
 
-class RecordBoxArtistList(Gtk.ListBox):
+class ArtistList(Gtk.ListView):
     __gtype_name__ = 'RecordBoxArtistList'
 
     _sort_type = 0
+
+    artist_selected = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.model = Gio.ListStore.new(ArtistItem)
+        selection_model = Gtk.SingleSelection.new(self.model)
+        selection_model.connect('selection_changed', self._artist_selected)
+        self.set_model(selection_model)
+        factory = Gtk.BuilderListItemFactory.new_from_resource(
+            Gtk.BuilderCScope(),
+            '/com/github/edestcroix/RecordBox/lists/artist_row.ui',
+        )
+        self.set_factory(factory)
 
     @GObject.Property(type=int)
     def sort(self):
         return self._sort_type
 
     @sort.setter
-    def set_sort(self, value):
+    def set_sort(self, value: int):
         self._sort_type = value
         self._update_sort()
 
+    def append(self, artist: ArtistItem):
+        self.model.append(artist)
+
+    def populate(self, artist_list: list[ArtistItem]):
+        self.model.remove_all()
+        for artist in artist_list:
+            self.append(artist)
+        self._update_sort()
+
+    def remove_all(self):
+        self.model.remove_all()
+
     def _update_sort(self):
         if self._sort_type == 0:
-            self.set_sort_func(lambda a, b: a.data.sort > b.data.sort)
+            self.model.sort(lambda a, b: a.sort > b.sort)
         elif self._sort_type == 1:
-            self.set_sort_func(lambda a, b: a.data.sort < b.data.sort)
-        self.invalidate_sort()
+            self.model.sort(lambda a, b: a.sort < b.sort)
 
-    def append(self, artist):
-        row = MusicRow(
-            activatable=True, subtitle=f'{artist.num_albums} albums'
+    def _artist_selected(self, selection_model, position, _):
+        self.emit('artist-selected', selection_model.get_selected_item())
         )
         row.set_data(artist)
         row.set_title(artist.name)
@@ -62,7 +103,7 @@ class RecordBoxArtistList(Gtk.ListBox):
         super().append(row)
 
 
-class RecordBoxAlbumList(Gtk.ListBox):
+class AlbumList(Gtk.ListBox):
     __gtype_name__ = 'RecordBoxAlbumList'
 
     _sort_type = 0

@@ -7,6 +7,7 @@
     <file preprocess="xml-stripblanks">preferences.ui</file>
     <file preprocess="xml-stripblanks">player_controls.ui</file>
     <file preprocess="xml-stripblanks">gtk/help-overlay.ui</file>
+    <file preprocess="xml-stripblanks">lists/artist_row.ui</file>
     <file>style.css</file>
   </gresource>
 </gresources>

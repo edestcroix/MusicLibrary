@@ -35,18 +35,6 @@ class Album:
 
 
 @dataclass
-class Artist:
-    name: str
-    sort: str
-    num_albums: int
-
-    def __init__(self, name, sort, num_albums):
-        self.name = name
-        self.sort = sort or name
-        self.num_albums = num_albums
-
-
-@dataclass
 class Track:
     track: str
     discnumber: str

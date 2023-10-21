@@ -88,7 +88,7 @@
                             <property name="hscrollbar-policy">never</property>
                             <child>
                               <object class="RecordBoxArtistList" id="artist_list">
-                                <signal name="row-activated" handler="select_artist" />
+                                <signal name="artist_selected" handler="select_artist" />
                                 <style>
                                   <class name="navigation-sidebar" />
                                 </style>
