@@ -25,12 +25,21 @@ class PlayQueue(Gtk.ListBox):
 
     loop = GObject.property(type=bool, default=False)
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
     def clear(self):
         self.remove_all()
         self.current_track = None
         self.start = None
         self.end = None
+
+    def empty_queue(self):
+        cur = self.start
+        while cur:
+            nxt = cur.next
+            self._remove(cur.get_ancestor(PlayQueueAlbumRow), cur)
+            cur = nxt
 
     def restart(self):
         self._move_track_indicator(self.current_track, self.start)
@@ -58,6 +67,8 @@ class PlayQueue(Gtk.ListBox):
         album_row = PlayQueueAlbumRow(
             album.name, ', '.join(album.artists), album.cover
         )
+        if self.start is None:
+            album_row.set_expanded(True)
         album_row.set_tracks(album.tracks)
         album_row.remove_button.connect(
             'clicked',
@@ -136,9 +147,11 @@ class PlayQueue(Gtk.ListBox):
     def _move_track_indicator(self, cur, next):
         if next:
             cur.remove_prefix() if cur else None
+            cur.get_ancestor(PlayQueueAlbumRow).set_expanded(False)
             next.add_prefix(
                 Gtk.Image.new_from_icon_name('media-playback-start-symbolic')
             )
+            next.get_ancestor(PlayQueueAlbumRow).set_expanded(True)
 
     def _remove(self, album_row, row):
 
@@ -187,6 +200,7 @@ class PlayQueueAlbumRow(Adw.ExpanderRow):
         self.remove_button.get_style_context().add_class('flat')
         self.remove_button.set_icon_name('list-remove-symbolic')
         self.remove_button.set_tooltip_text('Remove from queue')
+        self.remove_button.set_valign(Gtk.Align.CENTER)
         self.add_suffix(self.remove_button)
 
         if cover:
@@ -226,6 +240,7 @@ class PlayQueueTrackRow(Adw.ActionRow):
         self.remove_button.get_style_context().add_class('flat')
         self.remove_button.set_icon_name('list-remove-symbolic')
         self.remove_button.set_tooltip_text('Remove from queue')
+        self.remove_button.set_valign(Gtk.Align.CENTER)
         self.add_suffix(self.remove_button)
 
     def set_prev(self, prev):

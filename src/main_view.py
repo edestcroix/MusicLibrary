@@ -117,6 +117,10 @@ class MainView(Adw.Bin):
             self.send_toast('Queue Updated')
 
     @Gtk.Template.Callback()
+    def _on_queue_clear(self, _):
+        self.play_queue.empty_queue()
+
+    @Gtk.Template.Callback()
     def _on_play_track(self, _, track):
         album = self._get_album_from_track(track)
         if self.player.state == 'stopped' or not self.confirm_play:
