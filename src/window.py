@@ -66,7 +66,7 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         return self._show_all_artists
 
     @show_all_artists.setter
-    def set_show_all_artists(self, value):
+    def set_show_all_artists(self, value: bool):
         self._show_all_artists = value
         self.refresh_lists()
 
@@ -106,7 +106,7 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         # binding this refreshes the lists on initial startup, so it doesn't have to be done on init.
         self._bind('show-all-artists', self, 'show_all_artists')
 
-    def _bind(self, key, obj, property):
+    def _bind(self, key: str, obj: GObject.Object, property: str):
         self.app.settings.bind(
             key, obj, property, Gio.SettingsBindFlags.DEFAULT
         )
@@ -170,7 +170,7 @@ class RecordBoxWindow(Adw.ApplicationWindow):
             self.album_list.append(album)
 
     @Gtk.Template.Callback()
-    def select_album(self, _, clicked_row):
+    def select_album(self, _, clicked_row: MusicRow):
         album = self.db.get_album(clicked_row.raw_title)
 
         self.main_page.set_title(album.name)
@@ -204,7 +204,7 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         self.artist_list.unselect_all()
 
     @Gtk.Template.Callback()
-    def _on_album_changed(self, _, album):
+    def _on_album_changed(self, _, album: Album):
         self.album_list.filter_on_key(album.artists[0])
         self.album_list_page.set_title(album.artists[0])
         self.main_page.set_title(album.name)
@@ -219,7 +219,9 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         self._select_row_with_title(self.album_list, album.name)
         self._select_row_with_title(self.artist_list, album.artists[0])
 
-    def _select_row_with_title(self, row_list, title):
+    def _select_row_with_title(
+        self, row_list: AlbumList | ArtistList, title: str
+    ):
         i = 0
         cur = row_list.get_row_at_index(i)
         while cur and cur.raw_title != title:
@@ -228,6 +230,6 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         if cur:
             self.artist_list.select_row(cur)
 
-    def _connect_breakpoint(self, breakpoint, num):
+    def _connect_breakpoint(self, breakpoint: Adw.Breakpoint, num: int):
         breakpoint.connect('apply', self.main_view.set_breakpoint, num)
         breakpoint.connect('unapply', self.main_view.unset_breakpoint, num)
