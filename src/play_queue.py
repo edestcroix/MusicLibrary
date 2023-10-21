@@ -15,8 +15,6 @@ class PlayQueue(Gtk.ListBox):
     end = None
     start = None
 
-    _loop = False
-
     # Since AdwExpanderRows don't index their children, all the track rows
     # maintain a linked list of themselves so they when albums or tracks are removed
     # the continuity of the current track in the queue is maintained. New tracks
@@ -25,13 +23,8 @@ class PlayQueue(Gtk.ListBox):
     # on every track in the album starting at the first (Album ExpanderRows point
     # to first track in the album).
 
-    @GObject.Property(type=bool, default=False)
-    def loop(self):
-        return self._loop
+    loop = GObject.property(type=bool, default=False)
 
-    @loop.setter
-    def set_loop(self, value):
-        self._loop = value
 
     def clear(self):
         self.remove_all()
