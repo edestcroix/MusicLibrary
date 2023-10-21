@@ -74,7 +74,6 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         super().__init__(**kwargs)
         self.app = kwargs.get('application', None)
 
-        self.db = MusicDB()
         self.parser = MusicParser()
 
         self.selected_artist = None
@@ -155,6 +154,7 @@ class RecordBoxWindow(Adw.ApplicationWindow):
     def update_db(self):
         db = MusicDB()
         self.parser.build(db)
+        db.close()
         GLib.idle_add(self.refresh_lists)
         GLib.idle_add(self.progress_bar1.set_visible, False)
         GLib.idle_add(self.progress_bar2.set_visible, False)
@@ -165,8 +165,10 @@ class RecordBoxWindow(Adw.ApplicationWindow):
 
         print('Populating lists')
 
-        self.artist_list.populate(self.db.get_artists(self._show_all_artists))
-        self.album_list.populate(self.db.get_albums())
+        db = MusicDB()
+        self.artist_list.populate(db.get_artists(self._show_all_artists))
+        self.album_list.populate(db.get_albums())
+        db.close()
 
     @Gtk.Template.Callback()
     def select_album(self, _, album: AlbumItem):
