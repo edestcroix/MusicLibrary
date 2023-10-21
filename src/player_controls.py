@@ -3,7 +3,7 @@ import gi
 gi.require_version('Gtk', '4.0')
 gi.require_version('GstAudio', '1.0')
 
-from gi.repository import Adw, Gtk, GLib, Gio, GObject, GstAudio
+from gi.repository import Adw, Gtk, GLib, GObject, GstAudio
 from .monitor import ProgressMonitor
 
 
