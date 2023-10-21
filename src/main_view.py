@@ -70,9 +70,7 @@ class MainView(Adw.Bin):
         self._setup_actions()
         self._set_controls_stopped()
 
-    @GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
-    def album_changed(self, album):
-        self.update_album(album)
+    album_changed = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
 
     def set_breakpoint(self, _, breakpoint_num):
         self.album_overview.set_breakpoint(None)

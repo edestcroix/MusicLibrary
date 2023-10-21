@@ -202,31 +202,34 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         self.artist_list.unselect_all()
 
     @Gtk.Template.Callback()
-    def _on_album_changed(self, _, album: AlbumItem):
-        self.album_list.filter_on_key(album.artists[0])
+    def _on_album_changed(self, _, album_name: str):
+        album = self.album_list.find_album(album_name)
+
+        self.album_list.filter_on_artist(album.artists[0])
         self.album_list_page.set_title(album.artists[0])
         self.main_page.set_title(album.name)
         self.inner_split.set_show_content('album_view')
         self.album_return.set_sensitive(True)
 
         self.selected_artist = album.artists[0]
+        self.main_view.update_album(album, self.selected_artist)
 
         self.album_list.unselect_all()
         self.artist_list.unselect_all()
 
-        self._select_row_with_title(self.album_list, album.name)
         self._select_row_with_title(self.artist_list, album.artists[0])
+        self._select_row_with_title(self.album_list, album.name)
 
     def _select_row_with_title(
         self, row_list: AlbumList | ArtistList, title: str
     ):
         i = 0
         cur = row_list.get_row_at_index(i)
-        while cur and cur.raw_title != title:
+        while cur and cur.raw_name != title:
             i += 1
             cur = row_list.get_row_at_index(i)
         if cur:
-            self.artist_list.select_row(cur)
+            row_list.select_index(i)
 
     def _connect_breakpoint(self, breakpoint: Adw.Breakpoint, num: int):
         breakpoint.connect('apply', self.main_view.set_breakpoint, num)

@@ -153,6 +153,12 @@ class ArtistList(Gtk.ListView):
     def remove_all(self):
         self.model.remove_all()
 
+    def get_row_at_index(self, index: int):
+        return self.model[index]
+
+    def select_index(self, index: int):
+        self.selection_model.select_item(index, True)
+
     def _update_sort(self):
         if self._sort_type == 0:
             self.model.sort(lambda a, b: a.sort > b.sort)
@@ -210,6 +216,17 @@ class AlbumList(Gtk.ListView):
         self.filter_model.set_filter(
             Gtk.CustomFilter.new(lambda r: artist in r.artists)
         )
+
+    def find_album(self, album_name: str):
+        return next(
+            (row for row in self.model if row.raw_name == album_name), None
+        )
+
+    def get_row_at_index(self, index: int):
+        return self.model[index]
+
+    def select_index(self, index: int):
+        self.selection_model.select_item(index, True)
 
     def unselect_all(self):
         self.selection_model.unselect_item(self.selection_model.get_selected())
