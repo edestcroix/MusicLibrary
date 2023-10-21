@@ -180,6 +180,7 @@ class RecordBoxWindow(Adw.ApplicationWindow):
 
     @Gtk.Template.Callback()
     def select_artist(self, _, selected: ArtistItem):
+        self.selected_artist = selected.raw_name
         self.album_list.filter_on_artist(selected.raw_name)
         self.album_list_page.set_title(selected.name)
         self.inner_split.set_show_content('album_view')
