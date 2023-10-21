@@ -1,19 +1,16 @@
 from gi.repository import GLib
 import os
 import sqlite3
-from collections import namedtuple
 
 from .music_types import Album, Track
 from .library import ArtistItem
 
-AlbumInsert = namedtuple('AlbumInsert', ['name', 'year', 'covers'])
-ArtistInsert = namedtuple(
-    'ArtistInsert', ['name', 'sort', 'album', 'track_title', 'albumartist']
-)
-TrackInsert = namedtuple(
-    'TrackInsert',
-    ['title', 'track', 'discnumber', 'album', 'length', 'path', 'modified'],
-)
+
+StrOpt = str | None
+FloatOpt = float | None
+ArtistTags = tuple[str, StrOpt, StrOpt, StrOpt, bool]
+AlbumTags = tuple[StrOpt, StrOpt, StrOpt, StrOpt]
+TrackTags = tuple[StrOpt, StrOpt, StrOpt, StrOpt, float, str, FloatOpt]
 
 # TODO: Start adding type hints to this file.
 class MusicDB:
@@ -27,41 +24,17 @@ class MusicDB:
         self.cursor = self.db.cursor()
         self._create_tables()
 
-    def insert_artist(self, artist):
+    def insert_artist(self, artist: ArtistTags):
         self.cursor.execute(
-            'INSERT INTO artists VALUES (?, ?, ?, ?, ?)',
-            (
-                artist.name,
-                artist.sort,
-                artist.album,
-                artist.track_title,
-                artist.albumartist,
-            ),
+            'INSERT INTO artists VALUES (?, ?, ?, ?, ?)', artist
         )
 
-    def insert_album(self, album):
-        self.cursor.execute(
-            'INSERT INTO albums VALUES (?, ?, ?, ?)',
-            (
-                album.name,
-                album.year,
-                album.covers[0] if album.covers else None,
-                album.covers[1] if album.covers else None,
-            ),
-        )
+    def insert_album(self, album: AlbumTags):
+        self.cursor.execute('INSERT INTO albums VALUES (?, ?, ?, ?)', album)
 
-    def insert_track(self, track):
+    def insert_track(self, track: TrackTags):
         self.cursor.execute(
-            'INSERT INTO tracks VALUES (?, ?, ?, ?, ?, ?, ?)',
-            (
-                track.title,
-                track.track,
-                track.discnumber,
-                track.album,
-                track.length,
-                track.path,
-                track.modified,
-            ),
+            'INSERT INTO tracks VALUES (?, ?, ?, ?, ?, ?, ?)', track
         )
 
     def commit(self):
@@ -79,7 +52,7 @@ class MusicDB:
             'DELETE FROM albums WHERE name NOT IN (SELECT album FROM tracks)',
         )
 
-    def modify_time(self, path):
+    def modify_time(self, path: str) -> float | None:
         self.cursor.execute(
             'SELECT modified FROM tracks WHERE path=?', (path,)
         )
@@ -92,22 +65,24 @@ class MusicDB:
         )
         return [ArtistItem(*artist) for artist in self.cursor.fetchall()]
 
-    def get_albums(self):
+    def get_albums(self) -> list[Album]:
         self.cursor.execute(
             'SELECT DISTINCT name, COUNT(title), SUM(length), year, thumb, cover FROM albums JOIN tracks ON albums.name = tracks.album GROUP BY name ORDER BY year',
         )
         # Albums do not need to consider albumartist/artists, as they are only used to display the album list.
         # The library needs to have albums returned with all artists in the album's 'artist' field, because selecting
         # an artist will filter through the albums that have that artist in the 'artist' field.
+        albums = []
         for album in self.cursor.fetchall():
             self.cursor.execute(
                 'SELECT DISTINCT name FROM artists WHERE album = ? ORDER BY name',
                 (album[0],),
             )
             artists = [a[0] for a in self.cursor.fetchall()]
-            yield Album(*(album + (artists,)))
+            albums.append(Album(*(album + (artists,))))
+        return albums
 
-    def get_album(self, album):
+    def get_album(self, album: str) -> Album:
         self.cursor.execute(
             'SELECT name, COUNT(title), SUM(length), year, thumb, cover FROM albums JOIN tracks ON albums.name = tracks.album WHERE name = ? GROUP BY name',
             (album,),
@@ -120,7 +95,7 @@ class MusicDB:
         artists = [a[0] for a in self.cursor.fetchall()]
         return Album(*(result + (artists,)))
 
-    def get_tracks(self, album):
+    def get_tracks(self, album: Album) -> list[Track]:
         self.cursor.execute(
             'SELECT track, discnumber, title, length, path FROM tracks WHERE album = ? ORDER BY discnumber, track',
             (album.name,),
@@ -155,7 +130,7 @@ class MusicDB:
                 """,
         )
 
-    def _execute_queries(self, *queries):
+    def _execute_queries(self, *queries: str):
         for query in queries:
             self.cursor.execute(query)
         self.db.commit()
