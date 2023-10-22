@@ -172,7 +172,7 @@ class RecordBoxWindow(Adw.ApplicationWindow):
 
     @Gtk.Template.Callback()
     def select_album(self, _, album: AlbumItem):
-        self.main_page.set_title(album.name)
+        self.main_page.set_title(album.raw_name)
         self.main_view.update_album(album, self.selected_artist)
         self.outer_split.set_show_sidebar(
             self.outer_split.get_collapsed() == False
@@ -182,7 +182,7 @@ class RecordBoxWindow(Adw.ApplicationWindow):
     def select_artist(self, _, selected: ArtistItem):
         self.selected_artist = selected.raw_name
         self.album_list.filter_on_artist(selected.raw_name)
-        self.album_list_page.set_title(selected.name)
+        self.album_list_page.set_title(selected.raw_name)
         self.inner_split.set_show_content('album_view')
         self.filter_all.set_sensitive(True)
 
@@ -207,7 +207,7 @@ class RecordBoxWindow(Adw.ApplicationWindow):
 
         self.album_list.filter_on_artist(album.artists[0])
         self.album_list_page.set_title(album.artists[0])
-        self.main_page.set_title(album.name)
+        self.main_page.set_title(album.raw_name)
         self.inner_split.set_show_content('album_view')
         self.album_return.set_sensitive(True)
 
@@ -217,8 +217,8 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         self.album_list.unselect_all()
         self.artist_list.unselect_all()
 
-        self._select_row_with_title(self.artist_list, album.artists[0])
         self._select_row_with_title(self.album_list, album.name)
+        self._select_row_with_title(self.artist_list, album.artists[0])
 
     def _select_row_with_title(
         self, row_list: AlbumList | ArtistList, title: str
