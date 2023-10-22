@@ -199,8 +199,9 @@ class MainView(Adw.Bin):
         self.player.play()
 
     def _on_stream_start(self, _):
-        self.player_controls.set_current_track(
-            self.play_queue.get_current_track()
+        GLib.idle_add(
+            self.player_controls.set_current_track,
+            self.play_queue.get_current_track(),
         )
 
     def _on_player_state_changed(self, _, state):
