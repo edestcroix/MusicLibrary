@@ -118,7 +118,7 @@ class PlayQueue(Gtk.ListBox):
                     self.current_track, self.current_track.next
                 )
                 self.current_track = self.current_track.next
-            elif self._loop:
+            elif self.loop:
                 self._move_track_indicator(self.current_track, self.start)
                 self.current_track = self.start
             elif allow_none:
