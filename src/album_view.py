@@ -151,49 +151,43 @@ class TrackRow(Adw.ActionRow):
     def sort_key(self):
         return (self.track.disc_num(), self.track.track_num())
 
-    def _create_button(self, icon_name, callback, title, args=None):
-        button, content = Gtk.Button(), Adw.ButtonContent()
-        content.set_label(title)
-        content.set_icon_name(icon_name)
-        button.set_child(content)
-        button.set_css_classes(['flat'])
-        if args:
-            button.connect('clicked', callback, args)
-        else:
-            button.connect('clicked', callback)
-        return button
-
     def _create_popover(self):
         popover = Gtk.Popover.new()
         popover.set_position(Gtk.PositionType.BOTTOM)
-        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        popover.set_css_classes(['menu'])
+        box = Gtk.ListBox()
         box.append(
-            self._create_button(
-                'media-playback-start-symbolic',
-                self._popover_selected,
-                'Play track',
-                'play_track',
+            self._create_menu_option(
+                'media-playback-start-symbolic', 'Play Track'
             )
         )
         box.append(
-            self._create_button(
-                'media-playback-start-symbolic',
-                self._popover_selected,
-                'Start from track',
-                'start_from_track',
+            self._create_menu_option(
+                'media-playback-start-symbolic', 'Start Here'
             )
         )
         box.append(
-            self._create_button(
-                'list-add-symbolic',
-                self._popover_selected,
-                'Add to queue',
-                'add_track',
-            )
+            self._create_menu_option('list-add-symbolic', 'Add to Queue')
         )
+        box.connect('row-activated', self._popover_selected)
         popover.set_child(box)
         return popover
 
-    def _popover_selected(self, _, action):
+    def _create_menu_option(self, icon_name, label):
+        box = Gtk.Box()
+        box.set_orientation(Gtk.Orientation.HORIZONTAL)
+        box.set_halign(Gtk.Align.START)
+        icon = Gtk.Image.new_from_icon_name(icon_name)
+        label = Gtk.Label(label=label, halign=Gtk.Align.START)
+        box.append(icon)
+        box.append(label)
+        return box
+
+    def _popover_selected(self, _, row):
         self.popover.popdown()
-        self.emit(action, self.track)
+        if row.get_index() == 0:
+            self.emit('play_track', self.track)
+        elif row.get_index() == 1:
+            self.emit('start_from_track', self.track)
+        elif row.get_index() == 2:
+            self.emit('add_track', self.track)
