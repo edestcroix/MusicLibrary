@@ -114,6 +114,7 @@
                   <object class="RecordBoxAlbumView" id="album_overview">
                     <signal name="play_track" handler="_on_play_track" />
                     <signal name="add_track" handler="_on_add_track" />
+                    <signal name="start_from_track" handler="_on_play_track" />
                   </object>
                 </property>
               </object>

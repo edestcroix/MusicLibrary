@@ -48,6 +48,7 @@ class RecordBoxAlbumView(Adw.Bin):
 
     def unset_breakpoint(self, _):
         self.album_box.set_orientation(Gtk.Orientation.HORIZONTAL)
+    start_from_track = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
 
     def update_cover(self, cover_path):
         self.cover_image.set_from_file(cover_path)
@@ -82,6 +83,7 @@ class RecordBoxAlbumView(Adw.Bin):
         row = self._create_row(track, current_artist)
         row.connect('play_track', self._play_track)
         row.connect('add_track', self._add_track)
+        row.connect('start_from_track', self._start_from_track)
         if disc_row:
             disc_row.add_row(row)
         else:
@@ -102,6 +104,14 @@ class RecordBoxAlbumView(Adw.Bin):
     def _add_track(self, _, track):
         self._track_signal(track, 'add_track')
 
+    def _start_from_track(self, _, track):
+        if self.current_album:
+            new_album = self.current_album.copy()
+            new_album.tracks = new_album.tracks[
+                new_album.tracks.index(track) :
+            ]
+            self.emit('start_from_track', new_album)
+
     def _track_signal(self, track, signal):
         # Play queue currently can only add albums, not lone tracks,
         # so we create a new album with only the desired track in it.
@@ -115,6 +125,7 @@ class TrackRow(Adw.ActionRow):
 
     play_track = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
     add_track = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
+    start_from_track = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
 
     def __init__(self, track: TrackItem, current_artist, **kwargs):
         super().__init__(**kwargs)
@@ -171,6 +182,14 @@ class TrackRow(Adw.ActionRow):
                 self._popover_selected,
                 'Play track',
                 'play_track',
+            )
+        )
+        box.append(
+            self._create_button(
+                'media-playback-start-symbolic',
+                self._popover_selected,
+                'Start from track',
+                'start_from_track',
             )
         )
         box.append(
