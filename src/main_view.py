@@ -44,6 +44,8 @@ class MainView(Adw.Bin):
     queue_add = Gtk.Template.Child()
     play_queue = Gtk.Template.Child()
 
+    select_all_queue = Gtk.Template.Child()
+
     return_to_album = Gtk.Template.Child()
 
     lists_toggle = Gtk.Template.Child()
@@ -127,7 +129,7 @@ class MainView(Adw.Bin):
 
     @Gtk.Template.Callback()
     def _on_return_to_album(self, _):
-        if self.play_queue.current_track:
+        if not self.play_queue.empty():
             current_album = self.play_queue.get_current_track().album
             self.emit('album_changed', current_album)
 
@@ -148,11 +150,9 @@ class MainView(Adw.Bin):
         self.player.toggle()
 
     @Gtk.Template.Callback()
-    def _on_selection_mode_toggled(self, button):
-        if button.get_active():
-            self.play_queue.start_selection()
-        else:
-            self.play_queue.stop_selection()
+    def _remove_selected(self, _):
+        self.play_queue.remove_selected()
+        self.select_all_queue.set_active(False)
 
     def _confirm_album_play(self, album, name):
         dialog = Adw.MessageDialog(

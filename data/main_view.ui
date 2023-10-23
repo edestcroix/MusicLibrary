@@ -22,7 +22,6 @@
                     <child type="start">
                       <object class="GtkToggleButton" id="select_toggle">
                         <property name="icon-name">selection-mode-symbolic</property>
-                        <signal name="toggled" handler="_on_selection_mode_toggled" />
                       </object>
                     </child>
                     <child type="end">
@@ -36,13 +35,21 @@
                 <child type="bottom">
                   <object class="GtkActionBar">
                     <child type="start">
-                      <object class="GtkButton">
+                      <object class="GtkCheckButton" id="select_all_queue">
                         <property name="label">Select All</property>
+                        <style>
+                          <class name="selection-mode" />
+                        </style>
                       </object>
                     </child>
                     <child type="end">
                       <object class="GtkButton">
-                        <property name="label">Remove</property>
+                        <property name="icon-name">edit-delete-symbolic</property>
+                        <property name="valign">center</property>
+                        <signal name="clicked" handler="_remove_selected" />
+                        <style>
+                          <class name="destructive-action" />
+                        </style>
                       </object>
                     </child>
                   </object>
@@ -51,7 +58,11 @@
                   <object class="GtkScrolledWindow">
                     <property name="hscrollbar-policy">never</property>
                     <child>
-                      <object class="BetterPlayQueue" id="play_queue">
+                      <object class="RecordBoxPlayQueue" id="play_queue">
+                        <property name="selection-active" bind-source="select_toggle"
+                          bind-property="active" />
+                        <property name="all-selected" bind-source="select_all_queue"
+                          bind-property="active" />
                         <style>
                           <class name="navigation-sidebar" />
                         </style>
@@ -64,67 +75,72 @@
           </object>
         </property>
         <property name="content">
-          <object class="AdwToastOverlay" id="toast">
-            <child>
-              <object class="AdwToolbarView" id="toolbar_view">
-                <property name="reveal-bottom-bars">false</property>
-                <property name="bottom-bar-style">ADW_TOOLBAR_RAISED_BORDER</property>
-                <child type="top">
-                  <object class="AdwHeaderBar">
-                    <child type="start">
-                      <object class="GtkButton" id="lists_toggle">
-                        <property name="icon-name">sidebar-show-symbolic</property>
-                        <property name="visible">False</property>
+          <object class="AdwNavigationPage">
+            <property name="title" translatable="yes">Overview</property>
+            <property name="child">
+              <object class="AdwToastOverlay" id="toast">
+                <child>
+                  <object class="AdwToolbarView" id="toolbar_view">
+                    <property name="reveal-bottom-bars">false</property>
+                    <property name="bottom-bar-style">ADW_TOOLBAR_RAISED_BORDER</property>
+                    <child type="top">
+                      <object class="AdwHeaderBar">
+                        <child type="start">
+                          <object class="GtkButton" id="lists_toggle">
+                            <property name="icon-name">sidebar-show-symbolic</property>
+                            <property name="visible">False</property>
+                          </object>
+                        </child>
+                        <child type="start">
+                          <object class="GtkButton" id="play">
+                            <property name="icon-name">media-playback-start-symbolic</property>
+                            <property name="sensitive">false</property>
+                            <signal name="clicked" handler="_on_play" />
+                          </object>
+                        </child>
+                        <child type="start">
+                          <object class="GtkButton" id="queue_add">
+                            <property name="icon-name">list-add-symbolic</property>
+                            <property name="sensitive">false</property>
+                            <signal name="clicked" handler="_on_queue_add" />
+                          </object>
+                        </child>
+                        <child type="end">
+                          <object class="GtkButton" id="queue_toggle">
+                            <property name="icon-name">view-list-symbolic</property>
+                            <property name="sensitive">false</property>
+                            <signal name="clicked" handler="_on_queue_toggle" />
+                          </object>
+                        </child>
+                        <child type="end">
+                          <object class="GtkButton" id="return_to_album">
+                            <property name="icon-name">document-revert-symbolic</property>
+                            <property name="sensitive">false</property>
+                            <property name="tooltip-text" translatable="yes">Return to playing album</property>
+                            <signal name="clicked" handler="_on_return_to_album" />
+                          </object>
+                        </child>
                       </object>
                     </child>
-                    <child type="start">
-                      <object class="GtkButton" id="play">
-                        <property name="icon-name">media-playback-start-symbolic</property>
-                        <property name="sensitive">false</property>
-                        <signal name="clicked" handler="_on_play" />
+                    <child type="bottom">
+                      <object class="RecordBoxPlayerControls" id="player_controls">
+                        <signal name="play_skip_forward" handler="_skip_forward" />
+                        <signal name="play_skip_backward" handler="_skip_backward" />
+                        <signal name="play_stop" handler="_stop" />
+                        <signal name="play_toggle" handler="_toggle_play" />
                       </object>
                     </child>
-                    <child type="start">
-                      <object class="GtkButton" id="queue_add">
-                        <property name="icon-name">list-add-symbolic</property>
-                        <property name="sensitive">false</property>
-                        <signal name="clicked" handler="_on_queue_add" />
+                    <property name="content">
+                      <object class="RecordBoxAlbumView" id="album_overview">
+                        <signal name="play_track" handler="_on_play_track" />
+                        <signal name="add_track" handler="_on_add_track" />
+                        <signal name="start_from_track" handler="_on_play_track" />
                       </object>
-                    </child>
-                    <child type="end">
-                      <object class="GtkButton" id="queue_toggle">
-                        <property name="icon-name">view-list-symbolic</property>
-                        <property name="sensitive">false</property>
-                        <signal name="clicked" handler="_on_queue_toggle" />
-                      </object>
-                    </child>
-                    <child type="end">
-                      <object class="GtkButton" id="return_to_album">
-                        <property name="icon-name">document-revert-symbolic</property>
-                        <property name="sensitive">false</property>
-                        <property name="tooltip-text" translatable="yes">Return to playing album</property>
-                        <signal name="clicked" handler="_on_return_to_album" />
-                      </object>
-                    </child>
+                    </property>
                   </object>
                 </child>
-                <child type="bottom">
-                  <object class="RecordBoxPlayerControls" id="player_controls">
-                    <signal name="play_skip_forward" handler="_skip_forward" />
-                    <signal name="play_skip_backward" handler="_skip_backward" />
-                    <signal name="play_stop" handler="_stop" />
-                    <signal name="play_toggle" handler="_toggle_play" />
-                  </object>
-                </child>
-                <property name="content">
-                  <object class="RecordBoxAlbumView" id="album_overview">
-                    <signal name="play_track" handler="_on_play_track" />
-                    <signal name="add_track" handler="_on_add_track" />
-                    <signal name="start_from_track" handler="_on_play_track" />
-                  </object>
-                </property>
               </object>
-            </child>
+            </property>
           </object>
         </property>
       </object>
