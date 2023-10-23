@@ -40,31 +40,30 @@
         <property name="sidebar">
           <object class="AdwNavigationPage">
             <property name="title" translatable="yes">Sidebar</property>
-            <!-- <property name="tag">lists-views</property> -->
             <property name="child">
-              <object class="AdwNavigationSplitView" id="inner_split">
-                <property name="max-sidebar-width">300</property>
-                <property name="min-sidebar-width">100</property>
-                <property name="sidebar-width-fraction">0.43</property>
-                <property name="sidebar">
-                  <!-- sidebar -->
-                  <object class="AdwNavigationPage">
-                    <property name="title" translatable="yes">Artists</property>
-                    <property name="child">
-                      <object class="AdwToolbarView">
-                        <child type="top">
-                          <object class="GtkOverlay">
-                            <child type="overlay">
-                              <object class="GtkProgressBar" id="progress_bar1">
-                                <property name="visible">False</property>
-                                <property name="halign">fill</property>
-                                <property name="valign">end</property>
-                                <style>
-                                  <class name="osd" />
-                                </style>
-                              </object>
-                            </child>
-                            <child>
+              <object class="GtkOverlay">
+                <child type="overlay">
+                  <object class="GtkProgressBar" id="progress_bar">
+                    <property name="visible">False</property>
+                    <property name="halign">fill</property>
+                    <property name="valign">end</property>
+                    <style>
+                      <class name="osd" />
+                    </style>
+                  </object>
+                </child>
+                <child>
+                  <object class="AdwNavigationSplitView" id="inner_split">
+                    <property name="max-sidebar-width">300</property>
+                    <property name="min-sidebar-width">100</property>
+                    <property name="sidebar-width-fraction">0.43</property>
+                    <property name="sidebar">
+                      <!-- sidebar -->
+                      <object class="AdwNavigationPage">
+                        <property name="title" translatable="yes">Artists</property>
+                        <property name="child">
+                          <object class="AdwToolbarView">
+                            <child type="top">
                               <object class="AdwHeaderBar">
                                 <child type="end">
                                   <object class="GtkButton" id="artist_return">
@@ -81,45 +80,31 @@
                                 </child>
                               </object>
                             </child>
-                          </object>
-                        </child>
-                        <property name="content">
-                          <object class="GtkScrolledWindow">
-                            <property name="hscrollbar-policy">never</property>
-                            <child>
-                              <object class="RecordBoxArtistList" id="artist_list">
-                                <signal name="artist_selected" handler="select_artist" />
-                                <style>
-                                  <class name="navigation-sidebar" />
-                                </style>
+                            <property name="content">
+                              <object class="GtkScrolledWindow">
+                                <property name="hscrollbar-policy">never</property>
+                                <child>
+                                  <object class="RecordBoxArtistList" id="artist_list">
+                                    <signal name="artist_selected" handler="select_artist" />
+                                    <style>
+                                      <class name="navigation-sidebar" />
+                                    </style>
+                                  </object>
+                                </child>
                               </object>
-                            </child>
+                            </property>
                           </object>
                         </property>
                       </object>
                     </property>
-                  </object>
-                </property>
-                <property name="content">
-                  <!-- middle pane -->
-                  <object class="AdwNavigationPage" id="album_list_page">
-                    <property name="title" translatable="yes">Albums</property>
-                    <property name="tag">album-view</property>
-                    <property name="child">
-                      <object class="AdwToolbarView">
-                        <child type="top">
-                          <object class="GtkOverlay">
-                            <child type="overlay">
-                              <object class="GtkProgressBar" id="progress_bar2">
-                                <property name="visible">False</property>
-                                <property name="halign">fill</property>
-                                <property name="valign">end</property>
-                                <style>
-                                  <class name="osd" />
-                                </style>
-                              </object>
-                            </child>
-                            <child>
+                    <property name="content">
+                      <!-- middle pane -->
+                      <object class="AdwNavigationPage" id="album_list_page">
+                        <property name="title" translatable="yes">Albums</property>
+                        <property name="tag">album-view</property>
+                        <property name="child">
+                          <object class="AdwToolbarView">
+                            <child type="top">
                               <object class="AdwHeaderBar">
                                 <child type="start">
                                   <object class="GtkButton" id="filter_all">
@@ -137,25 +122,25 @@
                                 </child>
                               </object>
                             </child>
-                          </object>
-                        </child>
-                        <property name="content">
-                          <object class="GtkScrolledWindow">
-                            <property name="hscrollbar-policy">never</property>
-                            <child>
-                              <object class="RecordBoxAlbumList" id="album_list">
-                                <signal name="album-selected" handler="select_album" />
-                                <style>
-                                  <class name="navigation-sidebar" />
-                                </style>
+                            <property name="content">
+                              <object class="GtkScrolledWindow">
+                                <property name="hscrollbar-policy">never</property>
+                                <child>
+                                  <object class="RecordBoxAlbumList" id="album_list">
+                                    <signal name="album-selected" handler="select_album" />
+                                    <style>
+                                      <class name="navigation-sidebar" />
+                                    </style>
+                                  </object>
+                                </child>
                               </object>
-                            </child>
+                            </property>
                           </object>
                         </property>
                       </object>
                     </property>
                   </object>
-                </property>
+                </child>
               </object>
             </property>
           </object>
