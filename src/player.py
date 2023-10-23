@@ -6,7 +6,7 @@ import urllib.parse
 import gi
 
 gi.require_version('Gst', '1.0')
-from gi.repository import GLib, Gst, GObject
+from gi.repository import GLib, Gst, GObject, Gio
 
 
 Gst.init(None)
@@ -74,6 +74,14 @@ class Player(GObject.GObject):
     def stop(self):
         self._player.set_state(Gst.State.NULL)
         self.emit('state_changed', 'stopped')
+
+    def go_next(self):
+        if self._play_queue.next():
+            self.play()
+
+    def go_previous(self):
+        if self._play_queue.previous():
+            self.play()
 
     def get_progress(self):
         return self._player.query_position(Gst.Format.TIME)[1]

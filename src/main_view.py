@@ -149,13 +149,11 @@ class MainView(Adw.Bin):
 
     @Gtk.Template.Callback()
     def _skip_forward(self, _):
-        if self.play_queue.next():
-            self.player.play()
+        self.player.go_next()
 
     @Gtk.Template.Callback()
     def _skip_backward(self, _):
-        if self.play_queue.previous():
-            self.player.play()
+        self.player.go_previous()
 
     @Gtk.Template.Callback()
     def _stop(self, _):
