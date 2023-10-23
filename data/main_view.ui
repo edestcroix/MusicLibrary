@@ -13,9 +13,18 @@
           <object class="AdwNavigationPage">
             <property name="title" translatable="yes">Play Queue</property>
             <property name="child">
-              <object class="AdwToolbarView">
+              <object class="AdwToolbarView" id="queue_toolbar">
+                <property name="reveal-bottom-bars">false</property>
+                <property name="reveal-bottom-bars" bind-source="select_toggle"
+                  bind-property="active" />
                 <child type="top">
                   <object class="AdwHeaderBar">
+                    <child type="start">
+                      <object class="GtkToggleButton" id="select_toggle">
+                        <property name="icon-name">selection-mode-symbolic</property>
+                        <signal name="toggled" handler="_on_selection_mode_toggled" />
+                      </object>
+                    </child>
                     <child type="end">
                       <object class="GtkButton">
                         <property name="icon-name">go-next-symbolic</property>
@@ -27,16 +36,13 @@
                 <child type="bottom">
                   <object class="GtkActionBar">
                     <child type="start">
-                      <object class="GtkLabel" id="queue_count">
-                        <property name="halign">start</property>
-                        <property name="valign">center</property>
-                        <property name="label" translatable="yes">0 tracks</property>
+                      <object class="GtkButton">
+                        <property name="label">Select All</property>
                       </object>
                     </child>
                     <child type="end">
                       <object class="GtkButton">
-                        <property name="icon-name">edit-delete-symbolic</property>
-                        <signal name="clicked" handler="_on_queue_clear" />
+                        <property name="label">Remove</property>
                       </object>
                     </child>
                   </object>
@@ -45,7 +51,7 @@
                   <object class="GtkScrolledWindow">
                     <property name="hscrollbar-policy">never</property>
                     <child>
-                      <object class="PlayQueue" id="play_queue">
+                      <object class="BetterPlayQueue" id="play_queue">
                         <style>
                           <class name="navigation-sidebar" />
                         </style>

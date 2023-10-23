@@ -54,6 +54,7 @@ class MainView(Adw.Bin):
 
     confirm_play = GObject.Property(type=bool, default=True)
     clear_queue = GObject.Property(type=bool, default=False)
+    album_changed = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -68,9 +69,6 @@ class MainView(Adw.Bin):
         )
 
         self._setup_actions()
-        self._set_controls_stopped()
-
-    album_changed = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
 
     def update_album(self, album: AlbumItem):
         self.album_overview.update_album(album)
@@ -103,10 +101,6 @@ class MainView(Adw.Bin):
             if self.player.state == 'stopped':
                 self.player.ready()
             self.send_toast('Queue Updated')
-
-    @Gtk.Template.Callback()
-    def _on_queue_clear(self, _):
-        self.play_queue.empty_queue()
 
     @Gtk.Template.Callback()
     def _on_play_track(self, _, track_album: AlbumItem):
@@ -152,6 +146,13 @@ class MainView(Adw.Bin):
     @Gtk.Template.Callback()
     def _toggle_play(self, _):
         self.player.toggle()
+
+    @Gtk.Template.Callback()
+    def _on_selection_mode_toggled(self, button):
+        if button.get_active():
+            self.play_queue.start_selection()
+        else:
+            self.play_queue.stop_selection()
 
     def _confirm_album_play(self, album, name):
         dialog = Adw.MessageDialog(
