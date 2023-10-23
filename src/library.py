@@ -41,7 +41,9 @@ class TrackItem(GObject.Object):
 
     def length_str(self, length):
         if length // 60 > 60:
-            return f'{length // 3600}:{length % 3600 // 60}:{length % 60:02}'
+            return (
+                f'{length // 3600}:{length % 3600 // 60:02}:{length % 60:02}'
+            )
         return f'{length // 60}:{length % 60:02}'
 
 
@@ -75,7 +77,7 @@ class AlbumItem(GObject.Object):
 
     def length_str(self):
         if self.length // 60 > 60:
-            return f'{self.length // 3600}:{self.length % 3600 // 60}:{self.length % 60:02}'
+            return f'{self.length // 300}:{self.length % 3600 // 60:02}:{self.length % 60:02}'
         return f'{self.length // 60}:{self.length % 60:02}'
 
     def copy(self):
