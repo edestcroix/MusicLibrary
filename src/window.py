@@ -47,8 +47,7 @@ class RecordBoxWindow(Adw.ApplicationWindow):
     album_list = Gtk.Template.Child()
     album_list_page = Gtk.Template.Child()
 
-    progress_bar1 = Gtk.Template.Child()
-    progress_bar2 = Gtk.Template.Child()
+    progress_bar = Gtk.Template.Child()
 
     main_page = Gtk.Template.Child()
     main_view = Gtk.Template.Child()
@@ -128,13 +127,7 @@ class RecordBoxWindow(Adw.ApplicationWindow):
 
         self.parser.bind_property(
             'progress',
-            self.progress_bar1,
-            'fraction',
-            GObject.BindingFlags.DEFAULT,
-        )
-        self.parser.bind_property(
-            'progress',
-            self.progress_bar2,
+            self.progress_bar,
             'fraction',
             GObject.BindingFlags.DEFAULT,
         )
@@ -147,8 +140,7 @@ class RecordBoxWindow(Adw.ApplicationWindow):
     def sync_library(self, _):
         self.thread = threading.Thread(target=self.update_db)
         self.thread.daemon = True
-        self.progress_bar1.set_visible(True)
-        self.progress_bar2.set_visible(True)
+        self.progress_bar.set_visible(True)
         self.thread.start()
 
     def update_db(self):
@@ -156,8 +148,7 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         self.parser.build(db)
         db.close()
         GLib.idle_add(self.refresh_lists)
-        GLib.idle_add(self.progress_bar1.set_visible, False)
-        GLib.idle_add(self.progress_bar2.set_visible, False)
+        GLib.idle_add(self.progress_bar.set_visible, False)
 
     def refresh_lists(self):
         self.artist_list.remove_all()
