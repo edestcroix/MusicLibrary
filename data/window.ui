@@ -5,16 +5,11 @@
   <template class="RecordBoxWindow" parent="AdwApplicationWindow">
     <property name="width-request">380</property>
     <property name="height-request">700</property>
-    <property name="default-width">1200</property>
+    <property name="default-width">1260</property>
     <property name="default-height">650</property>
     <child>
       <object class="AdwBreakpoint" id="breakpoint1">
-        <condition>max-width: 1180sp</condition>
-      </object>
-    </child>
-    <child>
-      <object class="AdwBreakpoint" id="breakpoint2">
-        <condition>max-width: 1020sp</condition>
+        <condition>max-width: 1050sp</condition>
         <setter object="inner_split" property="collapsed">True</setter>
         <setter object="album_return" property="visible">false</setter>
         <setter object="outer_split" property="min-sidebar-width">160</setter>
@@ -22,7 +17,7 @@
       </object>
     </child>
     <child>
-      <object class="AdwBreakpoint" id="breakpoint3">
+      <object class="AdwBreakpoint" id="breakpoint2">
         <condition>max-width: 640sp</condition>
         <setter object="outer_split" property="pin-sidebar">false</setter>
         <setter object="outer_split" property="collapsed">True</setter>

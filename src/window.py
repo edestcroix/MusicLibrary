@@ -52,9 +52,7 @@ class RecordBoxWindow(Adw.ApplicationWindow):
     main_page = Gtk.Template.Child()
     main_view = Gtk.Template.Child()
 
-    breakpoint1 = Gtk.Template.Child()
     breakpoint2 = Gtk.Template.Child()
-    breakpoint3 = Gtk.Template.Child()
 
     filter_all = Gtk.Template.Child()
 
@@ -74,8 +72,6 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         self.app = kwargs.get('application', None)
 
         self.parser = MusicParser()
-
-        self.selected_artist = None
 
         if self.app.settings.get_boolean('restore-window-state'):
             self._bind_state()
@@ -132,10 +128,12 @@ class RecordBoxWindow(Adw.ApplicationWindow):
             GObject.BindingFlags.DEFAULT,
         )
 
-        # Connect breakpoint signals to functions so that the breakpoint signal can be propagated to child widgets.
-        self._connect_breakpoint(self.breakpoint1, 1)
-        self._connect_breakpoint(self.breakpoint2, 2)
-        self._connect_breakpoint(self.breakpoint3, 3)
+        self.breakpoint2.connect(
+            'apply', lambda _: self.main_view.lists_toggle.set_visible(True)
+        )
+        self.breakpoint2.connect(
+            'unapply', lambda _: self.main_view.lists_toggle.set_visible(False)
+        )
 
     def sync_library(self, _):
         self.thread = threading.Thread(target=self.update_db)
@@ -162,14 +160,13 @@ class RecordBoxWindow(Adw.ApplicationWindow):
     @Gtk.Template.Callback()
     def select_album(self, _, album: AlbumItem):
         self.main_page.set_title(album.raw_name)
-        self.main_view.update_album(album, self.selected_artist)
+        self.main_view.update_album(album)
         self.outer_split.set_show_sidebar(
             self.outer_split.get_collapsed() == False
         )
 
     @Gtk.Template.Callback()
     def select_artist(self, _, selected: ArtistItem):
-        self.selected_artist = selected.raw_name
         self.album_list.filter_on_artist(selected.raw_name)
         self.album_list_page.set_title(selected.raw_name)
         self.inner_split.set_show_content('album_view')
@@ -200,8 +197,7 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         self.inner_split.set_show_content('album_view')
         self.album_return.set_sensitive(True)
 
-        self.selected_artist = album.artists[0]
-        self.main_view.update_album(album, self.selected_artist)
+        self.main_view.update_album(album)
 
         self.album_list.unselect_all()
         self.artist_list.unselect_all()
@@ -219,7 +215,3 @@ class RecordBoxWindow(Adw.ApplicationWindow):
             cur = row_list.get_row_at_index(i)
         if cur:
             row_list.select_index(i)
-
-    def _connect_breakpoint(self, breakpoint: Adw.Breakpoint, num: int):
-        breakpoint.connect('apply', self.main_view.set_breakpoint, num)
-        breakpoint.connect('unapply', self.main_view.unset_breakpoint, num)

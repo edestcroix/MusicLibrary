@@ -26,7 +26,7 @@ from .library import AlbumItem, TrackItem
 
 
 @Gtk.Template(resource_path='/com/github/edestcroix/RecordBox/album_view.ui')
-class RecordBoxAlbumView(Adw.Bin):
+class RecordBoxAlbumView(Adw.BreakpointBin):
     __gtype_name__ = 'RecordBoxAlbumView'
 
     cover_image = Gtk.Template.Child()
@@ -35,6 +35,9 @@ class RecordBoxAlbumView(Adw.Bin):
 
     album_box = Gtk.Template.Child()
 
+    album_title = Gtk.Template.Child()
+    album_artist = Gtk.Template.Child()
+
     stack = Gtk.Template.Child()
     current_album = None
 
@@ -42,12 +45,6 @@ class RecordBoxAlbumView(Adw.Bin):
 
     play_track = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
     add_track = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
-
-    def set_breakpoint(self, _):
-        self.album_box.set_orientation(Gtk.Orientation.VERTICAL)
-
-    def unset_breakpoint(self, _):
-        self.album_box.set_orientation(Gtk.Orientation.HORIZONTAL)
     start_from_track = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
 
     def update_cover(self, cover_path):
@@ -56,19 +53,21 @@ class RecordBoxAlbumView(Adw.Bin):
     def clear_all(self):
         self.track_list.remove_all()
 
-    def update_album(self, album: AlbumItem, current_artist=None):
+    def update_album(self, album: AlbumItem):
         self.current_album = album
         self.clear_all()
         self.update_cover(album.cover)
-        self.update_tracks(album.tracks, current_artist)
+        self.update_tracks(album.tracks)
+        self.album_title.set_text(album.raw_name)
+        self.album_artist.set_text(album.artists[0])
         self.stack.set_visible_child_name('album_view')
 
-    def update_tracks(self, tracks: list[TrackItem], current_artist):
+    def update_tracks(self, tracks: list[TrackItem]):
         current_disc, disc_row = 0, None
         for track in tracks:
             if track.discnumber != current_disc:
                 disc_row = self._disc_row(current_disc := track.discnumber)
-            self._setup_row(track, disc_row, current_artist)
+            self._setup_row(track, disc_row)
 
     def _disc_row(self, current_disc):
         disc_row = Adw.ExpanderRow(
@@ -79,8 +78,8 @@ class RecordBoxAlbumView(Adw.Bin):
         self.track_list.append(disc_row)
         return disc_row
 
-    def _setup_row(self, track: TrackItem, disc_row, current_artist):
-        row = self._create_row(track, current_artist)
+    def _setup_row(self, track: TrackItem, disc_row):
+        row = self._create_row(track)
         row.connect('play_track', self._play_track)
         row.connect('add_track', self._add_track)
         row.connect('start_from_track', self._start_from_track)
@@ -89,8 +88,8 @@ class RecordBoxAlbumView(Adw.Bin):
         else:
             self.track_list.append(row)
 
-    def _create_row(self, track: TrackItem, current_artist, parent_row=None):
-        row = TrackRow(track=track, current_artist=current_artist)
+    def _create_row(self, track: TrackItem, parent_row=None):
+        row = TrackRow(track=track)
         row.set_title_lines(1)
         row.set_selectable(False)
         if parent_row:
@@ -127,22 +126,14 @@ class TrackRow(Adw.ActionRow):
     add_track = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
     start_from_track = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
 
-    def __init__(self, track: TrackItem, current_artist, **kwargs):
+    def __init__(self, track: TrackItem, **kwargs):
         super().__init__(**kwargs)
         self.track = track
         track_num = track.track
         self.set_title_lines(1)
         self.set_title(track.title)
 
-        if current_artist and track.albumartist != current_artist:
-            if track.artists:
-                artists = f'\n{track.albumartist}, {track.artists}'
-            else:
-                artists = f'\n{track.albumartist}'
-        elif artists := track.artists:
-            artists = f'\n{track.artists}'
-        else:
-            artists = ''
+        artists = f'\n{track.artists}' if (artists := track.artists) else ''
         self.set_subtitle(
             GLib.markup_escape_text(
                 f'{track_num:0>2} - {track.length}{artists}'

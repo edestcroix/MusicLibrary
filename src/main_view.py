@@ -72,18 +72,8 @@ class MainView(Adw.Bin):
 
     album_changed = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
 
-    def set_breakpoint(self, _, breakpoint_num):
-        self.album_overview.set_breakpoint(None)
-        if breakpoint_num > 2:
-            self.lists_toggle.set_visible(True)
-
-    def unset_breakpoint(self, _, breakpoint_num):
-        self.album_overview.unset_breakpoint(None)
-        if breakpoint_num > 2:
-            self.lists_toggle.set_visible(False)
-
-    def update_album(self, album: AlbumItem, current_artist=None):
-        self.album_overview.update_album(album, current_artist)
+    def update_album(self, album: AlbumItem):
+        self.album_overview.update_album(album)
         self.play.set_sensitive(True)
         self.queue_add.set_sensitive(True)
 
@@ -204,11 +194,11 @@ class MainView(Adw.Bin):
 
     def _on_player_state_changed(self, _, state):
         if state == 'playing':
-            self._set_controls_active(True, playing=True)
+            GLib.idle_add(self._set_controls_active, True, True)
         elif state in ['paused', 'ready']:
-            self._set_controls_active(True, playing=False)
+            GLib.idle_add(self._set_controls_active, True, False)
         elif state == 'stopped':
-            self._set_controls_stopped()
+            GLib.idle_add(self._set_controls_stopped)
 
     def _set_controls_stopped(self):
         if self.clear_queue:

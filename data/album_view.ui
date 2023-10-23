@@ -2,7 +2,20 @@
 <interface>
   <requires lib="gtk" version="4.0" />
   <requires lib="Adw" version="1.0" />
-  <template class="RecordBoxAlbumView" parent="AdwBin">
+  <template class="RecordBoxAlbumView" parent="AdwBreakpointBin">
+    <property name="width-request">380</property>
+    <property name="height-request">500</property>
+    <child>
+      <object class="AdwBreakpoint">
+        <condition>max-width: 750sp</condition>
+        <setter object="album_box" property="orientation">vertical</setter>
+        <setter object="album_box" property="valign">center</setter>
+        <setter object="album_box" property="spacing">0</setter>
+        <setter object="cover_image" property="pixel-size">256</setter>
+        <setter object="outer_scroll" property="vscrollbar-policy">automatic</setter>
+        <setter object="inner_scroll" property="vscrollbar-policy">never</setter>
+      </object>
+    </child>
     <child>
       <object class="AdwViewStack" id="stack">
         <child>
@@ -22,37 +35,75 @@
           <object class="AdwViewStackPage">
             <property name="name">album_view</property>
             <property name="child">
-              <object class="GtkBox" id="album_box">
-                <property name="orientation">horizontal</property>
-                <property name="homogeneous">false</property>
-                <property name="halign">center</property>
-                <property name="spacing">10</property>
-                <style>
-                  <class name="album-view" />
-                </style>
+              <object class="GtkScrolledWindow" id="outer_scroll">
+                <property name="hscrollbar-policy">never</property>
+                <property name="vscrollbar-policy">never</property>
                 <child>
-                  <object class="GtkImage" id="cover_image">
-                    <property name="icon-name">audio-x-generic-symbolic</property>
-                    <property name="pixel-size">320</property>
-                  </object>
-                </child>
-                <child>
-                  <object class="AdwClamp">
-                    <property name="maximum-size">900</property>
+                  <object class="GtkBox" id="album_box">
+                    <property name="width-request">320</property>
+                    <property name="orientation">horizontal</property>
+                    <property name="homogeneous">false</property>
+                    <property name="halign">center</property>
+                    <property name="spacing">10</property>
+                    <style>
+                      <class name="album-view" />
+                    </style>
                     <child>
-                      <!-- <property name="set-vexpand">true</property> -->
-                      <object class="GtkScrolledWindow">
-                        <property name="hscrollbar-policy">never</property>
-                        <!-- <property name="vexpand">true</property> -->
+                      <object class="GtkBox">
+                        <property name="valign">center</property>
+                        <property name="halign">center</property>
+                        <property name="orientation">vertical</property>
+                        <style>
+                          <class name="card" />
+                          <class name="album-card" />
+                        </style>
                         <child>
-                          <object class="GtkListBox" id="track_list">
-                            <property name="width-request">300</property>
-                            <property name="vexpand">true</property>
-                            <property name="valign">center</property>
+                          <object class="GtkImage" id="cover_image">
+                            <property name="icon-name">audio-x-generic-symbolic</property>
+                            <property name="pixel-size">320</property>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkLabel" id="album_title">
+                            <property name="margin-top">5</property>
+                            <property name="wrap">true</property>
+                            <property name="justify">center</property>
                             <style>
-                              <class name="boxed-list" />
-                              <class name="track-list" />
+                              <class name="title-2" />
                             </style>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkLabel" id="album_artist">
+                            <property name="wrap">true</property>
+                            <property name="max-width-chars">40</property>
+                            <property name="justify">center</property>
+                            <style>
+                              <class name="heading" />
+                            </style>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwClamp">
+                        <property name="maximum-size">900</property>
+                        <child>
+                          <!-- <property name="set-vexpand">true</property> -->
+                          <object class="GtkScrolledWindow" id="inner_scroll">
+                            <property name="hscrollbar-policy">never</property>
+                            <!-- <property name="vexpand">true</property> -->
+                            <child>
+                              <object class="GtkListBox" id="track_list">
+                                <property name="width-request">320</property>
+                                <property name="vexpand">true</property>
+                                <property name="valign">center</property>
+                                <style>
+                                  <class name="boxed-list" />
+                                  <class name="track-list" />
+                                </style>
+                              </object>
+                            </child>
                           </object>
                         </child>
                       </object>
