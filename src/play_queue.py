@@ -194,7 +194,7 @@ class PlayQueueAlbumRow(Adw.ExpanderRow):
 
     def __init__(self, title=None, subtitle=None, cover=None):
         super().__init__()
-        self.set_title(GLib.markup_escape_text(title))
+        self.set_title(title)
         self.set_subtitle(GLib.markup_escape_text(subtitle))
         self.set_title_lines(1)
         self.remove_button = Gtk.Button()
