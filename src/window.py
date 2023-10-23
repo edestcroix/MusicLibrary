@@ -154,8 +154,6 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         self.artist_list.remove_all()
         self.album_list.remove_all()
 
-        print('Populating lists')
-
         db = MusicDB()
         self.artist_list.populate(db.get_artists(self._show_all_artists))
         self.album_list.populate(db.get_albums())

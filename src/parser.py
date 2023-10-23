@@ -166,7 +166,6 @@ class MusicParser(GObject.Object):
         self._path = path
         self._total_dirs = int(os.popen(f'find {path} -type d | wc -l').read())
         self._dirs_visited = 0
-        print(f'Found {self._total_dirs} directories')
 
     progress = GObject.Property(type=float, default=0.0)
 
