@@ -206,8 +206,8 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         self.album_list.unselect_all()
         self.artist_list.unselect_all()
 
-        self._select_row_with_title(self.album_list, album.name)
         self._select_row_with_title(self.artist_list, album.artists[0])
+        self._select_row_with_title(self.album_list, album.name)
 
     def _select_row_with_title(
         self, row_list: AlbumList | ArtistList, title: str

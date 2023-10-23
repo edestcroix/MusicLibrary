@@ -208,6 +208,7 @@ class AlbumList(Gtk.ListView):
 
     def populate(self, album_list: list[AlbumItem]):
         self.model.remove_all()
+        self.filter_model.set_filter(None)
         for album in album_list:
             self.append(album)
         self._update_sort()
@@ -223,7 +224,7 @@ class AlbumList(Gtk.ListView):
         )
 
     def get_row_at_index(self, index: int):
-        return self.model[index]
+        return self.filter_model[index]
 
     def select_index(self, index: int):
         self.selection_model.select_item(index, True)
@@ -240,9 +241,9 @@ class AlbumList(Gtk.ListView):
 
     def _update_sort(self):
         if self._sort_type == 0:
-            self.model.sort(lambda a, b: a.sort > b.sort)
+            self.model.sort(lambda a, b: a.name > b.name)
         elif self._sort_type == 1:
-            self.model.sort(lambda a, b: a.sort < b.sort)
+            self.model.sort(lambda a, b: a.name < b.name)
         elif self._sort_type == 2:
             self.model.sort(lambda a, b: a.date < b.date)
         elif self._sort_type == 3:
