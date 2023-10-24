@@ -168,7 +168,9 @@ class PlayQueueList(Gtk.ListBox):
         if self.current_index == -1 and len(self.model) > 0:
             self.current_index = 0
         self.current_track = (
-            self.model[self.current_index] if self.current_index >= 0 else None
+            self.model[self.current_index]
+            if 0 <= self.current_index < len(self.model)
+            else None
         )
         return self.current_track
 
