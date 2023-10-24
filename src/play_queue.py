@@ -183,6 +183,7 @@ class PlayQueueList(Gtk.ListBox):
             if 0 <= self.current_index < len(self.model)
             else None
         )
+        self._highlight_current()
         return self.current_track
 
     def next(self) -> bool:
@@ -292,6 +293,7 @@ class PlayQueueList(Gtk.ListBox):
             checkbox.set_active(row.is_selected())
 
     def _move_current(self, direction: str, allow_none=False):
+        self._unhighlight_current()
         if direction == 'next':
             if self.current_index >= len(self.model) - 1:
                 self.current_index = 0 if self.loop else len(self.model)
@@ -305,9 +307,30 @@ class PlayQueueList(Gtk.ListBox):
                 self.current_index = len(self.model) - 2
             else:
                 self.current_index -= 1
+
+    def _highlight_current(self):
+        if 0 <= self.current_index < len(self.model):
+            current_row = self.get_row_at_index(self.current_index)
+            self._add_css(current_row, 'current-track')
+
+    def _unhighlight_current(self):
+        if 0 <= self.current_index < len(self.model):
+            current_row = self.get_row_at_index(self.current_index)
+            self._remove_css(current_row, 'current-track')
+
+    def _add_css(self, obj: Gtk.Widget, class_name: str):
+        obj.set_css_classes(obj.get_css_classes() + [class_name])
+
+    def _remove_css(self, obj: Gtk.Widget, class_name: str):
+        obj.set_css_classes(
+            [c for c in obj.get_css_classes() if c != class_name]
+        )
+
     def _on_row_activated(self, _, row: Adw.ActionRow):
         if not self.selection_active:
             # jump to track in queue
+            self._unhighlight_current()
             self.current_index = row.get_index()
             self.current_track = self.get_current_track()
+            self._highlight_current()
             self.emit('jump-to-track')

@@ -11,6 +11,14 @@
   margin-left: 0px;
 }
 
+.current-track {
+  background: alpha(@accent_bg_color, 0.3);
+}
+
+.current-track:hover {
+  background: alpha(@accent_bg_color, 0.5);
+}
+
 .album-view {
   margin-left: 10px;
   margin-right: 10px;
