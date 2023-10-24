@@ -1,258 +1,286 @@
-from gi.repository import Adw, Gtk, GLib, GObject
+from gi.repository import Adw, Gtk, GLib, GObject, Gio
 import gi
-from .library import TrackItem
+from .library import AlbumItem, TrackItem
 
 gi.require_version('Gtk', '4.0')
 
 
-# TODO: Allow adding lone tracks to the queue. (Then allow for that in the UI)
+@Gtk.Template(resource_path='/com/github/edestcroix/RecordBox/play_queue.ui')
+class PlayQueue(Adw.Bin):
+    """A containter for the play queue, containing the entire view around the track list itself,
+    so the functionality for determining when to enable or disable the track list's selection mode can be
+    contained within this class instead of strewn across the MainView class.
+    Most of it's functions and properties just pass through to it's child track list, since most
+    property bindings are defined in the ui file.
+    """
 
+    __gtype_name__ = 'RecordBoxPlayQueue'
+    track_list = Gtk.Template.Child()
+    collapse = GObject.Signal()
 
-class PlayQueue(Gtk.ListBox):
-    __gtype_name__ = 'PlayQueue'
-
-    current_track = None
-
-    end = None
-    start = None
-
-    # Since AdwExpanderRows don't index their children, all the track rows
-    # maintain a linked list of themselves so they when albums or tracks are removed
-    # the continuity of the current track in the queue is maintained. New tracks
-    # added to the end pointer, and tracks that are deleted update their neighbors
-    # to point around them. Deleting an album preforms the track delete operations
-    # on every track in the album starting at the first (Album ExpanderRows point
-    # to first track in the album).
+    queue_header = Gtk.Template.Child()
 
     loop = GObject.property(type=bool, default=False)
+    _selection_active = False
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.bind_property(
+            'loop',
+            self.track_list,
+            'loop',
+            GObject.BindingFlags.BIDIRECTIONAL,
+        )
+        self.bind_property(
+            'selection-active',
+            self.track_list,
+            'selection-active',
+            GObject.BindingFlags.BIDIRECTIONAL,
+        )
+
+    @GObject.Property(type=bool, default=False)
+    def selection_active(self):
+        return self._selection_active
+
+    @selection_active.setter
+    def set_selection_active(self, value: bool):
+        self._selection_active = value
+        if value:
+            self.queue_header.set_css_classes(['header-accent'])
+        else:
+            self.queue_header.set_css_classes([])
+
+    @Gtk.Template.Callback()
+    def _on_queue_toggle(self, _):
+        self.track_list.selection_active = False
+        # tell the main view that the queue should be closed
+        self.emit('collapse')
+
+    @Gtk.Template.Callback()
+    def _remove_selected(self, _):
+        self.track_list.remove_selected()
+
+    def get_current_track(self) -> TrackItem | None:
+        return self.track_list.get_current_track()
+
+    def get_next_track(self) -> TrackItem | None:
+        return self.track_list.get_next_track()
+
+    def playing_track(self) -> TrackItem | None:
+        """Returns the currently playing track, regardless of if the queue is empty or not.
+        (track_list.current_track doesn't update to None until get_next_track is called on
+         an empty queue, while get_current_track returns None if the queue is empty)"""
+        return self.track_list.current_track
 
     def clear(self):
-        self.remove_all()
-        self.current_track = None
-        self.start = None
-        self.end = None
-
-    def empty_queue(self):
-        cur = self.start
-        while cur:
-            nxt = cur.next
-            self._remove(cur.get_ancestor(PlayQueueAlbumRow), cur)
-            cur = nxt
-
-    def restart(self):
-        self._move_track_indicator(self.current_track, self.start)
-        self.current_track = self.start
+        self.track_list.clear()
 
     def empty(self):
-        return self.start is None
+        return self.track_list.empty()
 
-    def get_next_track(self):
-        self._move_current('next', allow_none=True)
-        return self.get_current_track()
+    def add_album(self, album: AlbumItem):
+        self.track_list.add_album(album)
 
-    def get_current_track(self):
-        return self.current_track.track if self.current_track else None
+    def add_track(self, track: TrackItem):
+        self.track_list.add_track(track)
 
     def next(self):
-        self._move_current('next')
-        return self.current_track is not None
+        return self.track_list.next()
 
     def previous(self):
+        return self.track_list.previous()
+
+
+class PlayQueueList(Gtk.ListBox):
+    """A ListBox that contains the track list of the play queue, and
+    implements the functionality for tracking and advancing the current track,
+    and functions for removing tracks from the list. Implements a selection
+    mode that allows selecting tracks to remove."""
+
+    __gtype_name__ = 'RecordBoxPlayQueueList'
+
+    current_index = -1
+    # Set to true if the track at the currrent_index was removed, so that
+    # advancing to the next track doesn't skip a track.
+    current_index_moved = False
+    current_track = GObject.Property(type=TrackItem)
+
+    loop = GObject.property(type=bool, default=False)
+    _selection_active = False
+    all_selected = GObject.Property(type=bool, default=False)
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.model = Gio.ListStore.new(TrackItem)
+        self.bind_model(self.model, self._create_row, None, None)
+        self.set_selection_mode(Gtk.SelectionMode.NONE)
+
+    @GObject.Property(type=bool, default=False)
+    def selection_active(self):
+        return self._selection_active
+
+    @selection_active.setter
+    def set_selection_active(self, value: bool):
+        if value:
+            self.set_selection_mode(Gtk.SelectionMode.MULTIPLE)
+            self._selection_active = True
+        else:
+            self.set_selection_mode(Gtk.SelectionMode.NONE)
+            self._selection_active = False
+            self.all_selected = False
+
+    def add_album(self, album: AlbumItem):
+        for track in album.tracks:
+            self.model.append(track)
+
+    def add_track(self, track: TrackItem):
+        self.model.append(track)
+
+    def remove_selected(self):
+        for row in self.get_selected_rows():
+            if row.get_index() < self.current_index:
+                self.current_index -= 1
+            elif row.get_index() == self.current_index:
+                self.current_index_moved = True
+            self.model.remove(row.get_index())
+        if len(self.model) == 0:
+            self.current_index = -1
+        self.all_selected = False
+
+    def clear(self):
+        self.model.remove_all()
+        self.current_index = -1
+
+    def restart(self):
+        self.current_index = 0
+
+    def empty(self) -> bool:
+        return self.current_index == -1
+
+    def get_next_track(self) -> TrackItem | None:
+        if self.current_index_moved:
+            self.current_index_moved = False
+            return self.get_current_track()
+        self._move_current('next')
+        return self.get_current_track()
+
+    def get_current_track(self) -> TrackItem | None:
+        if self.current_index == -1 and len(self.model) > 0:
+            self.current_index = 0
+        self.current_track = (
+            self.model[self.current_index] if self.current_index >= 0 else None
+        )
+        return self.current_track
+
+    def next(self) -> bool:
+        if self.current_index_moved:
+            self.current_index_moved = False
+        else:
+            self._move_current('next', True)
+        return 0 <= self.current_index < len(self.model)
+
+    def previous(self) -> bool:
         self._move_current('prev')
-        return self.current_track is not None
+        if self.current_index_moved:
+            self.current_index_moved = False
+        return 0 <= self.current_index < len(self.model)
 
-    def add_album(self, album):
-        album_row = PlayQueueAlbumRow(
-            album.name, ', '.join(album.artists), album.cover
+    def _create_row(self, item: TrackItem, __, _) -> Adw.ActionRow:
+        """Callback for the ListBox's bind_model method to create row widgets for
+        newly added items to the model. Returns an Adw.ActionRow with a hidden
+        checkbox that can be used to select the row. Checkbox will become visible on
+        enabling selection mode."""
+        artists = (
+            f'{item.albumartist}, {item.artists}'
+            if item.artists
+            else item.albumartist
         )
-        if self.start is None:
-            album_row.set_expanded(True)
-        album_row.set_tracks(album.tracks)
-        album_row.remove_button.connect(
-            'clicked',
-            lambda r: self._remove_album(r.get_ancestor(PlayQueueAlbumRow)),
+        artists = GLib.markup_escape_text(artists)
+        row = Adw.ActionRow(
+            title=item.title,
+            subtitle=f'{item.length} - {artists}',
+            selectable=False,
+            css_classes=['queue-row'],
         )
-
-        row = None
-        prev = None
-
-        start_row = PlayQueueTrackRow(album.tracks[0])
-        row = start_row
-        start_row.remove_button.connect(
-            'clicked',
-            lambda r: self._remove(
-                album_row, r.get_ancestor(PlayQueueTrackRow)
-            ),
+        checkbox = Gtk.CheckButton(
+            valign=Gtk.Align.CENTER,
+            visible=False,
+            css_classes=['selection-mode'],
         )
-        if not self.current_track:
-            self.current_track = start_row
-            start_row.add_prefix(
-                Gtk.Image.new_from_icon_name('media-playback-start-symbolic')
-            )
-        elif self.end:
-            self.end.set_next(start_row)
-            start_row.set_prev(self.end)
+        image = Gtk.Image.new_from_file(item.thumb)
+        image.set_pixel_size(32)
+        row.add_prefix(image)
+        row.add_prefix(checkbox)
+        self._bind_row(row, checkbox, image)
+        return row
 
-        if not self.start:
-            self.start = start_row
+    def _bind_row(
+        self, row: Adw.ActionRow, checkbox: Gtk.CheckButton, image: Gtk.Image
+    ):
+        """Binds the necessary properties to implement the selection mode.
+        The selectable state of the row is disabled unless the checkbox is active,
+        and the checkbox is hidden if selection mode is disabled."""
 
-        album_row.set_first(start_row)
-        album_row.add_row(start_row)
-
-        for track in album.tracks[1:]:
-            prev = row
-            row = PlayQueueTrackRow(track)
-            self._setup_row(row, album_row, prev)
-
-        self.end = row
-
-        self.append(album_row)
-
-    def _move_current(self, direction, allow_none=False):
-        if direction == 'next' and self.current_track:
-            if self.current_track.next:
-                self._move_track_indicator(
-                    self.current_track, self.current_track.next
-                )
-                self.current_track = self.current_track.next
-            elif self.loop:
-                self._move_track_indicator(self.current_track, self.start)
-                self.current_track = self.start
-            elif allow_none:
-                self.current_track = None
-        elif direction == 'prev' and self.current_track:
-            if self.current_track.prev:
-                self._move_track_indicator(
-                    self.current_track, self.current_track.prev
-                )
-                self.current_track = self.current_track.prev
-            elif allow_none:
-                self.current_track = None
-
-    def _setup_row(self, row, album_row, prev):
-        row.set_prev(prev)
-        if prev:
-            prev.set_next(row)
-
-        album_row.add_row(row)
-        row.remove_button.connect(
-            'clicked',
-            lambda r: self._remove(
-                album_row, r.get_ancestor(PlayQueueTrackRow)
-            ),
+        self.bind_property(
+            'selection-active',
+            checkbox,
+            'visible',
+            GObject.BindingFlags.DEFAULT,
         )
 
-    def _move_track_indicator(self, cur, next):
-        if next:
-            cur.remove_prefix() if cur else None
-            cur.get_ancestor(PlayQueueAlbumRow).set_expanded(False)
-            next.add_prefix(
-                Gtk.Image.new_from_icon_name('media-playback-start-symbolic')
-            )
-            next.get_ancestor(PlayQueueAlbumRow).set_expanded(True)
+        self.bind_property(
+            'selection-active',
+            image,
+            'visible',
+            GObject.BindingFlags.INVERT_BOOLEAN,
+        )
 
-    def _remove(self, album_row, row):
+        # Enabling all-selected activates all checkboxes; default binding
+        # allows the checkbox to be (de)activated independently of the all-selected property.
+        self.bind_property(
+            'all-selected',
+            checkbox,
+            'active',
+            GObject.BindingFlags.DEFAULT,
+        )
+        # This binding primarily exists so the row properly becomes
+        # unselectable again when the checkbox is hidden, because the checkbox's
+        # 'hide' signal is set to deactivate it, which will then deactivate the row.
+        checkbox.bind_property(
+            'active',
+            row,
+            'selectable',
+            GObject.BindingFlags.DEFAULT,
+        )
+        checkbox.connect(
+            'toggled',
+            self._select_action,
+            row,
+        )
+        # make sure checkboxes deactivate when selection mode is disabled
+        checkbox.connect('hide', lambda b: b.set_active(False))
 
-        # Don't remove the current track
-        if self.current_track == row:
+    def _select_action(self, button: Gtk.CheckButton, row: Adw.ActionRow):
+        if not self.selection_active:
             return
+        if button.get_active():
+            row.set_selectable(True)
+            self.select_row(row)
+        else:
+            row.set_selectable(False)
+            self.unselect_row(row)
 
-        if self.end == row:
-            self.end = row.prev
-
-        if album_row.first == row:
-            album_row.set_first(row.next)
-
-        row.prev.set_next(row.next) if row.prev else None
-        row.next.set_prev(row.prev) if row.next else None
-
-        album_row.remove(row)
-        if album_row.num_tracks == 0:
-            self.remove(album_row)
-
-    def _remove_album(self, album_row):
-        cur = album_row.first
-        for _ in range(album_row.num_tracks):
-            next_cur = cur.next
-            self._remove(album_row, cur)
-            cur = next_cur
-
-
-# Subclass of an AdwExpanderRow that allows Albums to be collapsed in the
-# play queue. Since AdwExpanderRows don't index their children, AlbumRows
-# store a pointer to their first child track. Tracks store pointers to their
-# neighbors in the queue.
-class PlayQueueAlbumRow(Adw.ExpanderRow):
-    __gtype_name__ = 'PlayQueueAlbumRow'
-
-    first = None
-
-    num_tracks = 0
-
-    def __init__(self, title=None, subtitle=None, cover=None):
-        super().__init__()
-        self.set_title(title)
-        self.set_subtitle(GLib.markup_escape_text(subtitle))
-        self.set_title_lines(1)
-        self.remove_button = Gtk.Button()
-        self.remove_button.get_style_context().add_class('flat')
-        self.remove_button.set_icon_name('list-remove-symbolic')
-        self.remove_button.set_tooltip_text('Remove from queue')
-        self.remove_button.set_valign(Gtk.Align.CENTER)
-        self.add_suffix(self.remove_button)
-
-        if cover:
-            image = Gtk.Image()
-            image.set_from_file(cover)
-            image.set_pixel_size(32)
-            self.add_prefix(image)
-
-    def set_first(self, first):
-        self.first = first
-
-    def set_tracks(self, tracks):
-        self.tracks = tracks
-
-    def add_row(self, row):
-        self.num_tracks += 1
-        super().add_row(row)
-
-    def remove(self, row):
-        self.num_tracks -= 1
-        super().remove(row)
-
-
-class PlayQueueTrackRow(Adw.ActionRow):
-    __gtype_name__ = 'PlayQueueTrackRow'
-
-    prev = None
-    next = None
-
-    def __init__(self, track: TrackItem):
-        self.track = track
-        super().__init__()
-
-        self.set_title(track.title)
-        self.set_subtitle(track.length)
-        self.remove_button = Gtk.Button()
-        self.remove_button.get_style_context().add_class('flat')
-        self.remove_button.set_icon_name('list-remove-symbolic')
-        self.remove_button.set_tooltip_text('Remove from queue')
-        self.remove_button.set_valign(Gtk.Align.CENTER)
-        self.add_suffix(self.remove_button)
-
-    def set_prev(self, prev):
-        self.prev = prev
-
-    def set_next(self, next):
-        self.next = next
-
-    def add_prefix(self, widget):
-        self.prefix = widget
-        super().add_prefix(widget)
-
-    def remove_prefix(self):
-        super().remove(self.prefix)
+    def _move_current(self, direction: str, allow_none=False):
+        if direction == 'next':
+            if self.current_index >= len(self.model) - 1:
+                self.current_index = 0 if self.loop else len(self.model)
+            else:
+                self.current_index += 1
+        elif direction == 'prev':
+            if self.current_index <= 0:
+                if allow_none:
+                    self.current_index = -1
+            elif self.current_index >= len(self.model):
+                self.current_index = len(self.model) - 2
+            else:
+                self.current_index -= 1

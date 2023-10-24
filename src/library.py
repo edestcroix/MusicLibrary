@@ -16,6 +16,7 @@ class TrackItem(GObject.Object):
     album = GObject.Property(type=str)
     artists = GObject.Property(type=str)
     albumartist = GObject.Property(type=str)
+    thumb = GObject.Property(type=str)
 
     def __init__(
         self,
@@ -27,6 +28,7 @@ class TrackItem(GObject.Object):
         album,
         artists,
         albumartist,
+        thumb,
     ):
         super().__init__()
         track = int(track.split('/')[0]) if track else 0
@@ -39,6 +41,7 @@ class TrackItem(GObject.Object):
         self.album = album
         self.artists = artists
         self.albumartist = albumartist
+        self.thumb = thumb
 
     def length_str(self, length):
         time = datetime.timedelta(seconds=length)

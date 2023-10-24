@@ -17,7 +17,6 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from copy import copy
 from gi.repository import Adw, Gtk, GLib, Gst, Gio, GObject
 import gi
 from .library import AlbumItem
@@ -25,6 +24,7 @@ from .album_view import RecordBoxAlbumView
 from .player_controls import RecordBoxPlayerControls
 from .player import Player
 from .monitor import ProgressMonitor
+from .play_queue import PlayQueue, PlayQueueList
 
 gi.require_version('Gtk', '4.0')
 gi.require_version('Gst', '1.0')
@@ -37,6 +37,8 @@ class MainView(Adw.Bin):
     album_overview = Gtk.Template.Child()
 
     toolbar_view = Gtk.Template.Child()
+
+    content_page = Gtk.Template.Child()
 
     play = Gtk.Template.Child()
     queue_toggle = Gtk.Template.Child()
@@ -54,6 +56,7 @@ class MainView(Adw.Bin):
 
     confirm_play = GObject.Property(type=bool, default=True)
     clear_queue = GObject.Property(type=bool, default=False)
+    album_changed = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -68,11 +71,9 @@ class MainView(Adw.Bin):
         )
 
         self._setup_actions()
-        self._set_controls_stopped()
-
-    album_changed = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
 
     def update_album(self, album: AlbumItem):
+        self.content_page.set_title(album.raw_name)
         self.album_overview.update_album(album)
         self.play.set_sensitive(True)
         self.queue_add.set_sensitive(True)
@@ -105,10 +106,6 @@ class MainView(Adw.Bin):
             self.send_toast('Queue Updated')
 
     @Gtk.Template.Callback()
-    def _on_queue_clear(self, _):
-        self.play_queue.empty_queue()
-
-    @Gtk.Template.Callback()
     def _on_play_track(self, _, track_album: AlbumItem):
         # selected track to play is returned in an AlbumItem
         # containing only that specific track, because play queue currently
@@ -133,8 +130,8 @@ class MainView(Adw.Bin):
 
     @Gtk.Template.Callback()
     def _on_return_to_album(self, _):
-        if self.play_queue.current_track:
-            current_album = self.play_queue.get_current_track().album
+        if current_track := self.play_queue.playing_track():
+            current_album = current_track.album
             self.emit('album_changed', current_album)
 
     @Gtk.Template.Callback()
@@ -155,8 +152,8 @@ class MainView(Adw.Bin):
 
     def _confirm_album_play(self, album, name):
         dialog = Adw.MessageDialog(
-            heading='Queue Not Empty',
-            body=f'The play queue is not empty, playing "{name}" will clear it.',
+            heading='Already Playing',
+            body=f'A song is already playing. Do you want to clear the queue and play {name}?',
             transient_for=Gio.Application.get_default().props.active_window,
         )
         self.cancellable = Gio.Cancellable()

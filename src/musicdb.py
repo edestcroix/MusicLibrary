@@ -78,11 +78,11 @@ class MusicDB:
                 (album[0],),
             )
             artists = [a[0] for a in self.cursor.fetchall()]
-            tracks = self.get_tracks(album[0])
+            tracks = self.get_tracks(album[0], album[3])
             albums.append(AlbumItem(*(album + (artists, tracks))))
         return albums
 
-    def get_tracks(self, album: str) -> list[TrackItem]:
+    def get_tracks(self, album: str, thumb: str) -> list[TrackItem]:
         self.cursor.execute(
             'SELECT track, discnumber, title, length, path FROM tracks WHERE album = ? ORDER BY discnumber, track',
             (album,),
@@ -101,7 +101,9 @@ class MusicDB:
             albumartist = self.cursor.fetchone()
             albumartist = albumartist[0] if albumartist else None
             artists = ', '.join(artists)
-            tracks.append(TrackItem(*(track + (album, artists, albumartist))))
+            tracks.append(
+                TrackItem(*(track + (album, artists, albumartist, thumb)))
+            )
         return tracks
 
     def _create_tables(self):
