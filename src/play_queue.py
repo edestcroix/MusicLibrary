@@ -1,19 +1,109 @@
 from gi.repository import Adw, Gtk, GLib, GObject, Gio
 import gi
-from .library import TrackItem
+from .library import AlbumItem, TrackItem
 
 gi.require_version('Gtk', '4.0')
 
 
-# FIXME: Return-to-album no longer works when queue is empty because it requires getting
-# the current album from the queue. Currently playing track should be stored somewhere.
-class PlayQueue(Gtk.ListBox):
+@Gtk.Template(resource_path='/com/github/edestcroix/RecordBox/play_queue.ui')
+class PlayQueue(Adw.Bin):
+    """A containter for the play queue, containing the entire view around the track list itself,
+    so the functionality for determining when to enable or disable the track list's selection mode can be
+    contained within this class instead of strewn across the MainView class.
+    Most of it's functions and properties just pass through to it's child track list, since most
+    property bindings are defined in the ui file.
+    """
+
     __gtype_name__ = 'RecordBoxPlayQueue'
+    track_list = Gtk.Template.Child()
+    collapse = GObject.Signal()
+
+    queue_header = Gtk.Template.Child()
+
+    loop = GObject.property(type=bool, default=False)
+    _selection_active = False
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.bind_property(
+            'loop',
+            self.track_list,
+            'loop',
+            GObject.BindingFlags.BIDIRECTIONAL,
+        )
+        self.bind_property(
+            'selection-active',
+            self.track_list,
+            'selection-active',
+            GObject.BindingFlags.BIDIRECTIONAL,
+        )
+
+    @GObject.Property(type=bool, default=False)
+    def selection_active(self):
+        return self._selection_active
+
+    @selection_active.setter
+    def set_selection_active(self, value: bool):
+        self._selection_active = value
+        if value:
+            self.queue_header.set_css_classes(['header-accent'])
+        else:
+            self.queue_header.set_css_classes([])
+
+    @Gtk.Template.Callback()
+    def _on_queue_toggle(self, _):
+        self.track_list.selection_active = False
+        # tell the main view that the queue should be closed
+        self.emit('collapse')
+
+    @Gtk.Template.Callback()
+    def _remove_selected(self, _):
+        self.track_list.remove_selected()
+
+    def get_current_track(self) -> TrackItem | None:
+        return self.track_list.get_current_track()
+
+    def get_next_track(self) -> TrackItem | None:
+        return self.track_list.get_next_track()
+
+    def playing_track(self) -> TrackItem | None:
+        """Returns the currently playing track, regardless of if the queue is empty or not.
+        (track_list.current_track doesn't update to None until get_next_track is called on
+         an empty queue, while get_current_track returns None if the queue is empty)"""
+        return self.track_list.current_track
+
+    def clear(self):
+        self.track_list.clear()
+
+    def empty(self):
+        return self.track_list.empty()
+
+    def add_album(self, album: AlbumItem):
+        self.track_list.add_album(album)
+
+    def add_track(self, track: TrackItem):
+        self.track_list.add_track(track)
+
+    def next(self):
+        return self.track_list.next()
+
+    def previous(self):
+        return self.track_list.previous()
+
+
+class PlayQueueList(Gtk.ListBox):
+    """A ListBox that contains the track list of the play queue, and
+    implements the functionality for tracking and advancing the current track,
+    and functions for removing tracks from the list. Implements a selection
+    mode that allows selecting tracks to remove."""
+
+    __gtype_name__ = 'RecordBoxPlayQueueList'
 
     current_index = -1
     # Set to true if the track at the currrent_index was removed, so that
     # advancing to the next track doesn't skip a track.
     current_index_moved = False
+    current_track = GObject.Property(type=TrackItem)
 
     loop = GObject.property(type=bool, default=False)
     _selection_active = False
@@ -30,17 +120,21 @@ class PlayQueue(Gtk.ListBox):
         return self._selection_active
 
     @selection_active.setter
-    def set_selection_active(self, value):
+    def set_selection_active(self, value: bool):
         if value:
             self.set_selection_mode(Gtk.SelectionMode.MULTIPLE)
             self._selection_active = True
         else:
             self.set_selection_mode(Gtk.SelectionMode.NONE)
             self._selection_active = False
+            self.all_selected = False
 
-    def add_album(self, album):
+    def add_album(self, album: AlbumItem):
         for track in album.tracks:
             self.model.append(track)
+
+    def add_track(self, track: TrackItem):
+        self.model.append(track)
 
     def remove_selected(self):
         for row in self.get_selected_rows():
@@ -51,6 +145,7 @@ class PlayQueue(Gtk.ListBox):
             self.model.remove(row.get_index())
         if len(self.model) == 0:
             self.current_index = -1
+        self.all_selected = False
 
     def clear(self):
         self.model.remove_all()
@@ -59,59 +154,98 @@ class PlayQueue(Gtk.ListBox):
     def restart(self):
         self.current_index = 0
 
-    def empty(self):
+    def empty(self) -> bool:
         return self.current_index == -1
 
-    def get_next_track(self):
+    def get_next_track(self) -> TrackItem | None:
         if self.current_index_moved:
             self.current_index_moved = False
             return self.get_current_track()
         self._move_current('next')
         return self.get_current_track()
 
-    def get_current_track(self):
+    def get_current_track(self) -> TrackItem | None:
         if self.current_index == -1 and len(self.model) > 0:
             self.current_index = 0
-        return (
+        self.current_track = (
             self.model[self.current_index] if self.current_index >= 0 else None
         )
+        return self.current_track
 
-    def next(self):
+    def next(self) -> bool:
         if self.current_index_moved:
             self.current_index_moved = False
         else:
             self._move_current('next', True)
         return 0 <= self.current_index < len(self.model)
 
-    def previous(self):
+    def previous(self) -> bool:
         self._move_current('prev')
         if self.current_index_moved:
             self.current_index_moved = False
         return 0 <= self.current_index < len(self.model)
 
-    def _create_row(self, item, __, _):
-        row = Adw.ActionRow.new()
-        row.set_title(item.title)
-        row.set_subtitle(item.length)
-        row.set_selectable(False)
-        checkbox = Gtk.CheckButton()
-        checkbox.set_valign(Gtk.Align.CENTER)
-        checkbox.set_css_classes(['selection-mode'])
-        checkbox.set_visible(self.selection_active)
+    def _create_row(self, item: TrackItem, __, _) -> Adw.ActionRow:
+        """Callback for the ListBox's bind_model method to create row widgets for
+        newly added items to the model. Returns an Adw.ActionRow with a hidden
+        checkbox that can be used to select the row. Checkbox will become visible on
+        enabling selection mode."""
+        artists = (
+            f'{item.albumartist}, {item.artists}'
+            if item.artists
+            else item.albumartist
+        )
+        artists = GLib.markup_escape_text(artists)
+        row = Adw.ActionRow(
+            title=item.title,
+            subtitle=f'{item.length} - {artists}',
+            selectable=False,
+            css_classes=['queue-row'],
+        )
+        checkbox = Gtk.CheckButton(
+            valign=Gtk.Align.CENTER,
+            visible=False,
+            css_classes=['selection-mode'],
+        )
+        image = Gtk.Image.new_from_file(item.thumb)
+        image.set_pixel_size(32)
+        row.add_prefix(image)
+        row.add_prefix(checkbox)
+        self._bind_row(row, checkbox, image)
+        return row
+
+    def _bind_row(
+        self, row: Adw.ActionRow, checkbox: Gtk.CheckButton, image: Gtk.Image
+    ):
+        """Binds the necessary properties to implement the selection mode.
+        The selectable state of the row is disabled unless the checkbox is active,
+        and the checkbox is hidden if selection mode is disabled."""
+
         self.bind_property(
             'selection-active',
             checkbox,
             'visible',
             GObject.BindingFlags.DEFAULT,
         )
+
+        self.bind_property(
+            'selection-active',
+            image,
+            'visible',
+            GObject.BindingFlags.INVERT_BOOLEAN,
+        )
+
+        # Enabling all-selected activates all checkboxes; default binding
+        # allows the checkbox to be (de)activated independently of the all-selected property.
         self.bind_property(
             'all-selected',
             checkbox,
             'active',
             GObject.BindingFlags.DEFAULT,
         )
-        # Don't want the row to be selectable if the checkbox is not selected,
-        # so the only way to select the row is to click the checkbox.
+        # This binding primarily exists so the row properly becomes
+        # unselectable again when the checkbox is hidden, because the checkbox's
+        # 'hide' signal is set to deactivate it, which will then deactivate the row.
         checkbox.bind_property(
             'active',
             row,
@@ -123,12 +257,10 @@ class PlayQueue(Gtk.ListBox):
             self._select_action,
             row,
         )
+        # make sure checkboxes deactivate when selection mode is disabled
         checkbox.connect('hide', lambda b: b.set_active(False))
-        row.add_prefix(checkbox)
 
-        return row
-
-    def _select_action(self, button, row):
+    def _select_action(self, button: Gtk.CheckButton, row: Adw.ActionRow):
         if not self.selection_active:
             return
         if button.get_active():
@@ -138,7 +270,7 @@ class PlayQueue(Gtk.ListBox):
             row.set_selectable(False)
             self.unselect_row(row)
 
-    def _move_current(self, direction, allow_none=False):
+    def _move_current(self, direction: str, allow_none=False):
         if direction == 'next':
             if self.current_index >= len(self.model) - 1:
                 self.current_index = 0 if self.loop else len(self.model)

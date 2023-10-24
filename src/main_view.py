@@ -17,7 +17,6 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from copy import copy
 from gi.repository import Adw, Gtk, GLib, Gst, Gio, GObject
 import gi
 from .library import AlbumItem
@@ -25,6 +24,7 @@ from .album_view import RecordBoxAlbumView
 from .player_controls import RecordBoxPlayerControls
 from .player import Player
 from .monitor import ProgressMonitor
+from .play_queue import PlayQueue, PlayQueueList
 
 gi.require_version('Gtk', '4.0')
 gi.require_version('Gst', '1.0')
@@ -38,13 +38,13 @@ class MainView(Adw.Bin):
 
     toolbar_view = Gtk.Template.Child()
 
+    content_page = Gtk.Template.Child()
+
     play = Gtk.Template.Child()
     queue_toggle = Gtk.Template.Child()
     queue_panel_split_view = Gtk.Template.Child()
     queue_add = Gtk.Template.Child()
     play_queue = Gtk.Template.Child()
-
-    select_all_queue = Gtk.Template.Child()
 
     return_to_album = Gtk.Template.Child()
 
@@ -73,6 +73,7 @@ class MainView(Adw.Bin):
         self._setup_actions()
 
     def update_album(self, album: AlbumItem):
+        self.content_page.set_title(album.raw_name)
         self.album_overview.update_album(album)
         self.play.set_sensitive(True)
         self.queue_add.set_sensitive(True)
@@ -129,8 +130,8 @@ class MainView(Adw.Bin):
 
     @Gtk.Template.Callback()
     def _on_return_to_album(self, _):
-        if not self.play_queue.empty():
-            current_album = self.play_queue.get_current_track().album
+        if current_track := self.play_queue.playing_track():
+            current_album = current_track.album
             self.emit('album_changed', current_album)
 
     @Gtk.Template.Callback()
@@ -149,15 +150,10 @@ class MainView(Adw.Bin):
     def _toggle_play(self, _):
         self.player.toggle()
 
-    @Gtk.Template.Callback()
-    def _remove_selected(self, _):
-        self.play_queue.remove_selected()
-        self.select_all_queue.set_active(False)
-
     def _confirm_album_play(self, album, name):
         dialog = Adw.MessageDialog(
-            heading='Queue Not Empty',
-            body=f'The play queue is not empty, playing "{name}" will clear it.',
+            heading='Already Playing',
+            body=f'A song is already playing. Do you want to clear the queue and play {name}?',
             transient_for=Gio.Application.get_default().props.active_window,
         )
         self.cancellable = Gio.Cancellable()

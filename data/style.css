@@ -2,7 +2,7 @@
   margin: 10px;
 }
 
-.library-row {
+.library-row, .queue-row {
   padding-left: 0px;
 }
 
@@ -24,6 +24,10 @@
 .progress-box {
   padding: 5px;
   padding-top: 0px;
+}
+
+.header-accent {
+  background: @accent_bg_color;
 }
 
 .progress-bar { color: @window_fg_color; }

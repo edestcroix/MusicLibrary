@@ -159,7 +159,6 @@ class RecordBoxWindow(Adw.ApplicationWindow):
 
     @Gtk.Template.Callback()
     def select_album(self, _, album: AlbumItem):
-        self.main_page.set_title(album.raw_name)
         self.main_view.update_album(album)
         self.outer_split.set_show_sidebar(
             self.outer_split.get_collapsed() == False
