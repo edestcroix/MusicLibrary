@@ -72,6 +72,11 @@ class MainView(Adw.Bin):
 
         self._setup_actions()
 
+        self.play_queue.connect(
+            'jump-to-track',
+            self.player.jump_to_track,
+        )
+
     def update_album(self, album: AlbumItem):
         self.content_page.set_title(album.raw_name)
         self.album_overview.update_album(album)

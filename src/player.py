@@ -101,6 +101,17 @@ class Player(GObject.GObject):
             Gst.Format.TIME, Gst.SeekFlags.FLUSH, position
         )
 
+    def jump_to_track(self, _):
+        """Reloads the current track in the play queue, in response to the play
+        queue jumping to a different track. Expectation is that the current track
+        in the queue is no longer the same track that is playing"""
+
+        self._player.set_state(Gst.State.NULL)
+        self._player.set_property(
+            'uri', self._prepare_url(self._play_queue.get_current_track())
+        )
+        self._player.set_state(Gst.State.PLAYING)
+
     def _on_about_to_finish(self, _):
         if next_track := self._play_queue.get_next_track():
             self._player.set_property('uri', self._prepare_url(next_track))

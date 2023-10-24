@@ -23,6 +23,8 @@ class PlayQueue(Adw.Bin):
     loop = GObject.property(type=bool, default=False)
     _selection_active = False
 
+    jump_to_track = GObject.Signal()
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.bind_property(
@@ -36,6 +38,10 @@ class PlayQueue(Adw.Bin):
             self.track_list,
             'selection-active',
             GObject.BindingFlags.BIDIRECTIONAL,
+        )
+
+        self.track_list.connect(
+            'jump-to-track', lambda _: self.emit('jump-to-track')
         )
 
     @GObject.Property(type=bool, default=False)
@@ -108,12 +114,16 @@ class PlayQueueList(Gtk.ListBox):
     loop = GObject.property(type=bool, default=False)
     _selection_active = False
     all_selected = GObject.Property(type=bool, default=False)
+    jump_to_track = GObject.Signal()
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.model = Gio.ListStore.new(TrackItem)
         self.bind_model(self.model, self._create_row, None, None)
         self.set_selection_mode(Gtk.SelectionMode.NONE)
+        self.set_activate_on_single_click(False)
+
+        self.connect('row-activated', self._on_row_activated)
 
     @GObject.Property(type=bool, default=False)
     def selection_active(self):
@@ -121,12 +131,13 @@ class PlayQueueList(Gtk.ListBox):
 
     @selection_active.setter
     def set_selection_active(self, value: bool):
+        self.unselect_all()
+        self.set_activate_on_single_click(value)
+        self._selection_active = value
         if value:
             self.set_selection_mode(Gtk.SelectionMode.MULTIPLE)
-            self._selection_active = True
         else:
             self.set_selection_mode(Gtk.SelectionMode.NONE)
-            self._selection_active = False
             self.all_selected = False
 
     def add_album(self, album: AlbumItem):
@@ -294,3 +305,9 @@ class PlayQueueList(Gtk.ListBox):
                 self.current_index = len(self.model) - 2
             else:
                 self.current_index -= 1
+    def _on_row_activated(self, _, row: Adw.ActionRow):
+        if not self.selection_active:
+            # jump to track in queue
+            self.current_index = row.get_index()
+            self.current_track = self.get_current_track()
+            self.emit('jump-to-track')
