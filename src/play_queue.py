@@ -199,7 +199,6 @@ class PlayQueueList(Gtk.ListBox):
         row = Adw.ActionRow(
             title=item.title,
             subtitle=f'{item.length} - {artists}',
-            selectable=False,
             css_classes=['queue-row'],
         )
         checkbox = Gtk.CheckButton(
@@ -217,9 +216,10 @@ class PlayQueueList(Gtk.ListBox):
     def _bind_row(
         self, row: Adw.ActionRow, checkbox: Gtk.CheckButton, image: Gtk.Image
     ):
-        """Binds the necessary properties to implement the selection mode.
-        The selectable state of the row is disabled unless the checkbox is active,
-        and the checkbox is hidden if selection mode is disabled."""
+        """Binds the necessary properties to implement the selection mode, by
+        connection the checkbox's toggled state to the selection of the row,
+        allowing selection to be toggled by clicking on the row when the select mode
+        is active. Also set up so selection state resets when selection mode toggles."""
 
         self.bind_property(
             'selection-active',
@@ -243,32 +243,38 @@ class PlayQueueList(Gtk.ListBox):
             'active',
             GObject.BindingFlags.DEFAULT,
         )
-        # This binding primarily exists so the row properly becomes
-        # unselectable again when the checkbox is hidden, because the checkbox's
-        # 'hide' signal is set to deactivate it, which will then deactivate the row.
-        checkbox.bind_property(
-            'active',
-            row,
-            'selectable',
-            GObject.BindingFlags.DEFAULT,
-        )
+
+        # Bind the checkbox to a callback to select the row when active
         checkbox.connect(
             'toggled',
             self._select_action,
             row,
         )
-        # make sure checkboxes deactivate when selection mode is disabled
+        # and also bind the list to toggle checkboxes when rows are selected,
+        # to make sure selection state and checkbox state are always in sync
+        # (ListBoxRows don't have a 'selected' property to bind to)
+        self.connect(
+            'selected-rows-changed',
+            self._selection_changed,
+            row,
+            checkbox,
+        )
+        # makes sure checkboxes are reset when selection mode is toggled
         checkbox.connect('hide', lambda b: b.set_active(False))
+        checkbox.connect('show', lambda b: b.set_active(False))
 
     def _select_action(self, button: Gtk.CheckButton, row: Adw.ActionRow):
         if not self.selection_active:
             return
         if button.get_active():
-            row.set_selectable(True)
             self.select_row(row)
         else:
-            row.set_selectable(False)
             self.unselect_row(row)
+
+    def _selection_changed(
+        self, _, row: Adw.ActionRow, checkbox: Gtk.CheckButton
+    ):
+        checkbox.set_active(row.is_selected())
 
     def _move_current(self, direction: str, allow_none=False):
         if direction == 'next':
