@@ -261,6 +261,7 @@ class PlayQueueList(Gtk.ListBox):
             row,
             checkbox,
         )
+        row.set_activatable_widget(checkbox)
         # makes sure checkboxes are reset when selection mode is toggled
         checkbox.connect('hide', lambda b: b.set_active(False))
         checkbox.connect('show', lambda b: b.set_active(False))
@@ -276,7 +277,8 @@ class PlayQueueList(Gtk.ListBox):
     def _selection_changed(
         self, _, row: Adw.ActionRow, checkbox: Gtk.CheckButton
     ):
-        checkbox.set_active(row.is_selected())
+        if checkbox.get_active():
+            checkbox.set_active(row.is_selected())
 
     def _move_current(self, direction: str, allow_none=False):
         if direction == 'next':
