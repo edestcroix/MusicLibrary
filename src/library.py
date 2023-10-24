@@ -1,5 +1,6 @@
 from gi.repository import Adw, Gtk, GLib, GObject, Gio
 import gi
+import datetime
 
 gi.require_version('Gtk', '4.0')
 
@@ -40,11 +41,8 @@ class TrackItem(GObject.Object):
         self.albumartist = albumartist
 
     def length_str(self, length):
-        if length // 60 > 60:
-            return (
-                f'{length // 3600}:{length % 3600 // 60:02}:{length % 60:02}'
-            )
-        return f'{length // 60}:{length % 60:02}'
+        time = datetime.timedelta(seconds=length)
+        return str(time) if length // 60 > 60 else str(time)[2:]
 
 
 class AlbumItem(GObject.Object):
@@ -76,9 +74,8 @@ class AlbumItem(GObject.Object):
         self.summary = f'{date} - {self.track_num} tracks\n{self.length_str()}'
 
     def length_str(self):
-        if self.length // 60 > 60:
-            return f'{self.length // 300}:{self.length % 3600 // 60:02}:{self.length % 60:02}'
-        return f'{self.length // 60}:{self.length % 60:02}'
+        time = datetime.timedelta(seconds=self.length)
+        return str(time) if self.length // 60 > 60 else str(time)[2:]
 
     def copy(self):
         return AlbumItem(
