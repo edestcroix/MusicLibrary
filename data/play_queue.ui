@@ -26,7 +26,7 @@
         <child type="bottom">
           <object class="GtkActionBar">
             <child type="start">
-              <object class="GtkCheckButton" id="select_all_queue">
+              <object class="GtkCheckButton" id="select_all">
                 <property name="label" translatable="yes">Select All</property>
                 <style>
                   <class name="selection-mode" />
@@ -34,9 +34,10 @@
               </object>
             </child>
             <child type="end">
-              <object class="GtkButton">
+              <object class="GtkButton" id="delete_selected">
                 <property name="icon-name">user-trash-symbolic</property>
                 <property name="valign">center</property>
+                <property name="sensitive">false</property>
                 <signal name="clicked" handler="_remove_selected" />
                 <style>
                   <class name="destructive-action" />
@@ -52,7 +53,7 @@
               <object class="RecordBoxPlayQueueList" id="track_list">
                 <property name="selection-active" bind-source="select_toggle"
                   bind-property="active" bind-flags="bidirectional" />
-                <property name="all-selected" bind-source="select_all_queue"
+                <property name="all-selected" bind-source="select_all"
                   bind-property="active" bind-flags="bidirectional" />
                 <style>
                   <class name="navigation-sidebar" />

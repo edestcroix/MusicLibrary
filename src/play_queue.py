@@ -19,6 +19,7 @@ class PlayQueue(Adw.Bin):
     collapse = GObject.Signal()
 
     queue_header = Gtk.Template.Child()
+    delete_selected = Gtk.Template.Child()
 
     loop = GObject.property(type=bool, default=False)
     _selection_active = False
@@ -42,6 +43,13 @@ class PlayQueue(Adw.Bin):
 
         self.track_list.connect(
             'jump-to-track', lambda _: self.emit('jump-to-track')
+        )
+
+        self.track_list.connect(
+            'selected-rows-changed',
+            lambda _: self.delete_selected.set_sensitive(
+                len(self.track_list.get_selected_rows()) > 0
+            ),
         )
 
     @GObject.Property(type=bool, default=False)
