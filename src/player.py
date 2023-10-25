@@ -24,6 +24,8 @@ class Player(GObject.GObject):
         type=GObject.TYPE_PYOBJECT, default=None, setter=None
     )
 
+    player_error = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
+
     def __init__(self, play_queue, **kwargs):
         super().__init__(**kwargs)
         self._player = Gst.parse_launch(
@@ -148,4 +150,5 @@ class Player(GObject.GObject):
             self.emit('stream_start')
         elif t == Gst.MessageType.ERROR:
             self._player.set_state(Gst.State.NULL)
-            err, debug = message.parse_error()
+            err, _ = message.parse_error()
+            self.player_error.emit(err)

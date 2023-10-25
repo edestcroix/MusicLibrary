@@ -78,7 +78,7 @@ class MainView(Adw.Bin):
         )
         self.player.connect(
             'player-error',
-            lambda _, err, debug: self.send_toast(f'Playback Error: {err}'),
+            lambda _, err: self.send_toast(f'Playback Error: {err}'),
         )
 
     def update_album(self, album: AlbumItem):
