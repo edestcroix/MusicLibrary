@@ -400,7 +400,7 @@ class MPRIS(Server):
             'mpris:length': GLib.Variant('x', self._length()),
             'xesam:url': GLib.Variant('s', f'file://{current_track.path}'),
         }
-        cover_path = current_track.thumb
+        cover_path = current_track.cover
         if cover_path is not None:
             self._metadata['mpris:artUrl'] = GLib.Variant(
                 's', f'file://{cover_path}'
