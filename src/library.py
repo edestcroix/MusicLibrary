@@ -73,7 +73,7 @@ class AlbumItem(GObject.Object):
         self.artists = artists
         self.track_num = len(tracks)
         self.tracks = tracks
-        self.tracks.sort(key=lambda t: t.track + t.discnumber * 100)
+        self.tracks.sort(key=lambda t: (t.discnumber, t.track))
         self.summary = f'{date} - {self.track_num} tracks\n{self.length_str()}'
 
     def length_str(self):
