@@ -69,8 +69,8 @@
               <class name="linked" />
             </style>
             <child>
-              <object class="GtkToggleButton" id="loop">
-                <property name="icon-name">media-playlist-repeat-symbolic</property>
+              <object class="GtkButton" id="loop">
+                <property name="icon-name">media-playlist-consecutive-symbolic</property>
               </object>
             </child>
             <child>

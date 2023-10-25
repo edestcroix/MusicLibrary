@@ -2,6 +2,7 @@ import os
 import time
 import urllib
 import urllib.parse
+from enum import Enum
 
 import gi
 
@@ -12,19 +13,28 @@ from gi.repository import GLib, Gst, GObject, Gio
 Gst.init(None)
 
 
+class LoopMode(Enum):
+    NONE = 0
+    SINGLE = 1
+    ALL = 2
+
+
 class Player(GObject.GObject):
     volume = GObject.Property(type=float, default=1.0)
     muted = GObject.Property(type=bool, default=False)
 
     stream_start = GObject.Signal()
     seeked = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
+    player_error = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
 
     # current_track property should not be setable
     current_track = GObject.Property(
         type=GObject.TYPE_PYOBJECT, default=None, setter=None
     )
 
-    player_error = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
+    loop = GObject.Property(type=GObject.TYPE_PYOBJECT)
+
+    single_repeated = False
 
     def __init__(self, play_queue, **kwargs):
         super().__init__(**kwargs)
@@ -42,8 +52,10 @@ class Player(GObject.GObject):
         self.bus.add_signal_watch()
         self.bus.connect('message', self._on_message)
         self._play_queue = play_queue
-        self.state = 'stopped'
         self._seeking = False
+
+        self.state = 'stopped'
+        self.loop = LoopMode.NONE
 
     @GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
     def state_changed(self, state):
@@ -80,7 +92,6 @@ class Player(GObject.GObject):
 
     def toggle_mute(self):
         mute_state = self._player.get_property('mute')
-        print(mute_state)
         self._player.set_property('mute', not mute_state)
 
     def stop(self):
@@ -88,13 +99,15 @@ class Player(GObject.GObject):
         self.emit('state_changed', 'stopped')
 
     def exit(self):
-        print('exiting')
         self.current_track = None
         self._player.set_state(Gst.State.NULL)
         self.emit('state_changed', 'stopped')
 
     def go_next(self):
         if self._play_queue.next():
+            self.play()
+        elif self.loop == LoopMode.ALL:
+            self._play_queue.restart()
             self.play()
 
     def go_previous(self):
@@ -132,8 +145,19 @@ class Player(GObject.GObject):
         self._player.set_state(Gst.State.PLAYING)
 
     def _on_about_to_finish(self, _):
-        if next_track := self._play_queue.get_next_track():
+        if self.loop == LoopMode.SINGLE and not self.single_repeated:
+            self.single_repeated = True
+            self._player.set_property(
+                'uri', self._prepare_url(self._play_queue.get_current_track())
+            )
+        elif next_track := self._play_queue.get_next_track():
+            self.single_repeated = False
             self._player.set_property('uri', self._prepare_url(next_track))
+        elif self.loop == LoopMode.ALL:
+            self._play_queue.restart()
+            self._player.set_property(
+                'uri', self._prepare_url(self._play_queue.get_current_track())
+            )
 
     def _prepare_url(self, track):
         path = os.path.realpath(track.path.strip())

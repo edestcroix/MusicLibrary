@@ -1,5 +1,6 @@
 from random import randint
 from gi.repository import Gio, GLib
+from .player import LoopMode
 
 import logging
 
@@ -202,6 +203,7 @@ class MPRIS(Server):
         self._player.connect('state-changed', self._on_state_changed)
         self._player.connect('seeked', self._on_seeked)
         self._player.connect('notify::volume', self._on_volume_changed)
+        self._player.connect('notify::loop', self._on_loop_changed)
 
     def Raise(self):
         self._app.props.active_window.present()
@@ -229,14 +231,14 @@ class MPRIS(Server):
         self._player.toggle()
 
     def Stop(self):
-        # TODO: MPRIS spec states that after stop, play will start from the beginning of the track.
-        # Currently, stop completely stops all playback and exits the player. This behaviour should
-        # be chaged by making the current stop() into exit(), and make stop() behave as per the spec.
         self._player.stop()
 
     def Play(self):
         if self._player.state == 'paused':
             self._player.toggle()
+
+    def LoopStatus(self, loop):
+        logging.debug(f'LoopStatus: {loop}')
 
     def SetPosition(self, _, position):
         logging.debug(f'SetPosition: {position}')
@@ -300,9 +302,13 @@ class MPRIS(Server):
                 return GLib.Variant('s', self._get_status())
             case 'LoopStatus':
                 # TODO: Player should have a loop track option to match the MPRIS spec.
-                loop = self._player._play_queue.loop
-                value = 'Playlist' if loop else 'None'
-                return GLib.Variant('s', value)
+                match self._player.loop:
+                    case LoopMode.ALL:
+                        return GLib.Variant('s', 'Playlist')
+                    case LoopMode.SINGLE:
+                        return GLib.Variant('s', 'Track')
+                    case LoopMode.NONE:
+                        return GLib.Variant('s', 'None')
             case 'Metadata':
                 return GLib.Variant('a{sv}', self._metadata)
             case 'Volume':
@@ -325,10 +331,16 @@ class MPRIS(Server):
         return ret
 
     def Set(self, _, property_name, new_value):
+        logging.debug(f'Set: {property_name} {new_value}')
         if property_name == 'LoopStatus':
-            # TODO: Move loop status to player, have player request restart of queue
-            # instead of the queue doing it, and allow player to restart track.
-            self._player._play_queue.loop = new_value == 'Playlist'
+            match new_value:
+                case 'None':
+                    self._player.loop = LoopMode.NONE
+                case 'Playlist':
+                    self._player.loop = LoopMode.ALL
+                case 'Track':
+                    self._player.loop = LoopMode.SINGLE
+
         elif property_name == 'Volume':
             self._player.volume = new_value
 
@@ -412,6 +424,20 @@ class MPRIS(Server):
         volume = GLib.Variant('d', volume)
         self.PropertiesChanged(
             self._MPRIS_PLAYER_IFACE, {'Volume': volume}, []
+        )
+
+    def _on_loop_changed(self, _, __):
+        loop = self._player.loop
+        match loop:
+            case LoopMode.NONE:
+                loop = 'None'
+            case LoopMode.ALL:
+                loop = 'Playlist'
+            case LoopMode.SINGLE:
+                loop = 'Track'
+        loop = GLib.Variant('s', loop)
+        self.PropertiesChanged(
+            self._MPRIS_PLAYER_IFACE, {'LoopStatus': loop}, []
         )
 
     def _on_current_changed(self, player):

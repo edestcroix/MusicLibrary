@@ -63,9 +63,9 @@ class MainView(Adw.Bin):
 
         self.player = Player(self.play_queue)
         self.player_controls.attach_to_player(self.player)
-        self.player_controls.loop.bind_property(
-            'active',
-            self.play_queue,
+        self.player_controls.bind_property(
+            'loop-mode',
+            self.player,
             'loop',
             GObject.BindingFlags.BIDIRECTIONAL,
         )

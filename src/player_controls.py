@@ -5,6 +5,7 @@ gi.require_version('GstAudio', '1.0')
 
 from gi.repository import Adw, Gtk, GLib, GObject, GstAudio
 from .monitor import ProgressMonitor
+from .player import LoopMode
 
 
 @Gtk.Template(
@@ -35,6 +36,7 @@ class RecordBoxPlayerControls(Gtk.Box):
     stop_button = Gtk.Template.Child()
 
     muted = GObject.Property(type=bool, default=False)
+    loop_mode = GObject.Property(type=GObject.TYPE_PYOBJECT)
 
     _stop_exits = False
 
@@ -42,6 +44,11 @@ class RecordBoxPlayerControls(Gtk.Box):
         super().__init__(**kwargs)
         self.volume_slider.set_range(0, 1)
         self.progress.set_increments(1, 5)
+
+        self.loop.connect('clicked', self._cycle_loop_mode)
+
+        self.connect('notify::loop-mode', self._on_loop_mode_changed)
+        self.loop_mode = LoopMode.NONE
 
     # Create a GObject property for the volume so it can be bidirectionally
     # bound to the player's volume property.
@@ -143,6 +150,9 @@ class RecordBoxPlayerControls(Gtk.Box):
         self.set_property('muted', not self.muted)
         self._update_volume_icon()
 
+    def _cycle_loop_mode(self, loop):
+        self.loop_mode = LoopMode((self.loop_mode.value + 1) % 3)
+
     @Gtk.Template.Callback()
     def _volume_changed(self, _, __, value):
         value = GstAudio.StreamVolume.convert_volume(
@@ -161,3 +171,12 @@ class RecordBoxPlayerControls(Gtk.Box):
             self.volume_toggle.set_icon_name('audio-volume-medium-symbolic')
         else:
             self.volume_toggle.set_icon_name('audio-volume-high-symbolic')
+
+    def _on_loop_mode_changed(self, _, loop):
+        loop = self.loop_mode
+        if loop == LoopMode.NONE:
+            self.loop.set_icon_name('media-playlist-consecutive-symbolic')
+        elif loop == LoopMode.ALL:
+            self.loop.set_icon_name('media-playlist-repeat-symbolic')
+        elif loop == LoopMode.SINGLE:
+            self.loop.set_icon_name('media-playlist-repeat-song-symbolic')
