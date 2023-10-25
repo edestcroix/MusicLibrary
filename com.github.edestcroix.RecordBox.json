@@ -11,7 +11,8 @@
     "--device=dri",
     "--socket=wayland",
     "--filesystem=xdg-music",
-    "--socket=pulseaudio"
+    "--socket=pulseaudio",
+    "--own-name=org.mpris.MediaPlayer2.RecordBox"
   ],
   "cleanup": [
     "/include",

@@ -30,6 +30,7 @@ recordbox_sources = [
   'monitor.py',
   'musicdb.py',
   'parser.py',
+  'mpris.py',
 ]
 
 

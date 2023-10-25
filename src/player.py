@@ -13,6 +13,17 @@ Gst.init(None)
 
 
 class Player(GObject.GObject):
+    volume = GObject.Property(type=float, default=1.0)
+    muted = GObject.Property(type=bool, default=False)
+
+    stream_start = GObject.Signal()
+    seeked = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
+
+    # current_track property should not be setable
+    current_track = GObject.Property(
+        type=GObject.TYPE_PYOBJECT, default=None, setter=None
+    )
+
     def __init__(self, play_queue, **kwargs):
         super().__init__(**kwargs)
         self._player = Gst.parse_launch(
@@ -31,15 +42,6 @@ class Player(GObject.GObject):
         self._play_queue = play_queue
         self.state = 'stopped'
         self._seeking = False
-
-    volume = GObject.Property(type=float, default=1.0)
-    muted = GObject.Property(type=bool, default=False)
-
-    stream_start = GObject.Signal()
-
-    player_error = GObject.Signal(
-        arg_types=(GObject.TYPE_PYOBJECT, GObject.TYPE_PYOBJECT)
-    )
 
     @GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
     def state_changed(self, state):
@@ -76,6 +78,7 @@ class Player(GObject.GObject):
         self._player.set_property('mute', not mute_state)
 
     def stop(self):
+        self.current_track = None
         self._player.set_state(Gst.State.NULL)
         self.emit('state_changed', 'stopped')
 
@@ -104,6 +107,7 @@ class Player(GObject.GObject):
         self._player.seek_simple(
             Gst.Format.TIME, Gst.SeekFlags.FLUSH, position
         )
+        self.emit('seeked', position)
 
     def jump_to_track(self, _):
         """Reloads the current track in the play queue, in response to the play
@@ -136,11 +140,11 @@ class Player(GObject.GObject):
     def _on_message(self, _, message):
         t = message.type
         if t == Gst.MessageType.EOS:
-            self._player.set_state(Gst.State.NULL)
-            self.emit('state_changed', 'stopped')
+            self.stop()
         elif t == Gst.MessageType.ASYNC_DONE and self._seeking:
             self._seeking = False
         elif message.type == Gst.MessageType.STREAM_START:
+            self.current_track = self._play_queue.get_current_track()
             self.emit('stream_start')
         elif t == Gst.MessageType.ERROR:
             self._player.set_state(Gst.State.NULL)
