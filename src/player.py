@@ -35,7 +35,11 @@ class Player(GObject.GObject):
     volume = GObject.Property(type=float, default=1.0)
     muted = GObject.Property(type=bool, default=False)
 
-    stream_start = GObject.Signal(return_type=GObject.TYPE_NONE)
+    stream_start = GObject.Signal()
+
+    player_error = GObject.Signal(
+        arg_types=(GObject.TYPE_PYOBJECT, GObject.TYPE_PYOBJECT)
+    )
 
     @GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
     def state_changed(self, state):
@@ -141,4 +145,3 @@ class Player(GObject.GObject):
         elif t == Gst.MessageType.ERROR:
             self._player.set_state(Gst.State.NULL)
             err, debug = message.parse_error()
-            print(f'Error: {err}', debug)

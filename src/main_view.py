@@ -76,6 +76,10 @@ class MainView(Adw.Bin):
             'jump-to-track',
             self.player.jump_to_track,
         )
+        self.player.connect(
+            'player-error',
+            lambda _, err, debug: self.send_toast(f'Playback Error: {err}'),
+        )
 
     def update_album(self, album: AlbumItem):
         self.content_page.set_title(album.raw_name)
