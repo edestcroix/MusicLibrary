@@ -123,6 +123,7 @@
                                 <child>
                                   <object class="RecordBoxAlbumList" id="album_list">
                                     <signal name="album-selected" handler="select_album" />
+                                    <signal name="activate" handler="_on_album_activated" />
                                     <style>
                                       <class name="navigation-sidebar" />
                                     </style>

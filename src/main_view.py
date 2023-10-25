@@ -94,7 +94,7 @@ class MainView(Adw.Bin):
         self.player.connect('state-changed', self._on_player_state_changed)
 
     @Gtk.Template.Callback()
-    def _on_play(self, _):
+    def play_album(self, _):
         if not (album := self.album_overview.current_album):
             return
         if self.player.state == 'stopped' or not self.confirm_play:

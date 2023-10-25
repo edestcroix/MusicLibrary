@@ -204,6 +204,13 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         self._select_row_with_title(self.artist_list, album.artists[0])
         self._select_row_with_title(self.album_list, album.name)
 
+    @Gtk.Template.Callback()
+    def _on_album_activated(self, _, __):
+        # album row activation only happens on double-click, and the row
+        # gets selected on the first click, setting the main_view's album,
+        # so we can just call the play_album callback.
+        self.main_view.play_album(None)
+
     def _select_row_with_title(
         self, row_list: AlbumList | ArtistList, title: str
     ):
