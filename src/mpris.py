@@ -3,9 +3,6 @@ from gi.repository import Gio, GLib
 
 import logging
 
-logging.basicConfig(level=logging.DEBUG)
-
-
 # full credit for the bulk of this MPRIS implementation goes to Lollyop
 # at https://gitlab.gnome.org/World/lollypop/-/blob/master/lollypop/mpris.py
 class Server:
