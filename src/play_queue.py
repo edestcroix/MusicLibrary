@@ -303,7 +303,7 @@ class PlayQueueList(Gtk.ListBox):
     def _move_current(self, direction: str, allow_none=False):
         self._unhighlight_current()
         if direction == 'next':
-            if self.current_index >= len(self.model) - 1:
+            if self.current_index >= len(self.model):
                 self.current_index = 0 if self.loop else len(self.model)
             else:
                 self.current_index += 1
