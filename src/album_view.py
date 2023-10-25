@@ -24,9 +24,12 @@ gi.require_version('Gtk', '4.0')
 
 from .library import AlbumItem, TrackItem
 
+START_ICON = 'media-playback-start-symbolic'
+ADD_ICON = 'list-add-symbolic'
+
 
 @Gtk.Template(resource_path='/com/github/edestcroix/RecordBox/album_view.ui')
-class RecordBoxAlbumView(Adw.BreakpointBin):
+class AlbumView(Adw.BreakpointBin):
     __gtype_name__ = 'RecordBoxAlbumView'
 
     cover_image = Gtk.Template.Child()
@@ -47,7 +50,7 @@ class RecordBoxAlbumView(Adw.BreakpointBin):
     add_track = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
     start_from_track = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
 
-    def update_cover(self, cover_path):
+    def update_cover(self, cover_path: str):
         self.cover_image.set_from_file(cover_path)
 
     def clear_all(self):
@@ -69,7 +72,7 @@ class RecordBoxAlbumView(Adw.BreakpointBin):
                 disc_row = self._disc_row(current_disc := track.discnumber)
             self._setup_row(track, disc_row)
 
-    def _disc_row(self, current_disc):
+    def _disc_row(self, current_disc: int):
         disc_row = Adw.ExpanderRow(
             title=f'Disc {current_disc}',
             selectable=False,
@@ -78,7 +81,7 @@ class RecordBoxAlbumView(Adw.BreakpointBin):
         self.track_list.append(disc_row)
         return disc_row
 
-    def _setup_row(self, track: TrackItem, disc_row):
+    def _setup_row(self, track: TrackItem, disc_row: Adw.ExpanderRow):
         row = self._create_row(track)
         row.connect('play_track', self._play_track)
         row.connect('add_track', self._add_track)
@@ -97,27 +100,19 @@ class RecordBoxAlbumView(Adw.BreakpointBin):
             parent_row.add_row(row)
         return row
 
-    def _play_track(self, _, track):
-        self._track_signal(track, 'play_track')
+    def _play_track(self, _, track: TrackItem):
+        self.emit('play_track', track)
 
-    def _add_track(self, _, track):
-        self._track_signal(track, 'add_track')
+    def _add_track(self, _, track: TrackItem):
+        self.emit('add_track', track)
 
-    def _start_from_track(self, _, track):
+    def _start_from_track(self, _, track: TrackItem):
         if self.current_album:
             new_album = self.current_album.copy()
             new_album.tracks = new_album.tracks[
                 new_album.tracks.index(track) :
             ]
             self.emit('start_from_track', new_album)
-
-    def _track_signal(self, track, signal):
-        # Play queue currently can only add albums, not lone tracks,
-        # so we create a new album with only the desired track in it.
-        if self.current_album:
-            new_album = self.current_album.copy()
-            new_album.tracks = [track]
-            self.emit(signal, new_album)
 
 
 class TrackRow(Adw.ActionRow):
@@ -148,32 +143,19 @@ class TrackRow(Adw.ActionRow):
         btn.set_popover(self.popover)
         self.add_suffix(btn)
 
-    def sort_key(self):
-        return (self.track.disc_num(), self.track.track_num())
-
-    def _create_popover(self):
+    def _create_popover(self) -> Gtk.Popover:
         popover = Gtk.Popover.new()
         popover.set_position(Gtk.PositionType.BOTTOM)
         popover.set_css_classes(['menu'])
         box = Gtk.ListBox()
-        box.append(
-            self._create_menu_option(
-                'media-playback-start-symbolic', 'Play Track'
-            )
-        )
-        box.append(
-            self._create_menu_option(
-                'media-playback-start-symbolic', 'Start Here'
-            )
-        )
-        box.append(
-            self._create_menu_option('list-add-symbolic', 'Add to Queue')
-        )
+        box.append(self._create_menu_option(START_ICON, 'Play Track'))
+        box.append(self._create_menu_option(START_ICON, 'Start Here'))
+        box.append(self._create_menu_option(ADD_ICON, 'Add to Queue'))
         box.connect('row-activated', self._popover_selected)
         popover.set_child(box)
         return popover
 
-    def _create_menu_option(self, icon_name, label):
+    def _create_menu_option(self, icon_name: str, label: str) -> Gtk.Box:
         box = Gtk.Box()
         box.set_orientation(Gtk.Orientation.HORIZONTAL)
         box.set_halign(Gtk.Align.START)
@@ -183,7 +165,7 @@ class TrackRow(Adw.ActionRow):
         box.append(label)
         return box
 
-    def _popover_selected(self, _, row):
+    def _popover_selected(self, _, row: Gtk.ListBoxRow):
         self.popover.popdown()
         if row.get_index() == 0:
             self.emit('play_track', self.track)

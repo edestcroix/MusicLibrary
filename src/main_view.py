@@ -19,8 +19,8 @@
 
 from gi.repository import Adw, Gtk, GLib, Gst, Gio, GObject
 import gi
-from .library import AlbumItem
-from .album_view import RecordBoxAlbumView
+from .library import AlbumItem, TrackItem
+from .album_view import AlbumView
 from .player_controls import RecordBoxPlayerControls
 from .player import Player
 from .monitor import ProgressMonitor
@@ -87,24 +87,42 @@ class MainView(Adw.Bin):
         self.play.set_sensitive(True)
         self.queue_add.set_sensitive(True)
 
-    def send_toast(self, title, timeout=2):
+    def send_toast(self, title: str, timeout=2):
         toast = Adw.Toast()
         toast.set_title(title)
         toast.set_timeout(timeout)
         self.toast.add_toast(toast)
 
-    def _setup_actions(self):
-        self.player.connect('stream_start', self._on_stream_start)
-        self.player.connect('state-changed', self._on_player_state_changed)
-
     @Gtk.Template.Callback()
     def play_album(self, _):
         if not (album := self.album_overview.current_album):
             return
+        self._confirm_album_play(None, album)
+
+    def _setup_actions(self):
+        self.play_queue.connect(
+            'jump-to-track',
+            self.player.jump_to_track,
+        )
+
+        self.player.connect('stream_start', self._on_stream_start)
+        self.player.connect('state-changed', self._on_player_state_changed)
+
+    @Gtk.Template.Callback()
+    def _confirm_album_play(self, _, album: AlbumItem):
         if self.player.state == 'stopped' or not self.confirm_play:
             self._play_album(album)
-        else:
-            self._confirm_album_play(album, album.name)
+            return
+        dialog = self._play_dialog(album.raw_name)
+        dialog.choose(self.cancellable, self._on_dialog_response, album)
+
+    @Gtk.Template.Callback()
+    def _confirm_track_play(self, _, track: TrackItem):
+        if self.player.state == 'stopped' or not self.confirm_play:
+            self._play_track(track)
+            return
+        dialog = self._play_dialog(track.title)
+        dialog.choose(self.cancellable, self._on_dialog_track_response, track)
 
     @Gtk.Template.Callback()
     def _on_queue_add(self, _):
@@ -115,18 +133,8 @@ class MainView(Adw.Bin):
             self.send_toast('Queue Updated')
 
     @Gtk.Template.Callback()
-    def _on_play_track(self, _, track_album: AlbumItem):
-        # selected track to play is returned in an AlbumItem
-        # containing only that specific track, because play queue currently
-        # doesn't support adding individual tracks.
-        if self.player.state == 'stopped' or not self.confirm_play:
-            self._play_album(track_album)
-        else:
-            self._confirm_album_play(track_album, track_album.tracks[0].title)
-
-    @Gtk.Template.Callback()
-    def _on_add_track(self, _, track_album):
-        self.play_queue.add_album(track_album)
+    def _on_add_track(self, _, track: TrackItem):
+        self.play_queue.add_track(track)
         if self.player.state == 'stopped':
             self.player.ready()
         self.send_toast('Queue Updated')
@@ -162,7 +170,7 @@ class MainView(Adw.Bin):
     def _toggle_play(self, _):
         self.player.toggle()
 
-    def _confirm_album_play(self, album, name):
+    def _play_dialog(self, name: str) -> Adw.MessageDialog:
         dialog = Adw.MessageDialog(
             heading='Already Playing',
             body=f'A song is already playing. Do you want to clear the queue and play {name}?',
@@ -180,9 +188,11 @@ class MainView(Adw.Bin):
         dialog.set_response_appearance(
             'append', Adw.ResponseAppearance.SUGGESTED
         )
-        dialog.choose(self.cancellable, self._on_dialog_response, album)
+        return dialog
 
-    def _on_dialog_response(self, dialog, response, album):
+    def _on_dialog_response(
+        self, dialog: Adw.MessageDialog, response, album: AlbumItem
+    ):
         result = dialog.choose_finish(response)
         if result == 'accept':
             self._play_album(album)
@@ -190,21 +200,33 @@ class MainView(Adw.Bin):
             self.play_queue.add_album(album)
             self.send_toast('Queue Updated')
 
-    def _play_album(self, album):
+    def _on_dialog_track_response(self, dialog, response, track):
+        result = dialog.choose_finish(response)
+        if result == 'accept':
+            self._play_track(track)
+        elif result == 'append':
+            self.play_queue.add_track(track)
+            self.send_toast('Queue Updated')
+
+    def _play_album(self, album: AlbumItem):
         self.play_queue.clear()
         self.play_queue.add_album(album)
         self.player.play()
 
+    def _play_track(self, track: TrackItem):
+        self.play_queue.clear()
+        self.play_queue.add_track(track)
+        self.player.play()
+
     def _on_stream_start(self, _):
-        GLib.idle_add(
-            self.player_controls.set_current_track,
-            self.play_queue.get_current_track(),
+        self.player_controls.set_current_track(
+            self.play_queue.get_current_track()
         )
 
-    def _on_player_state_changed(self, _, state):
+    def _on_player_state_changed(self, _, state: str):
         if state == 'playing':
             GLib.idle_add(self._set_controls_active, True, True)
-        elif state in ['paused', 'ready']:
+        elif state in {'paused', 'ready'}:
             GLib.idle_add(self._set_controls_active, True, False)
         elif state == 'stopped':
             GLib.idle_add(self._set_controls_stopped)
@@ -219,7 +241,7 @@ class MainView(Adw.Bin):
             self.player.ready()
         self.player_controls.deactivate()
 
-    def _set_controls_active(self, active, playing=False):
+    def _set_controls_active(self, active: bool, playing=False):
         self.toolbar_view.set_reveal_bottom_bars(active)
         self.queue_toggle.set_sensitive(active)
         self.return_to_album.set_sensitive(active)
