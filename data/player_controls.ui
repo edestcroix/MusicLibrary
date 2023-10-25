@@ -74,7 +74,7 @@
               </object>
             </child>
             <child>
-              <object class="GtkButton" id="stop">
+              <object class="GtkButton" id="stop_button">
                 <property name="icon-name">media-playback-stop-symbolic</property>
                 <signal name="clicked" handler="_stop" />
               </object>
@@ -101,6 +101,7 @@
         <child>
           <object class="GtkScale" id="progress">
             <property name="hexpand">true</property>
+            <property name="sensitive">false</property>
             <style>
               <class name="progress-bar" />
             </style>

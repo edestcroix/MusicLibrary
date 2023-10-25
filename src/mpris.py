@@ -359,8 +359,6 @@ class MPRIS(Server):
 
     def _get_status(self):
         state = self._player.state
-        if state == 'ready':
-            state = 'paused'
         return state.capitalize()
 
     def _update_metadata(self):

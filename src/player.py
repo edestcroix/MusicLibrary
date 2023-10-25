@@ -50,29 +50,33 @@ class Player(GObject.GObject):
         self.state = state
 
     def play(self):
-        url = self._prepare_url(self._play_queue.get_current_track())
-        self._player.set_state(Gst.State.NULL)
-        time.sleep(0.1)
-        self._player.set_property('uri', url)
-        self._player.set_state(Gst.State.PLAYING)
-        self.emit('state_changed', 'playing')
+        self.setup(Gst.State.PLAYING)
 
     def ready(self):
+        self.setup(Gst.State.PAUSED)
+
+    def setup(self, initial_state):
         url = self._prepare_url(self._play_queue.get_current_track())
         self._player.set_state(Gst.State.NULL)
         time.sleep(0.1)
         self._player.set_property('uri', url)
-        self._player.set_state(Gst.State.PAUSED)
-        self.emit('state_changed', 'ready')
+        self._player.set_state(initial_state)
+        if initial_state == Gst.State.PLAYING:
+            self.emit('state_changed', 'playing')
+        elif initial_state == Gst.State.PAUSED:
+            self.emit('state_changed', 'paused')
 
     def toggle(self):
-        if self._player.get_state(1 * Gst.SECOND)[1] == Gst.State.PLAYING:
-            self._player.set_state(Gst.State.PAUSED)
-            self.emit('state_changed', 'paused')
-            self.state = 'paused'
-        elif self._player.get_state(1 * Gst.SECOND)[1] == Gst.State.PAUSED:
-            self._player.set_state(Gst.State.PLAYING)
-            self.emit('state_changed', 'playing')
+        match self._player.get_state(1 * Gst.SECOND)[1]:
+            case Gst.State.PLAYING:
+                self._player.set_state(Gst.State.PAUSED)
+                self.emit('state_changed', 'paused')
+            case Gst.State.PAUSED:
+                self._player.set_state(Gst.State.PLAYING)
+                self.emit('state_changed', 'playing')
+            case Gst.State.NULL:
+                if self.current_track:
+                    self.play()
 
     def toggle_mute(self):
         mute_state = self._player.get_property('mute')
@@ -80,6 +84,11 @@ class Player(GObject.GObject):
         self._player.set_property('mute', not mute_state)
 
     def stop(self):
+        self._player.set_state(Gst.State.NULL)
+        self.emit('state_changed', 'stopped')
+
+    def exit(self):
+        print('exiting')
         self.current_track = None
         self._player.set_state(Gst.State.NULL)
         self.emit('state_changed', 'stopped')
@@ -142,7 +151,7 @@ class Player(GObject.GObject):
     def _on_message(self, _, message):
         t = message.type
         if t == Gst.MessageType.EOS:
-            self.stop()
+            self.exit()
         elif t == Gst.MessageType.ASYNC_DONE and self._seeking:
             self._seeking = False
         elif message.type == Gst.MessageType.STREAM_START:

@@ -73,6 +73,7 @@
                         <signal name="play_skip_backward" handler="_skip_backward" />
                         <signal name="play_stop" handler="_stop" />
                         <signal name="play_toggle" handler="_toggle_play" />
+                        <signal name="exit" handler="_exit_player" />
                       </object>
                     </child>
                     <property name="content">

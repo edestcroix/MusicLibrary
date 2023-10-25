@@ -30,8 +30,13 @@ class RecordBoxPlayerControls(Gtk.Box):
     play_skip_forward = GObject.Signal()
     play_skip_backward = GObject.Signal()
     play_stop = GObject.Signal()
+    exit = GObject.Signal()
+
+    stop_button = Gtk.Template.Child()
 
     muted = GObject.Property(type=bool, default=False)
+
+    _stop_exits = False
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -59,6 +64,18 @@ class RecordBoxPlayerControls(Gtk.Box):
         GLib.idle_add(self.volume_slider.set_value, value)
         self._update_volume_icon()
 
+    @GObject.Property(type=bool, default=False)
+    def stop_exits(self):
+        return self._stop_exits
+
+    @stop_exits.setter
+    def set_stop_exits(self, value):
+        self._stop_exits = value
+        if value:
+            self.stop_button.set_icon_name('application-exit-symbolic')
+        else:
+            self.stop_button.set_icon_name('media-playback-stop-symbolic')
+
     def attach_to_player(self, player):
         self._monitor = ProgressMonitor(
             player, self.progress, self.start_label, self.end_label
@@ -72,15 +89,16 @@ class RecordBoxPlayerControls(Gtk.Box):
 
     def activate(self, playing=True):
         self._monitor.start()
-        self.progress.set_sensitive(True)
         if playing:
             self.play_pause.set_icon_name('media-playback-pause-symbolic')
+            self.progress.set_sensitive(True)
         else:
             self.play_pause.set_icon_name('media-playback-start-symbolic')
 
     def deactivate(self):
         self.play_pause.set_icon_name('media-playback-start-symbolic')
         self.progress.set_sensitive(False)
+        self.set_property('stop_exits', True)
 
     def set_current_track(self, track):
         if track:
@@ -103,7 +121,10 @@ class RecordBoxPlayerControls(Gtk.Box):
 
     @Gtk.Template.Callback()
     def _stop(self, _):
-        self.emit('play_stop')
+        if self.stop_exits:
+            self.emit('exit')
+        else:
+            self.emit('play_stop')
 
     @Gtk.Template.Callback()
     def _play_pause(self, _):

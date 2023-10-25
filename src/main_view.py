@@ -167,6 +167,10 @@ class MainView(Adw.Bin):
         self.player.stop()
 
     @Gtk.Template.Callback()
+    def _exit_player(self, _):
+        self.player.exit()
+
+    @Gtk.Template.Callback()
     def _toggle_play(self, _):
         self.player.toggle()
 
@@ -226,19 +230,22 @@ class MainView(Adw.Bin):
     def _on_player_state_changed(self, _, state: str):
         if state == 'playing':
             GLib.idle_add(self._set_controls_active, True, True)
-        elif state in {'paused', 'ready'}:
+            self.player_controls.stop_exits = False
+        elif state in 'paused':
             GLib.idle_add(self._set_controls_active, True, False)
         elif state == 'stopped':
+            print('stopped')
             GLib.idle_add(self._set_controls_stopped)
 
     def _set_controls_stopped(self):
-        if self.clear_queue:
-            self._set_controls_active(False)
-            self.play_queue.clear()
-            self.queue_panel_split_view.set_show_sidebar(False)
-        elif not self.play_queue.empty():
-            self.play_queue.restart()
-            self.player.ready()
+        if not self.player.current_track:
+            if self.clear_queue or self.player_controls.stop_exits:
+                self._set_controls_active(False)
+                self.play_queue.clear()
+                self.queue_panel_split_view.set_show_sidebar(False)
+            else:
+                self.play_queue.restart()
+                self.player.ready()
         self.player_controls.deactivate()
 
     def _set_controls_active(self, active: bool, playing=False):

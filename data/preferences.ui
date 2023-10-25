@@ -58,18 +58,11 @@
             <property name="title" translatable="yes">Play Queue</property>
             <child>
               <object class="AdwSwitchRow" id="clear_queue">
-                <property name="title" translatable="yes">_Clear Queue</property>
-                <property name="subtitle" translatable="yes">Stopping playback or reaching the end of the queue clears the play queue.</property>
+                <property name="title" translatable="yes">_Exit Player Automatically</property>
+                <property name="subtitle" translatable="yes">Automatically clear the play queue and hide the player controls when the last track finishes.</property>
                 <property name="use_underline">True</property>
               </object>
             </child>
-            <!-- <child> -->
-            <!--   <object class="AdwSwitchRow" id="expand_playing_album"> -->
-            <!--     <property name="title" translatable="yes">_Expand Playing Album</property> -->
-            <!--     <property name="subtitle" translatable="yes">Expand the album of the currently playing track in the play queue</property> -->
-            <!--     <property name="use_underline">True</property> -->
-            <!--   </object> -->
-            <!-- </child> -->
           </object>
         </child>
       </object>

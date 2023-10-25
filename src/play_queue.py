@@ -86,6 +86,9 @@ class PlayQueue(Adw.Bin):
          an empty queue, while get_current_track returns None if the queue is empty)"""
         return self.track_list.current_track
 
+    def restart(self):
+        self.track_list.restart()
+
     def clear(self):
         self.track_list.clear()
 
