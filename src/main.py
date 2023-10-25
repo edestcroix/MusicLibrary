@@ -27,8 +27,7 @@ from gi.repository import Gtk, Gio, Adw
 
 from .window import RecordBoxWindow
 from .preferences import RecordBoxPreferencesWindow
-from .mpris import Mpris, MprisEventHandler
-from mpris_server.server import Server
+from .mpris import MPRIS
 
 
 class RecordBoxApplication(Adw.Application):
@@ -60,12 +59,7 @@ class RecordBoxApplication(Adw.Application):
             win.set_title('RecordBox')
 
             if not self.mpris:
-                adapter = Mpris(self)
-                self.mpris = Server('RecordBox', adapter=adapter)
-                self.event_adapter = MprisEventHandler(
-                    self, root=self.mpris.root, player=self.mpris.player
-                )
-                self.mpris.publish()
+                self.mpris = MPRIS(self)
 
         win.present()
 

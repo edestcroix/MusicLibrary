@@ -1,192 +1,451 @@
-from gi.repository import Gio, Gst, GLib, Gtk
-from mpris_server.adapters import MprisAdapter
-from mpris_server.events import EventAdapter
-from mpris_server.base import Album, Track, PlayState, Artist
+from random import randint
+from gi.repository import Gio, GLib
+
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
 
 
-class Mpris(MprisAdapter):
-    def __init__(self, app, **kwargs):
-        super().__init__(**kwargs)
-        self.name = 'RecordBox'
-        self.app = app
-        self.app_player = self.app.player()
+# full credit for the bulk of this MPRIS implementation goes to Lollyop
+# at https://gitlab.gnome.org/World/lollypop/-/blob/master/lollypop/mpris.py
+class Server:
+    def __init__(self, con, path):
+        method_outargs = {}
+        method_inargs = {}
+        for interface in Gio.DBusNodeInfo.new_for_xml(self.__doc__).interfaces:
 
-    def can_fullscreen(self):
-        return False
+            for method in interface.methods:
+                method_outargs[method.name] = (
+                    '('
+                    + ''.join([arg.signature for arg in method.out_args])
+                    + ')'
+                )
+                method_inargs[method.name] = tuple(
+                    arg.signature for arg in method.in_args
+                )
 
-    def can_quit(self):
-        return False
-
-    def can_raise(self):
-        return True
-
-    def set_raise(self, _):
-        self.app.props.active_window.present()
-
-    def get_desktop_entry(self):
-        return 'com.github.edestcroix.RecordBox'
-
-    def get_fullscreen(self):
-        return False
-
-    def get_mime_types(self):
-        return [
-            'application/ogg',
-            'audio/x-vorbis+ogg',
-            'audio/x-flac',
-            'audio/mpeg',
-        ]
-
-    def get_uri_schemes(self):
-        return ['file']
-
-    def has_tracklist(self):
-        return False
-
-    def get_identity(self):
-        return 'RecordBox'
-
-    def get_playstate(self):
-        state = self.app_player.state
-        if state == 'ready':
-            state = 'paused'
-
-        return PlayState[state.upper()]
-
-    def quit(self):
-        self.app.quit()
-
-    def get_current_track(self):
-        if track := self.app_player._play_queue.playing_track():
-            return Track(
-                name=track.title,
-                artists=(Artist(name=track.albumartist),),
-                album=Album(name=track.album),
-                length=self.app_player.get_duration(),
-                disc_no=track.discnumber,
-                uri=f'file://{track.path}',
-                track_no=track.track,
+            con.register_object(
+                object_path=path,
+                interface_info=interface,
+                method_call_closure=self.on_method_call,
             )
 
-    def _has_track(self):
-        return self.app_player._play_queue.get_current_track() is not None
+        self.method_inargs = method_inargs
+        self.method_outargs = method_outargs
 
-    def can_control(self):
-        return self._has_track()
+    def on_method_call(
+        self,
+        connection,
+        sender,
+        object_path,
+        interface_name,
+        method_name,
+        parameters,
+        invocation,
+    ):
 
-    def can_go_next(self):
-        return self._has_track()
+        args = list(parameters.unpack())
+        for i, sig in enumerate(self.method_inargs[method_name]):
+            if sig == 'h':
+                msg = invocation.get_message()
+                fd_list = msg.get_unix_fd_list()
+                args[i] = fd_list.get(args[i])
 
-    def can_go_previous(self):
-        return self._has_track()
+        try:
+            result = getattr(self, method_name)(*args)
+            result = (result,)
+            out_args = self.method_outargs[method_name]
+            if out_args != '()':
+                variant = GLib.Variant(out_args, result)
+                invocation.return_value(variant)
+            else:
+                invocation.return_value(None)
+        except Exception as e:
+            logging.error(f'Error: {e}')
+            invocation.return_error(
+                GLib.G_DBUS_ERROR, GLib.G_DBUS_ERROR_FAILED, str(e)
+            )
 
-    def can_pause(self):
-        return self._has_track()
 
-    def can_play(self):
-        return self._has_track()
+class MPRIS(Server):
+    """
+    <!DOCTYPE node PUBLIC
+    "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN"
+    "http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">
+    <node>
+        <interface name="org.freedesktop.DBus.Introspectable">
+            <method name="Introspect">
+                <arg name="data" direction="out" type="s"/>
+            </method>
+        </interface>
+        <interface name="org.freedesktop.DBus.Properties">
+            <method name="Get">
+                <arg name="interface" direction="in" type="s"/>
+                <arg name="property" direction="in" type="s"/>
+                <arg name="value" direction="out" type="v"/>
+            </method>
+            <method name="Set">
+                <arg name="interface_name" direction="in" type="s"/>
+                <arg name="property_name" direction="in" type="s"/>
+                <arg name="value" direction="in" type="v"/>
+            </method>
+            <method name="GetAll">
+                <arg name="interface" direction="in" type="s"/>
+                <arg name="properties" direction="out" type="a{sv}"/>
+            </method>
+        </interface>
+        <interface name="org.mpris.MediaPlayer2">
+            <method name="Raise">
+            </method>
+            <method name="Quit">
+            </method>
+            <property name="CanQuit" type="b" access="read" />
+            <property name="Fullscreen" type="b" access="readwrite" />
+            <property name="CanSetFullscreen" type="b" access="read" />
+            <property name="CanRaise" type="b" access="read" />
+            <property name="HasTrackList" type="b" access="read"/>
+            <property name="Identity" type="s" access="read"/>
+            <property name="DesktopEntry" type="s" access="read"/>
+            <property name="SupportedUriSchemes" type="as" access="read"/>
+            <property name="SupportedMimeTypes" type="as" access="read"/>
+        </interface>
+        <interface name="org.mpris.MediaPlayer2.Player">
+            <method name="Next"/>
+            <method name="Previous"/>
+            <method name="Pause"/>
+            <method name="PlayPause"/>
+            <method name="Stop"/>
+            <method name="Play"/>
+            <method name="Seek">
+                <arg direction="in" name="Offset" type="x"/>
+            </method>
+            <method name="SetPosition">
+                <arg direction="in" name="TrackId" type="o"/>
+                <arg direction="in" name="Position" type="x"/>
+            </method>
+            <method name="OpenUri">
+                <arg direction="in" name="Uri" type="s"/>
+            </method>
+            <signal name="Seeked">
+                <arg name="Position" type="x"/>
+            </signal>
+            <property name="PlaybackStatus" type="s" access="read"/>
+            <property name="LoopStatus" type="s" access="readwrite"/>
+            <property name="Rate" type="d" access="readwrite"/>
+            <property name="Shuffle" type="b" access="readwrite"/>
+            <property name="Metadata" type="a{sv}" access="read">
+            </property>
+            <property name="Volume" type="d" access="readwrite"/>
+            <property name="Position" type="x" access="read"/>
+            <property name="MinimumRate" type="d" access="read"/>
+            <property name="MaximumRate" type="d" access="read"/>
+            <property name="CanGoNext" type="b" access="read"/>
+            <property name="CanGoPrevious" type="b" access="read"/>
+            <property name="CanPlay" type="b" access="read"/>
+            <property name="CanPause" type="b" access="read"/>
+            <property name="CanSeek" type="b" access="read"/>
+            <property name="CanControl" type="b" access="read"/>
+        </interface>
+    </node>
+    """
 
-    def can_seek(self):
-        return self._has_track()
+    _MPRIS_IFACE = 'org.mpris.MediaPlayer2'
+    _MPRIS_PLAYER_IFACE = 'org.mpris.MediaPlayer2.Player'
+    _MPRIS_RECORDBOX = 'org.mpris.MediaPlayer2.RecordBox'
+    _MPRIS_PATH = '/org/mpris/MediaPlayer2'
 
-    def get_art_url(self, _):
-        if track := self.app_player._play_queue.playing_track():
-            return f'file://{track.thumb}'
+    _MPRIS_PROPERTIES = (
+        'CanQuit',
+        'CanRaise',
+        'HasTrackList',
+        'CanSetFullscreen',
+        'Identity',
+        'DesktopEntry',
+        'SupportedUriSchemes',
+        'SupportedMimeTypes',
+    )
+    _MPRIS_PLAYER_PROPERTIES = (
+        'PlaybackStatus',
+        'LoopStatus',
+        'Rate',
+        'Shuffle',
+        'Metadata',
+        'Volume',
+        'Position',
+        'MinimumRate',
+        'MaximumRate',
+        'CanGoNext',
+        'CanGoPrevious',
+        'CanPlay',
+        'CanPause',
+        'CanSeek',
+        'CanControl',
+    )
 
-    def get_current_position(self):
-        return self.app_player.get_progress()
+    def __init__(self, app):
+        self._app = app
+        self._player = app.player()
+        self._volume = 0.0
+        self._metadata = {
+            'mpris:trackid': GLib.Variant(
+                'o', '/org/mpris/MediaPlayer2/NoTrack'
+            )
+        }
+        self._bus = Gio.bus_get_sync(Gio.BusType.SESSION, None)
+        Gio.bus_own_name_on_connection(
+            self._bus,
+            self._MPRIS_RECORDBOX,
+            Gio.BusNameOwnerFlags.NONE,
+            None,
+            None,
+        )
+        Server.__init__(self, self._bus, self._MPRIS_PATH)
 
-    def get_maxiumum_rate(self):
-        return 1.0
+        self._player.connect('stream-start', self._on_current_changed)
+        self._player.connect('state-changed', self._on_state_changed)
+        self._player.connect('seeked', self._on_seeked)
+        self._player.connect('notify::volume', self._on_volume_changed)
 
-    def get_minimum_rate(self):
-        return 1.0
+    def Raise(self):
+        self._app.props.active_window.present()
 
-    def get_stream_title(self):
-        if track := self.app_player._play_queue.playing_track():
-            return track.title
+    def Quit(self):
+        self._app.quit()
+
+    def Next(self):
+        playing = self._player.state == 'playing'
+        self._player.go_next()
+        if not playing:
+            self._player.toggle()
+
+    def Previous(self):
+        playing = self._player.state == 'playing'
+        self._player.go_previous()
+        if not playing:
+            self._player.toggle()
+
+    def Pause(self):
+        if self._player.state == 'playing':
+            self._player.toggle()
+
+    def PlayPause(self):
+        self._player.toggle()
+
+    def Stop(self):
+        # TODO: MPRIS spec states that after stop, play will start from the beginning of the track.
+        # Currently, stop completely stops all playback and exits the player. This behaviour should
+        # be chaged by making the current stop() into exit(), and make stop() behave as per the spec.
+        self._player.stop()
+
+    def Play(self):
+        if self._player.state == 'paused':
+            self._player.toggle()
+
+    def SetPosition(self, _, position):
+        logging.debug(f'SetPosition: {position}')
+        self._player.seek(position * 1000)
+
+    def OpenUri(self, uri):
+        pass
+
+    def Seek(self, offset):
+        offset = offset * 1000
+        position = self._player.get_progress()
+        duration = self._player.get_duration()
+        logging.debug(f'Seek: {offset} from {position}')
+        if position + offset > duration:
+            self._player.go_next()
+        elif position + offset < 0:
+            self._player.go_previous()
+        self._player.seek(position + offset)
+
+    def Seeked(self, position):
+        logging.debug(f'Seeked: {position / 1000}')
+        self._bus.emit_signal(
+            None,
+            self._MPRIS_PATH,
+            self._MPRIS_PLAYER_IFACE,
+            'Seeked',
+            GLib.Variant.new_tuple(GLib.Variant('x', position / 1000)),
+        )
+
+    def Get(self, interface, property_name):
+        logging.debug(f'Get: {interface} {property_name}')
+
+        match property_name:
+            case 'CanQuit' | 'CanRaise' | 'CanSeek' | 'CanControl':
+                return GLib.Variant('b', True)
+            case 'CanSetFullscreen' | 'Fullscreen' | 'HasTrackList' | 'Shuffle':
+                return GLib.Variant('b', False)
+            case 'Identity':
+                return GLib.Variant('s', 'RecordBox')
+            case 'DesktopEntry':
+                return GLib.Variant('s', 'com.github.edestcroix.RecordBox')
+            case 'SupportedUriSchemes':
+                return GLib.Variant('as', ['file'])
+            case 'SupportedMimeTypes':
+                return GLib.Variant(
+                    'as',
+                    [
+                        'application/ogg',
+                        'audio/x-vorbis+ogg',
+                        'audio/x-flac',
+                        'audio/mpeg',
+                    ],
+                )
+            case 'CanGoNext' | 'CanGoPrevious' | 'CanPlay' | 'CanPause':
+                return GLib.Variant(
+                    'b', self._player.current_track is not None
+                )
+            case 'Rate' | 'MinimumRate' | 'MaximumRate':
+                return GLib.Variant('d', 1.0)
+            case 'PlaybackStatus':
+                return GLib.Variant('s', self._get_status())
+            case 'LoopStatus':
+                # TODO: Player should have a loop track option to match the MPRIS spec.
+                loop = self._player._play_queue.loop
+                value = 'Playlist' if loop else 'None'
+                return GLib.Variant('s', value)
+            case 'Metadata':
+                return GLib.Variant('a{sv}', self._metadata)
+            case 'Volume':
+                return GLib.Variant('d', self._player.volume)
+            case 'Position':
+                return GLib.Variant('x', self._player.get_progress() / 1000)
+            case _:
+                logging.warning(f'Unknown: {property_name} for {interface})')
+                return GLib.Variant('s', 'Unknown')
+
+    def GetAll(self, interface):
+        ret = {}
+        match interface:
+            case self._MPRIS_IFACE:
+                for property_name in self._MPRIS_PROPERTIES:
+                    ret[property_name] = self.Get(interface, property_name)
+            case self._MPRIS_PLAYER_IFACE:
+                for property_name in self._MPRIS_PLAYER_PROPERTIES:
+                    ret[property_name] = self.Get(interface, property_name)
+        return ret
+
+    def Set(self, _, property_name, new_value):
+        if property_name == 'LoopStatus':
+            # TODO: Move loop status to player, have player request restart of queue
+            # instead of the queue doing it, and allow player to restart track.
+            self._player._play_queue.loop = new_value == 'Playlist'
+        elif property_name == 'Volume':
+            self._player.volume = new_value
+
+    def PropertiesChanged(
+        self, interface_name, changed_properties, invalidated_properties
+    ):
+        logging.debug(
+            f'PropertiesChanged: {interface_name} {changed_properties} {invalidated_properties}'
+        )
+        self._bus.emit_signal(
+            None,
+            self._MPRIS_PATH,
+            'org.freedesktop.DBus.Properties',
+            'PropertiesChanged',
+            GLib.Variant.new_tuple(
+                GLib.Variant('s', interface_name),
+                GLib.Variant('a{sv}', changed_properties),
+                GLib.Variant('as', invalidated_properties),
+            ),
+        )
+
+    def Introspect(self):
+        return self.__doc__
+
+    ## End of spec methods
+
+    ## Private methods
+
+    def _get_status(self):
+        state = self._player.state
+        if state == 'ready':
+            state = 'paused'
+        return state.capitalize()
+
+    def _update_metadata(self):
+        self._metadata = {}
+        if (
+            self._player.current_track is None
+            or self._get_status() == 'Stopped'
+        ):
+            self._metadata = {
+                'mpris:trackid': GLib.Variant(
+                    'o', '/org/mpris/MediaPlayer2/TrackList/NoTrack'
+                )
+            }
         else:
-            return ''
+            self._build_metadata()
 
-    def get_volume(self):
-        return self.app_player.volume
+    def _build_metadata(self):
+        current_track = self._player.current_track
+        if not (track_number := current_track.track):
+            track_number = 1
+        self._metadata = {
+            'mpris:trackid': GLib.Variant('o', self._track_id()),
+            'xesam:trackNumber': GLib.Variant('i', track_number),
+            'xesam:title': GLib.Variant('s', current_track.title),
+            'xesam:album': GLib.Variant('s', current_track.album),
+            'xesam:artist': GLib.Variant('as', (current_track.albumartist,)),
+            'mpris:length': GLib.Variant('x', self._length()),
+            'xesam:url': GLib.Variant('s', f'file://{current_track.path}'),
+        }
+        cover_path = current_track.thumb
+        if cover_path is not None:
+            self._metadata['mpris:artUrl'] = GLib.Variant(
+                's', f'file://{cover_path}'
+            )
 
-    def get_rate(self):
-        return 1.0
+    def _track_id(self):
+        track_id = randint(1000, 1000000000)
+        return f'/org/mpris/MediaPlayer2/Track{track_id}'
 
-    def is_mute(self):
-        return self.app_player.muted
+    def _length(self):
+        return self._player.get_duration() / 1000
 
-    def is_playlist(self):
-        return False
+    def _on_seeked(self, _, position):
+        self.Seeked(position / 1000)
 
-    def is_repeating(self):
-        return self.app_player._play_queue.loop
+    def _on_volume_changed(self, _, __):
+        volume = self._player.volume
+        if self._volume == volume:
+            return
+        self._volume = volume
+        volume = GLib.Variant('d', volume)
+        self.PropertiesChanged(
+            self._MPRIS_PLAYER_IFACE, {'Volume': volume}, []
+        )
 
-    def pause(self):
-        if self.app_player.state == 'playing':
-            self.app_player.toggle()
+    def _on_current_changed(self, player):
+        self._update_metadata()
+        properties = {
+            'Metadata': GLib.Variant('a{sv}', self._metadata),
+            'CanPlay': GLib.Variant('b', True),
+            'CanPause': GLib.Variant('b', True),
+            'CanGoNext': GLib.Variant('b', True),
+            'CanGoPrevious': GLib.Variant('b', True),
+            'PlaybackStatus': GLib.Variant('s', self._get_status()),
+        }
+        try:
+            self.PropertiesChanged(self._MPRIS_PLAYER_IFACE, properties, [])
+        except Exception as e:
+            print(f'MPRIS::__on_current_changed(): {e}')
 
-    def play(self):
-        if self.app_player.state == 'paused':
-            self.app_player.toggle()
-
-    def play_pause(self):
-        self.app_player.toggle()
-
-    def stop(self):
-        self.app_player.stop()
-
-    def next(self):
-        playing = self.app_player.state == 'playing'
-        self.app_player.go_next()
-        if not playing:
-            self.app_player.toggle()
-
-    def previous(self):
-        playing = self.app_player.state == 'playing'
-        self.app_player.go_previous()
-        if not playing:
-            self.app_player.toggle()
-
-    def resume(self):
-        if self.app_player.state == 'paused':
-            self.app_player.toggle()
-
-    def seek(self, time, _):
-        self.app_player.seek(time)
-
-    def set_repeating(self, val):
-        self.app_player.loop = val
-
-    def set_mute(self, val):
-        self.app_player.muted = val
-
-    def set_volume(self, val):
-        self.app_player.volume = val
-
-
-class MprisEventHandler(EventAdapter):
-    def __init__(self, app, **kwargs):
-        super().__init__(**kwargs)
-        self.app = app
-        self.app_player = self.app.props.active_window.main_view.player
-
-        self.app_player.connect('state-changed', self._on_state_changed)
-        self.app_player.connect('stream-start', self._on_stream_start)
-        self.app_player.connect('notify::volume', self._on_volume_changed)
-
-    def _on_state_changed(self, player, state):
-        if state in ('playing', 'paused'):
-            self.on_playpause()
-        if state == 'stopped':
-            self.on_ended()
-            self.on_options()
-
-    def _on_stream_start(self, player):
-        self.on_playpause()
-        self.on_playback()
-        self.on_options()
-
-    def _on_volume_changed(self, player, _):
-        self.on_volume()
+    def _on_state_changed(self, _, __):
+        if self._player.current_track is None:
+            properties = {
+                'Metadata': GLib.Variant('a{sv}', self._metadata),
+                'CanPlay': GLib.Variant('b', False),
+                'CanPause': GLib.Variant('b', False),
+                'CanGoNext': GLib.Variant('b', False),
+                'CanGoPrevious': GLib.Variant('b', False),
+                'PlaybackStatus': GLib.Variant('s', self._get_status()),
+            }
+        else:
+            properties = {
+                'PlaybackStatus': GLib.Variant('s', self._get_status())
+            }
+        self.PropertiesChanged(self._MPRIS_PLAYER_IFACE, properties, [])
