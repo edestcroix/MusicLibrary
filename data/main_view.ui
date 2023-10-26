@@ -68,13 +68,7 @@
                       </object>
                     </child>
                     <child type="bottom">
-                      <object class="RecordBoxPlayerControls" id="player_controls">
-                        <signal name="play_skip_forward" handler="_skip_forward" />
-                        <signal name="play_skip_backward" handler="_skip_backward" />
-                        <signal name="play_stop" handler="_stop" />
-                        <signal name="play_toggle" handler="_toggle_play" />
-                        <signal name="exit" handler="_exit_player" />
-                      </object>
+                      <object class="RecordBoxPlayerControls" id="player_controls" />
                     </child>
                     <property name="content">
                       <object class="RecordBoxAlbumView" id="album_overview">

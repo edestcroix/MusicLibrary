@@ -27,12 +27,6 @@ class RecordBoxPlayerControls(Gtk.Box):
     volume_toggle = Gtk.Template.Child()
     volume_slider = Gtk.Template.Child()
 
-    play_toggle = GObject.Signal()
-    play_skip_forward = GObject.Signal()
-    play_skip_backward = GObject.Signal()
-    play_stop = GObject.Signal()
-    exit = GObject.Signal()
-
     stop_button = Gtk.Template.Child()
 
     muted = GObject.Property(type=bool, default=False)
@@ -84,6 +78,7 @@ class RecordBoxPlayerControls(Gtk.Box):
             self.stop_button.set_icon_name('media-playback-stop-symbolic')
 
     def attach_to_player(self, player):
+        self._player = player
         self._monitor = ProgressMonitor(
             player, self.progress, self.start_label, self.end_label
         )
@@ -92,6 +87,12 @@ class RecordBoxPlayerControls(Gtk.Box):
         )
         player.bind_property(
             'muted', self, 'muted', GObject.BindingFlags.BIDIRECTIONAL
+        )
+        self.bind_property(
+            'loop-mode',
+            self._player,
+            'loop',
+            GObject.BindingFlags.BIDIRECTIONAL,
         )
 
     def activate(self, playing=True):
@@ -129,21 +130,21 @@ class RecordBoxPlayerControls(Gtk.Box):
     @Gtk.Template.Callback()
     def _stop(self, _):
         if self.stop_exits:
-            self.emit('exit')
+            self._player.exit()
         else:
-            self.emit('play_stop')
+            self._player.stop()
 
     @Gtk.Template.Callback()
     def _play_pause(self, _):
-        self.emit('play_toggle')
+        self._player.toggle()
 
     @Gtk.Template.Callback()
     def _skip_forward(self, _):
-        self.emit('play_skip_forward')
+        self._player.go_next()
 
     @Gtk.Template.Callback()
     def _skip_backward(self, _):
-        self.emit('play_skip_backward')
+        self._player.go_previous()
 
     @Gtk.Template.Callback()
     def _toggle_mute(self, _):

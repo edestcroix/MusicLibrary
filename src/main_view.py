@@ -1,5 +1,3 @@
-# window.py
-#
 # Copyright 2023 Emmett de St. Croix
 #
 # This program is free software: you can redistribute it and/or modify
@@ -63,12 +61,6 @@ class MainView(Adw.Bin):
 
         self.player = Player(self.play_queue)
         self.player_controls.attach_to_player(self.player)
-        self.player_controls.bind_property(
-            'loop-mode',
-            self.player,
-            'loop',
-            GObject.BindingFlags.BIDIRECTIONAL,
-        )
 
         self._setup_actions()
 
@@ -154,26 +146,6 @@ class MainView(Adw.Bin):
             current_album = current_track.album
             self.emit('album_changed', current_album)
 
-    @Gtk.Template.Callback()
-    def _skip_forward(self, _):
-        self.player.go_next()
-
-    @Gtk.Template.Callback()
-    def _skip_backward(self, _):
-        self.player.go_previous()
-
-    @Gtk.Template.Callback()
-    def _stop(self, _):
-        self.player.stop()
-
-    @Gtk.Template.Callback()
-    def _exit_player(self, _):
-        self.player.exit()
-
-    @Gtk.Template.Callback()
-    def _toggle_play(self, _):
-        self.player.toggle()
-
     def _play_dialog(self, name: str) -> Adw.MessageDialog:
         dialog = Adw.MessageDialog(
             heading='Already Playing',
@@ -227,6 +199,9 @@ class MainView(Adw.Bin):
             self.play_queue.get_current_track()
         )
 
+    # TODO: Split up state changes so that the state of
+    # player_controls is handled by itself, and only MainView's
+    # state should be handled here.
     def _on_player_state_changed(self, _, state: str):
         if state == 'playing':
             GLib.idle_add(self._set_controls_active, True, True)
