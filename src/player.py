@@ -27,7 +27,6 @@ class Player(GObject.GObject):
     seeked = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
     player_error = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
 
-    # current_track property should not be setable
     current_track = GObject.Property(
         type=GObject.TYPE_PYOBJECT, default=None, setter=None
     )
