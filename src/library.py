@@ -11,6 +11,7 @@ class TrackItem(GObject.Object):
     track = GObject.Property(type=int)
     discnumber = GObject.Property(type=int)
     title = GObject.Property(type=str)
+    raw_title = GObject.Property(type=str)
     length = GObject.Property(type=str)
     path = GObject.Property(type=str)
     album = GObject.Property(type=str)
@@ -38,6 +39,7 @@ class TrackItem(GObject.Object):
         discnumber = int(discnumber.split('/')[0]) if discnumber else 0
         self.discnumber = discnumber
         self.title = GLib.markup_escape_text(title)
+        self.raw_title = title
         self.length = self.length_str(int(length))
         self.path = path
         self.album = album
@@ -108,7 +110,7 @@ class ArtistItem(GObject.Object):
         self.name = GLib.markup_escape_text(name)
         self.raw_name = name
         self.sort = sort or name
-        self.albums = f'{num_albums} albums'
+        self.albums = f'{num_albums} album{"s" if num_albums > 1 else ""}'
 
 
 class ArtistList(Gtk.ListView):
