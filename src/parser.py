@@ -90,8 +90,10 @@ class AudioFile:
             cover_paths: The paths to the cover images associated with the album
         """
         thumb, cover = cover_paths or (None, None)
+        albumartist = self.try_key('albumartist') or self.try_key('artist')
         return (
             self.try_key('album'),
+            albumartist,
             self.try_key('date'),
             thumb,
             cover,
@@ -104,9 +106,7 @@ class AudioFile:
             (
                 str(artist),
                 self.try_key('artistsort'),
-                self.try_key('album'),
-                self.try_key('title'),
-                artist == albumartist,
+                self.file,
             )
             for artist in self.try_key_all('artist')
         ]
@@ -115,9 +115,7 @@ class AudioFile:
                 (
                     str(albumartist),
                     self.try_key('artistsort'),
-                    self.try_key('album'),
-                    self.try_key('title'),
-                    True,
+                    self.file,
                 )
             )
         return artists

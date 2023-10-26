@@ -7,29 +7,29 @@ from .library import AlbumItem, ArtistItem, TrackItem
 
 StrOpt = str | None
 FloatOpt = float | None
-ArtistTags = tuple[str, StrOpt, StrOpt, StrOpt, bool]
-AlbumTags = tuple[StrOpt, StrOpt, StrOpt, StrOpt]
+ArtistTags = tuple[str, StrOpt, str]
+AlbumTags = tuple[StrOpt, StrOpt, StrOpt, StrOpt, StrOpt]
 TrackTags = tuple[StrOpt, StrOpt, StrOpt, StrOpt, float, str, FloatOpt]
 
-# TODO: Start adding type hints to this file.
+
 class MusicDB:
     def __init__(
         self, path=f'{GLib.get_user_data_dir()}/RecordBox/recordbox.db'
     ):
-        if not os.path.exists(path):
+        if first_start := not os.path.exists(path):
             os.makedirs(os.path.dirname(path), exist_ok=True)
         self.path = path
         self.db = sqlite3.connect(self.path)
         self.cursor = self.db.cursor()
-        self._create_tables()
+        if first_start:
+            self._create_tables()
+            self._create_views()
 
     def insert_artist(self, artist: ArtistTags):
-        self.cursor.execute(
-            'INSERT INTO artists VALUES (?, ?, ?, ?, ?)', artist
-        )
+        self.cursor.execute('INSERT INTO artists VALUES (?, ?, ?)', artist)
 
     def insert_album(self, album: AlbumTags):
-        self.cursor.execute('INSERT INTO albums VALUES (?, ?, ?, ?)', album)
+        self.cursor.execute('INSERT INTO albums VALUES (?, ?, ?, ?, ?)', album)
 
     def insert_track(self, track: TrackTags):
         self.cursor.execute(
@@ -47,11 +47,12 @@ class MusicDB:
         for path in self.cursor.fetchall():
             if not os.path.exists(path[0]):
                 self.cursor.execute('DELETE FROM tracks WHERE path = ?', path)
+                self.cursor.execute('DELETE FROM artists WHERE path= ?', path)
         self.db.commit()
 
-        self._execute_queries(
-            'DELETE FROM artists WHERE track_title NOT IN (SELECT title FROM tracks)',
+        self.cursor.execute(
             'DELETE FROM albums WHERE name NOT IN (SELECT album FROM tracks)',
+            (),
         )
 
     def modify_time(self, path: str) -> float | None:
@@ -61,20 +62,24 @@ class MusicDB:
         return result[0] if (result := self.cursor.fetchone()) else None
 
     def get_artists(self, all_artists=False) -> list[ArtistItem]:
-        albumartist = '' if all_artists else ' WHERE albumartist = true'
-        self.cursor.execute(
-            f'SELECT DISTINCT name, sort, COUNT(DISTINCT album) FROM artists{albumartist} GROUP BY name ORDER BY name'
-        )
+        if all_artists:
+            self.cursor.execute('SELECT * FROM [All Artists]')
+        else:
+            self.cursor.execute('SELECT * FROM [Album Artists]')
         return [ArtistItem(*artist) for artist in self.cursor.fetchall()]
 
     def get_albums(self) -> list[AlbumItem]:
         self.cursor.execute(
-            'SELECT DISTINCT name, SUM(length), year, thumb, cover FROM albums JOIN tracks ON albums.name = tracks.album GROUP BY name ORDER BY year',
+            """SELECT DISTINCT name, SUM(length), year, thumb, cover
+                FROM albums JOIN tracks ON albums.name = tracks.album
+                GROUP BY name ORDER BY year""",
         )
         albums = []
         for album in self.cursor.fetchall():
             self.cursor.execute(
-                'SELECT DISTINCT name FROM artists WHERE album = ? ORDER BY name',
+                """SELECT DISTINCT name 
+                    FROM artists NATURAL JOIN tracks
+                    WHERE album = ? ORDER BY name""",
                 (album[0],),
             )
             artists = [a[0] for a in self.cursor.fetchall()]
@@ -86,22 +91,29 @@ class MusicDB:
         self, album: str, thumb: str, cover: str
     ) -> list[TrackItem]:
         self.cursor.execute(
-            'SELECT track, discnumber, title, length, path FROM tracks WHERE album = ? ORDER BY discnumber, track',
+            """SELECT track, discnumber, title, length, path 
+                FROM tracks 
+                WHERE album = ? ORDER BY discnumber, track""",
             (album,),
         )
         tracks = []
         for track in self.cursor.fetchall():
             self.cursor.execute(
-                'SELECT name FROM artists WHERE track_title = ? AND album = ? AND albumartist = false',
-                (track[2], album),
+                'SELECT name FROM artists WHERE path = ?',
+                (track[4],),
             )
             artists = [a[0] for a in self.cursor.fetchall()]
             self.cursor.execute(
-                'SELECT name FROM artists WHERE track_title = ? AND album = ? AND albumartist = true',
-                (track[2], album),
+                """SELECT artists.name 
+                FROM artists JOIN albums ON artists.name = albums.artist
+                WHERE path = ? AND albums.name = ?""",
+                (track[4], album),
             )
-            albumartist = self.cursor.fetchone()
-            albumartist = albumartist[0] if albumartist else None
+            if albumartist := self.cursor.fetchone():
+                albumartist = albumartist[0]
+            else:
+                albumartist = None
+            artists.remove(albumartist)
             artists = ', '.join(artists)
             tracks.append(
                 TrackItem(
@@ -111,14 +123,62 @@ class MusicDB:
         return tracks
 
     def _create_tables(self):
+        """Artist table stores the name of the artist, and the value of the artistsort tag found
+        for the artist, if any. It also stores the path of the track file that the artist was found
+        in. This way, all artists for each track can be stored.
+
+        Album artists are then identified as
+        artists that have their name in the artist column of the albums table. For the purposes
+        of this application, album artists are either the value of the albumartist tag or the first
+        artist encountered when parsing the file.
+
+        Album table exists mainly to identify album artists and group album covers.
+
+        Track table stores all track-specific metadata.
+
+        """
         self._execute_queries(
-            """CREATE TABLE IF NOT EXISTS artists
-                (name text, sort text, album text, track_title text, albumartist bool, UNIQUE(name, album, track_title) ON CONFLICT REPLACE)""",
-            """CREATE TABLE IF NOT EXISTS albums
-                (name text, year date, thumb text, cover text, UNIQUE(name, year) ON CONFLICT REPLACE)""",
-            """CREATE TABLE IF NOT EXISTS tracks
-                (title text, track text, discnumber text, album text, length real, path text, modified time, UNIQUE(path) ON CONFLICT REPLACE)
+            """CREATE TABLE IF NOT EXISTS artists(
+                name TEXT NOT NULL, 
+                sort TEXT, 
+                path NOT NULL,
+                UNIQUE(name, path) 
+                ON CONFLICT REPLACE
+            )""",
+            """CREATE TABLE IF NOT EXISTS albums(
+                name TEXT NOT NULL, 
+                artist TEXT NOT NULL, 
+                year DATE, 
+                thumb TEXT, 
+                cover TEXT, 
+                UNIQUE(name, artist) 
+                ON CONFLICT REPLACE
+            )""",
+            """CREATE TABLE IF NOT EXISTS tracks(
+                title TEXT,
+                track TEXT,
+                discnumber TEXT,
+                album TEXT,
+                length REAL,
+                path TEXT,
+                modified TIME,
+                UNIQUE(path)
+                ON CONFLICT REPLACE)
                 """,
+        )
+
+    def _create_views(self):
+        self._execute_queries(
+            """CREATE VIEW [Album Artists] AS
+                SELECT artists.name, sort, COUNT(DISTINCT albums.name)
+                FROM artists JOIN albums ON artists.name = albums.artist 
+                GROUP BY artists.name ORDER by artists.name
+               """,
+            """CREATE VIEW [ALL Artists] AS
+                SELECT name, sort, COUNT(DISTINCT album)
+                FROM artists NATURAL JOIN tracks
+                GROUP BY name ORDER BY name
+            """,
         )
 
     def _execute_queries(self, *queries: str):
