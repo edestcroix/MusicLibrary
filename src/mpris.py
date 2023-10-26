@@ -13,11 +13,10 @@ class Server:
         for interface in Gio.DBusNodeInfo.new_for_xml(self.__doc__).interfaces:
 
             for method in interface.methods:
-                method_outargs[method.name] = (
-                    '('
-                    + ''.join([arg.signature for arg in method.out_args])
-                    + ')'
+                out_args = (
+                    f'({"".join([arg.signature for arg in method.out_args])})'
                 )
+                method_outargs[method.name] = out_args
                 method_inargs[method.name] = tuple(
                     arg.signature for arg in method.in_args
                 )
@@ -131,8 +130,7 @@ class MPRIS(Server):
             <property name="LoopStatus" type="s" access="readwrite"/>
             <property name="Rate" type="d" access="readwrite"/>
             <property name="Shuffle" type="b" access="readwrite"/>
-            <property name="Metadata" type="a{sv}" access="read">
-            </property>
+            <property name="Metadata" type="a{sv}" access="read"/>
             <property name="Volume" type="d" access="readwrite"/>
             <property name="Position" type="x" access="read"/>
             <property name="MinimumRate" type="d" access="read"/>
@@ -256,7 +254,8 @@ class MPRIS(Server):
             self._player.go_next()
         elif position + offset < 0:
             self._player.go_previous()
-        self._player.seek(position + offset)
+        else:
+            self._player.seek(position + offset)
 
     def Seeked(self, position):
         logging.debug(f'Seeked: {position / 1000}')
@@ -301,7 +300,6 @@ class MPRIS(Server):
             case 'PlaybackStatus':
                 return GLib.Variant('s', self._get_status())
             case 'LoopStatus':
-                # TODO: Player should have a loop track option to match the MPRIS spec.
                 match self._player.loop:
                     case LoopMode.ALL:
                         return GLib.Variant('s', 'Playlist')
@@ -375,10 +373,7 @@ class MPRIS(Server):
 
     def _update_metadata(self):
         self._metadata = {}
-        if (
-            self._player.current_track is None
-            or self._get_status() == 'Stopped'
-        ):
+        if self._player.current_track is None:
             self._metadata = {
                 'mpris:trackid': GLib.Variant(
                     'o', '/org/mpris/MediaPlayer2/TrackList/NoTrack'
@@ -440,7 +435,7 @@ class MPRIS(Server):
             self._MPRIS_PLAYER_IFACE, {'LoopStatus': loop}, []
         )
 
-    def _on_current_changed(self, player):
+    def _on_current_changed(self, _):
         self._update_metadata()
         properties = {
             'Metadata': GLib.Variant('a{sv}', self._metadata),
