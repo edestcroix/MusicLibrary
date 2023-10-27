@@ -185,8 +185,9 @@ class PlayQueueList(Gtk.ListView):
         while i < len(self.model):
             if self.selection.is_selected(i):
                 self.model.remove(i)
-                self.current_index_moved = i == self.current_index
-                if i < self.current_index:
+                if i == self.current_index:
+                    self.current_index_moved = True
+                elif i < self.current_index:
                     self.current_index -= 1
                     self.current_track = self.get_current_track()
             else:
