@@ -149,9 +149,6 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         GLib.idle_add(self.progress_bar.set_visible, False)
 
     def refresh_lists(self):
-        self.artist_list.remove_all()
-        self.album_list.remove_all()
-
         db = MusicDB()
         self.artist_list.populate(db.get_artists(self._show_all_artists))
         self.album_list.populate(db.get_albums())
