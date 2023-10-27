@@ -91,7 +91,7 @@ class AudioFile:
         """
         thumb, cover = cover_paths or (None, None)
         albumartist = self.try_key('albumartist') or self.try_key('artist')
-        return (
+        return AlbumTags(
             self.try_key('album'),
             albumartist,
             self.try_key('date'),
@@ -103,7 +103,7 @@ class AudioFile:
         """Returns a list of the artists associated with the audio file."""
         albumartist = self.try_key('albumartist') or self.try_key('artist')
         artists = [
-            (
+            ArtistTags(
                 str(artist),
                 self.try_key('artistsort'),
                 self.file,
@@ -112,7 +112,7 @@ class AudioFile:
         ]
         if albumartist not in self.try_key_all('artist'):
             artists.append(
-                (
+                ArtistTags(
                     str(albumartist),
                     self.try_key('artistsort'),
                     self.file,
@@ -122,7 +122,7 @@ class AudioFile:
 
     def track(self) -> TrackTags:
         """Returns the track information from the audio file."""
-        return (
+        return TrackTags(
             self.try_key('title'),
             self.try_key('tracknumber'),
             self.try_key('discnumber'),

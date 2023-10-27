@@ -1,15 +1,27 @@
 from gi.repository import GLib
 import os
 import sqlite3
+from collections import namedtuple
 
 from .library import AlbumItem, ArtistItem, TrackItem
 
 
-StrOpt = str | None
-FloatOpt = float | None
-ArtistTags = tuple[str, StrOpt, str]
-AlbumTags = tuple[StrOpt, StrOpt, StrOpt, StrOpt, StrOpt]
-TrackTags = tuple[StrOpt, StrOpt, StrOpt, StrOpt, float, str, FloatOpt]
+ArtistTags = namedtuple('ArtistTags', ['name', 'sort', 'path'])
+AlbumTags = namedtuple(
+    'AlbumTags', ['name', 'artist', 'year', 'thumb', 'cover']
+)
+TrackTags = namedtuple(
+    'TrackTags',
+    [
+        'title',
+        'track',
+        'discnumber',
+        'album',
+        'length',
+        'path',
+        'modified',
+    ],
+)
 
 
 class MusicDB:
