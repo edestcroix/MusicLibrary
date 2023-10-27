@@ -5,6 +5,9 @@ from .library import AlbumItem, TrackItem
 gi.require_version('Gtk', '4.0')
 
 
+# TODO: Combine the PlayQueue and PlayQueueList classes.
+
+
 @Gtk.Template(resource_path='/com/github/edestcroix/RecordBox/play_queue.ui')
 class PlayQueue(Adw.Bin):
     """A containter for the play queue, containing the entire view around the track list itself,
@@ -136,9 +139,15 @@ class QueueRow(Adw.Bin):
         self.connect('notify::current-index', self._check_current)
 
     def _check_current(self, *_):
-        css = ['current-track'] if self.current_index == self.position else []
         if parent := self.get_parent():
-            parent.set_css_classes(css)
+            if self.current_index == self.position:
+                parent.set_css_classes(
+                    parent.get_css_classes() + ['current-track']
+                )
+            else:
+                parent.set_css_classes(
+                    list(set(parent.get_css_classes()) - {'current-track'})
+                )
 
 
 class PlayQueueList(Gtk.ListView):

@@ -6,8 +6,19 @@
   padding-left: 0px;
 }
 
-.queue-row image, .queue-row checkbutton {
+.queue-row {
+  padding-top: 5px;
+  padding-bottom: 5px;
+}
+
+.queue-row .prefix {
   padding-right: 8px;
+}
+
+.queue-row checkbutton {
+  padding-top: 0px;
+  padding-bottom: 0px;
+  padding-right: 0px;
 }
 
 .library-row.header {

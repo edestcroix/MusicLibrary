@@ -12,24 +12,32 @@
           <class name="header" />
         </style>
         <child>
-          <object class="GtkCheckButton" id="checkbutton">
-            <property name="can-target">False</property>
-            <property name="visible" bind-source="RecordBoxQueueRow"
-              bind-property="selection-active" />
+          <object class="GtkBox" id="prefixes">
             <style>
-              <class name="selection-mode" />
+              <class name="prefix" />
             </style>
-          </object>
-        </child>
-        <child>
-          <object class="GtkImage" id="image">
-            <property name="valign">center</property>
-            <property name="pixel-size">32</property>
-            <binding name="file">
-              <lookup name="image_path" type="RecordBoxQueueRow"></lookup>
-            </binding>
-            <property name="visible" bind-source="RecordBoxQueueRow"
-              bind-property="selection-active" bind-flags='invert-boolean' />
+            <child>
+              <object class="GtkCheckButton" id="checkbutton">
+                <property name="can-target">False</property>
+                <property name="halign">center</property>
+                <property name="visible" bind-source="RecordBoxQueueRow"
+                  bind-property="selection-active" />
+                <style>
+                  <class name="selection-mode" />
+                </style>
+              </object>
+            </child>
+            <child>
+              <object class="GtkImage" id="image">
+                <property name="valign">center</property>
+                <property name="pixel-size">32</property>
+                <binding name="file">
+                  <lookup name="image_path" type="RecordBoxQueueRow"></lookup>
+                </binding>
+                <property name="visible" bind-source="RecordBoxQueueRow"
+                  bind-property="selection-active" bind-flags='invert-boolean' />
+              </object>
+            </child>
           </object>
         </child>
         <child>
@@ -45,8 +53,8 @@
                 <binding name="label">
                   <lookup name="title" type="RecordBoxQueueRow"></lookup>
                 </binding>
-                <property name="ellipsize">none</property>
-                <property name="lines">0</property>
+                <property name="ellipsize">end</property>
+                <property name="lines">2</property>
                 <property name="wrap">True</property>
                 <property name="wrap-mode">word-char</property>
                 <property name="xalign">0</property>
@@ -60,8 +68,8 @@
                 <binding name="label">
                   <lookup name="subtitle" type="RecordBoxQueueRow"></lookup>
                 </binding>
-                <property name="ellipsize">none</property>
-                <property name="lines">0</property>
+                <property name="ellipsize">end</property>
+                <property name="lines">2</property>
                 <property name="wrap">True</property>
                 <property name="wrap-mode">word-char</property>
                 <property name="xalign">0</property>
