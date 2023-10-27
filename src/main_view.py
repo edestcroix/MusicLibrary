@@ -38,10 +38,10 @@ class MainView(Adw.Bin):
 
     content_page = Gtk.Template.Child()
 
-    play = Gtk.Template.Child()
+    action_button = Gtk.Template.Child()
+
     queue_toggle = Gtk.Template.Child()
     queue_panel_split_view = Gtk.Template.Child()
-    queue_add = Gtk.Template.Child()
     play_queue = Gtk.Template.Child()
 
     return_to_album = Gtk.Template.Child()
@@ -76,8 +76,7 @@ class MainView(Adw.Bin):
     def update_album(self, album: AlbumItem):
         self.content_page.set_title(album.raw_name)
         self.album_overview.update_album(album)
-        self.play.set_sensitive(True)
-        self.queue_add.set_sensitive(True)
+        self.action_button.set_sensitive(True)
 
     def send_toast(self, title: str, timeout=2):
         toast = Adw.Toast()
@@ -85,12 +84,16 @@ class MainView(Adw.Bin):
         toast.set_timeout(timeout)
         self.toast.add_toast(toast)
 
-    @Gtk.Template.Callback()
-    def play_album(self, _):
-        if not (album := self.album_overview.current_album):
-            return
-        self._confirm_album_play(None, album)
+    def play_album(self):
+        if album := self.album_overview.current_album:
+            self._confirm_album_play(None, album)
 
+    def queue_add(self):
+        if album := self.album_overview.current_album:
+            self.play_queue.add_album(album)
+            if self.player.state == 'stopped':
+                self.player.ready()
+            self.send_toast('Queue Updated')
     def _setup_actions(self):
         self.play_queue.connect(
             'jump-to-track',
@@ -99,6 +102,15 @@ class MainView(Adw.Bin):
 
         self.player.connect('stream_start', self._on_stream_start)
         self.player.connect('state-changed', self._on_player_state_changed)
+
+    @Gtk.Template.Callback()
+    def _on_album_action(self, _, action_row):
+        index = action_row.get_index()
+        if index == 0:
+            self.play_album()
+        elif index == 1:
+            self.queue_add()
+        action_row.get_ancestor(Gtk.Popover).popdown()
 
     @Gtk.Template.Callback()
     def _confirm_album_play(self, _, album: AlbumItem):
@@ -115,14 +127,6 @@ class MainView(Adw.Bin):
             return
         dialog = self._play_dialog(track.title)
         dialog.choose(self.cancellable, self._on_dialog_track_response, track)
-
-    @Gtk.Template.Callback()
-    def _on_queue_add(self, _):
-        if album := self.album_overview.current_album:
-            self.play_queue.add_album(album)
-            if self.player.state == 'stopped':
-                self.player.ready()
-            self.send_toast('Queue Updated')
 
     @Gtk.Template.Callback()
     def _on_add_track(self, _, track: TrackItem):

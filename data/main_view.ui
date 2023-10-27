@@ -37,17 +37,52 @@
                           </object>
                         </child>
                         <child type="start">
-                          <object class="GtkButton" id="play">
-                            <property name="icon-name">media-playback-start-symbolic</property>
+                          <object class="GtkMenuButton" id="action_button">
+                            <property name="icon-name">view-more-symbolic</property>
                             <property name="sensitive">false</property>
-                            <signal name="clicked" handler="play_album" />
-                          </object>
-                        </child>
-                        <child type="start">
-                          <object class="GtkButton" id="queue_add">
-                            <property name="icon-name">list-add-symbolic</property>
-                            <property name="sensitive">false</property>
-                            <signal name="clicked" handler="_on_queue_add" />
+                            <property name="popover">
+                              <object class="GtkPopover">
+                                <style>
+                                  <class name="menu" />
+                                </style>
+                                <child>
+                                  <object class="GtkListBox">
+                                    <signal name="row-activated" handler="_on_album_action" />
+                                    <property name="selection-mode">GTK_SELECTION_NONE</property>
+                                    <child>
+                                      <object class="GtkBox">
+                                        <property name="orientation">horizontal</property>
+                                        <child>
+                                          <object class="GtkImage">
+                                            <property name="icon-name">media-playback-start-symbolic</property>
+                                          </object>
+                                        </child>
+                                        <child>
+                                          <object class="GtkLabel">
+                                            <property name="label">Play Album</property>
+                                          </object>
+                                        </child>
+                                      </object>
+                                    </child>
+                                    <child>
+                                      <object class="GtkBox">
+                                        <property name="orientation">horizontal</property>
+                                        <child>
+                                          <object class="GtkImage">
+                                            <property name="icon-name">list-add-symbolic</property>
+                                          </object>
+                                        </child>
+                                        <child>
+                                          <object class="GtkLabel">
+                                            <property name="label">Add to Queue</property>
+                                          </object>
+                                        </child>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+                              </object>
+                            </property>
                           </object>
                         </child>
                         <child type="end">

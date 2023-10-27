@@ -209,7 +209,7 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         # album row activation only happens on double-click, and the row
         # gets selected on the first click, setting the main_view's album,
         # so we can just call the play_album callback.
-        self.main_view.play_album(None)
+        self.main_view.play_album()
 
     def _select_row_with_title(
         self, row_list: AlbumList | ArtistList, title: str
