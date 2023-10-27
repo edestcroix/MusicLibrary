@@ -15,8 +15,8 @@ Gst.init(None)
 
 class LoopMode(Enum):
     NONE = 0
-    SINGLE = 1
-    ALL = 2
+    TRACK = 1
+    PLAYLIST = 2
 
 
 class Player(GObject.GObject):
@@ -106,7 +106,7 @@ class Player(GObject.GObject):
     def go_next(self):
         if self._play_queue.next():
             self.play()
-        elif self.loop == LoopMode.ALL:
+        elif self.loop == LoopMode.PLAYLIST:
             self._play_queue.restart()
             self.play()
 
@@ -146,7 +146,7 @@ class Player(GObject.GObject):
         self.emit('state-changed', 'playing')
 
     def _on_about_to_finish(self, _):
-        if self.loop == LoopMode.SINGLE and not self.single_repeated:
+        if self.loop == LoopMode.TRACK and not self.single_repeated:
             self.single_repeated = True
             self._player.set_property(
                 'uri', self._prepare_url(self._play_queue.get_current_track())
@@ -154,7 +154,7 @@ class Player(GObject.GObject):
         elif next_track := self._play_queue.get_next_track():
             self.single_repeated = False
             self._player.set_property('uri', self._prepare_url(next_track))
-        elif self.loop == LoopMode.ALL:
+        elif self.loop == LoopMode.PLAYLIST:
             self._play_queue.restart()
             self._player.set_property(
                 'uri', self._prepare_url(self._play_queue.get_current_track())

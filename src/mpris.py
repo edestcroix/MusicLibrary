@@ -4,6 +4,8 @@ from .player import LoopMode
 
 import logging
 
+# logging.basicConfig(level=logging.DEBUG)
+
 # full credit for the bulk of this MPRIS implementation goes to Lollyop
 # at https://gitlab.gnome.org/World/lollypop/-/blob/master/lollypop/mpris.py
 class Server:
@@ -59,7 +61,7 @@ class Server:
                 invocation.return_value(None)
         except Exception as e:
             logging.error(f'Error: {e}')
-            invocation.return_error(
+            invocation.return_gerror(
                 GLib.G_DBUS_ERROR, GLib.G_DBUS_ERROR_FAILED, str(e)
             )
 
@@ -235,13 +237,6 @@ class MPRIS(Server):
         if self._player.state == 'paused':
             self._player.toggle()
 
-    def LoopStatus(self, loop):
-        logging.debug(f'LoopStatus: {loop}')
-
-    def SetPosition(self, _, position):
-        logging.debug(f'SetPosition: {position}')
-        self._player.seek(position * 1000)
-
     def OpenUri(self, uri):
         pass
 
@@ -300,13 +295,7 @@ class MPRIS(Server):
             case 'PlaybackStatus':
                 return GLib.Variant('s', self._get_status())
             case 'LoopStatus':
-                match self._player.loop:
-                    case LoopMode.ALL:
-                        return GLib.Variant('s', 'Playlist')
-                    case LoopMode.SINGLE:
-                        return GLib.Variant('s', 'Track')
-                    case LoopMode.NONE:
-                        return GLib.Variant('s', 'None')
+                return GLib.Variant('s', self._player.loop.name.capitalize())
             case 'Metadata':
                 return GLib.Variant('a{sv}', self._metadata)
             case 'Volume':
@@ -335,9 +324,9 @@ class MPRIS(Server):
                 case 'None':
                     self._player.loop = LoopMode.NONE
                 case 'Playlist':
-                    self._player.loop = LoopMode.ALL
+                    self._player.loop = LoopMode.PLAYLIST
                 case 'Track':
-                    self._player.loop = LoopMode.SINGLE
+                    self._player.loop = LoopMode.TRACK
 
         elif property_name == 'Volume':
             self._player.volume = new_value
@@ -422,14 +411,7 @@ class MPRIS(Server):
         )
 
     def _on_loop_changed(self, _, __):
-        loop = self._player.loop
-        match loop:
-            case LoopMode.NONE:
-                loop = 'None'
-            case LoopMode.ALL:
-                loop = 'Playlist'
-            case LoopMode.SINGLE:
-                loop = 'Track'
+        loop = self._player.loop.name.capitalize()
         loop = GLib.Variant('s', loop)
         self.PropertiesChanged(
             self._MPRIS_PLAYER_IFACE, {'LoopStatus': loop}, []

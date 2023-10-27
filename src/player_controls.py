@@ -166,7 +166,7 @@ class RecordBoxPlayerControls(Gtk.Box):
         match self._player.loop:
             case LoopMode.NONE:
                 self.loop.set_icon_name('media-playlist-consecutive-symbolic')
-            case LoopMode.ALL:
+            case LoopMode.PLAYLIST:
                 self.loop.set_icon_name('media-playlist-repeat-symbolic')
-            case LoopMode.SINGLE:
+            case LoopMode.TRACK:
                 self.loop.set_icon_name('media-playlist-repeat-song-symbolic')
