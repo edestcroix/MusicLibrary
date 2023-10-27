@@ -67,15 +67,20 @@ class AlbumView(Adw.BreakpointBin):
         current_disc, disc_row = 0, None
         for track in tracks:
             if track.discnumber != current_disc:
-                disc_row = self._disc_row(current_disc := track.discnumber)
+                disc_row = self._disc_row(
+                    current_disc := track.discnumber, track.discsubtitle
+                )
             self._setup_row(track, disc_row)
 
-    def _disc_row(self, current_disc: int):
+    def _disc_row(self, current_disc: int, discsubtitle: str):
         disc_row = Adw.ExpanderRow(
             title=f'Disc {current_disc}',
+            subtitle=discsubtitle,
             selectable=False,
             expanded=self.expand_discs,
         )
+        if discsubtitle:
+            disc_row.set_css_classes(disc_row.get_css_classes() + ['property'])
         self.track_list.append(disc_row)
         return disc_row
 

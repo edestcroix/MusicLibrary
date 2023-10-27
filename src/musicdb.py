@@ -16,6 +16,7 @@ TrackTags = namedtuple(
         'title',
         'track',
         'discnumber',
+        'discsubtitle',
         'album',
         'length',
         'path',
@@ -45,7 +46,7 @@ class MusicDB:
 
     def insert_track(self, track: TrackTags):
         self.cursor.execute(
-            'INSERT INTO tracks VALUES (?, ?, ?, ?, ?, ?, ?)', track
+            'INSERT INTO tracks VALUES (?, ?, ?, ?, ?, ?, ?, ?)', track
         )
 
     def commit(self):
@@ -103,7 +104,7 @@ class MusicDB:
         self, album: str, thumb: str, cover: str
     ) -> list[TrackItem]:
         self.cursor.execute(
-            """SELECT track, discnumber, title, length, path 
+            """SELECT track, discnumber, discsubtitle, title, length, path 
                 FROM tracks 
                 WHERE album = ? ORDER BY discnumber, track""",
             (album,),
@@ -169,6 +170,7 @@ class MusicDB:
                 title TEXT,
                 track TEXT,
                 discnumber TEXT,
+                discsubtitle TEXT,
                 album TEXT,
                 length REAL,
                 path TEXT,

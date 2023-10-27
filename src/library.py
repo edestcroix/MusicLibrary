@@ -10,6 +10,7 @@ class TrackItem(GObject.Object):
 
     track = GObject.Property(type=int)
     discnumber = GObject.Property(type=int)
+    discsubtitle = GObject.Property(type=str)
     title = GObject.Property(type=str)
     raw_title = GObject.Property(type=str)
     length = GObject.Property(type=str)
@@ -24,6 +25,7 @@ class TrackItem(GObject.Object):
         self,
         track,
         discnumber,
+        discsubtitle,
         title,
         length,
         path,
@@ -38,6 +40,7 @@ class TrackItem(GObject.Object):
         self.track = track
         discnumber = int(discnumber.split('/')[0]) if discnumber else 0
         self.discnumber = discnumber
+        self.discsubtitle = discsubtitle
         self.title = GLib.markup_escape_text(title)
         self.raw_title = title
         self.length = self.length_str(int(length))

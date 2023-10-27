@@ -126,6 +126,7 @@ class AudioFile:
             self.try_key('title'),
             self.try_key('tracknumber'),
             self.try_key('discnumber'),
+            self.try_key('discsubtitle'),
             self.try_key('album'),
             self.audio.info.length,
             self.file,
