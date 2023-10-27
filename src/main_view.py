@@ -207,7 +207,7 @@ class MainView(Adw.Bin):
 
     def _set_controls_stopped(self):
         if not self.player.current_track:
-            if self.clear_queue or self.player_controls.stop_exits:
+            if self.clear_queue:
                 self._set_controls_visible(False)
                 self.play_queue.clear()
                 self.queue_panel_split_view.set_show_sidebar(False)
