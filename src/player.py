@@ -86,7 +86,8 @@ class Player(GObject.GObject):
                 self._player.set_state(Gst.State.PLAYING)
                 self.emit('state_changed', 'playing')
             case Gst.State.NULL:
-                if self.current_track:
+                if not self._play_queue.empty():
+                    self._play_queue.restart()
                     self.play()
 
     def toggle_mute(self):
@@ -135,7 +136,7 @@ class Player(GObject.GObject):
     def jump_to_track(self, _):
         """Reloads the current track in the play queue, in response to the play
         queue jumping to a different track. Expectation is that the current track
-        in the queue is no longer the same track that is playing"""
+        in the queue is no longer the same track that is playing."""
 
         self._player.set_state(Gst.State.NULL)
         self._player.set_property(

@@ -150,6 +150,12 @@ class MainView(Adw.Bin):
             current_album = current_track.album
             self.emit('album_changed', current_album)
 
+    @Gtk.Template.Callback()
+    def _exit_player(self, _):
+        self._set_controls_visible(False)
+        self.play_queue.clear()
+        self.queue_panel_split_view.set_show_sidebar(False)
+
     def _play_dialog(self, name: str) -> Adw.MessageDialog:
         dialog = Adw.MessageDialog(
             heading='Already Playing',
@@ -203,17 +209,8 @@ class MainView(Adw.Bin):
             case 'playing' | 'paused':
                 GLib.idle_add(self._set_controls_visible, True)
             case 'stopped':
-                GLib.idle_add(self._set_controls_stopped)
-
-    def _set_controls_stopped(self):
-        if not self.player.current_track:
-            if self.clear_queue:
-                self._set_controls_visible(False)
-                self.play_queue.clear()
-                self.queue_panel_split_view.set_show_sidebar(False)
-            else:
-                self.play_queue.restart()
-                self.player.ready()
+                if not self.player.current_track and self.clear_queue:
+                    GLib.idle_add(self._exit_player, None)
 
     def _set_controls_visible(self, visible: bool):
         self.toolbar_view.set_reveal_bottom_bars(visible)

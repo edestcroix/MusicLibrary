@@ -103,7 +103,9 @@
                       </object>
                     </child>
                     <child type="bottom">
-                      <object class="RecordBoxPlayerControls" id="player_controls" />
+                      <object class="RecordBoxPlayerControls" id="player_controls">
+                        <signal name="exit-player" handler="_exit_player" />
+                      </object>
                     </child>
                     <property name="content">
                       <object class="RecordBoxAlbumView" id="album_overview">

@@ -32,6 +32,8 @@ class RecordBoxPlayerControls(Gtk.Box):
     muted = GObject.Property(type=bool, default=False)
     stop_exits = GObject.Property(type=bool, default=False)
 
+    exit_player = GObject.Signal()
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.volume_slider.set_range(0, 1)
@@ -87,7 +89,11 @@ class RecordBoxPlayerControls(Gtk.Box):
 
     @Gtk.Template.Callback()
     def _stop(self, _):
-        self._player.exit() if self.stop_exits else self._player.stop()
+        if self.stop_exits:
+            self._player.exit()
+            self.emit('exit-player')
+        else:
+            self._player.stop()
 
     @Gtk.Template.Callback()
     def _play_pause(self, _):
