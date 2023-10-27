@@ -176,7 +176,7 @@ class Player(GObject.GObject):
     def _on_message(self, _, message):
         t = message.type
         if t == Gst.MessageType.EOS:
-            self.exit()
+            self.stop()
         elif t == Gst.MessageType.ASYNC_DONE and self._seeking:
             self._seeking = False
         elif message.type == Gst.MessageType.STREAM_START:
