@@ -47,7 +47,7 @@
       </description>
     </key>
     <key name="clear-queue" type="b">
-      <default>true</default>
+      <default>false</default>
       <summary>Control queue clear</summary>
       <description>
         Control if queue should clear when end is reached
