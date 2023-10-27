@@ -129,15 +129,16 @@ class TrackRow(Adw.ActionRow):
         self.track = track
         track_num = track.track
         self.set_title_lines(1)
-        self.set_title(track.title)
 
         artists = f'\n{track.artists}' if (artists := track.artists) else ''
-        self.set_subtitle(
+        self.set_title(
             GLib.markup_escape_text(
-                f'{track_num:0>2} - {track.length}{artists}'
+                f'{track.track:0>2} - {track.length}{artists}'
             )
         )
-        self.set_tooltip_text(track.title)
+        self.set_subtitle(track.title)
+        self.set_css_classes(self.get_css_classes() + ['property'])
+        self.set_tooltip_text(track.raw_title)
         btn = Gtk.MenuButton()
         btn.set_icon_name('view-more-symbolic')
         btn.set_css_classes(['flat'])
