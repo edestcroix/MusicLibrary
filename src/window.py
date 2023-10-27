@@ -217,4 +217,4 @@ class RecordBoxWindow(Adw.ApplicationWindow):
             i += 1
             cur = row_list.get_row_at_index(i)
         if cur:
-            row_list.select_index(i)
+            row_list.scroll_to(i, Gtk.ListScrollFlags.SELECT, None)
