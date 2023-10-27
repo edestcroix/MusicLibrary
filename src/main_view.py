@@ -22,7 +22,7 @@ from .album_view import AlbumView
 from .player_controls import RecordBoxPlayerControls
 from .player import Player
 from .monitor import ProgressMonitor
-from .play_queue import PlayQueue, PlayQueueList
+from .play_queue import PlayQueue
 
 gi.require_version('Gtk', '4.0')
 gi.require_version('Gst', '1.0')
@@ -152,7 +152,7 @@ class MainView(Adw.Bin):
 
     @Gtk.Template.Callback()
     def _on_return_to_album(self, _):
-        if current_track := self.play_queue.playing_track():
+        if current_track := self.player.current_track:
             current_album = current_track.album
             self.emit('album_changed', current_album)
 

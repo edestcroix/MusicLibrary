@@ -1,6 +1,10 @@
 from gi.repository import Adw, Gtk, GLib, GObject, Gio
 import gi
 from .library import AlbumItem, TrackItem
+from enum import Enum
+
+
+Direction = Enum('Direction', 'NEXT PREV')
 
 gi.require_version('Gtk', '4.0')
 
@@ -21,7 +25,7 @@ class PlayQueue(Adw.Bin):
     track_list = Gtk.Template.Child()
     collapse = GObject.Signal()
 
-    select_all = Gtk.Template.Child()
+    select_all_button = Gtk.Template.Child()
 
     queue_header = Gtk.Template.Child()
     delete_selected = Gtk.Template.Child()
@@ -31,30 +35,33 @@ class PlayQueue(Adw.Bin):
 
     jump_to_track = GObject.Signal()
 
+    current_index = GObject.Property(type=int, default=-1)
+    current_index_moved = False
+    current_track = GObject.Property(type=TrackItem)
+
+    jump_to_track = GObject.Signal()
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.bind_property(
-            'loop',
-            self.track_list,
-            'loop',
-            GObject.BindingFlags.BIDIRECTIONAL,
-        )
-        self.bind_property(
-            'selection-active',
-            self.track_list,
-            'selection-active',
-            GObject.BindingFlags.BIDIRECTIONAL,
-        )
 
-        self.track_list.connect(
-            'jump-to-track', lambda _: self.emit('jump-to-track')
-        )
+        self.model = Gio.ListStore.new(TrackItem)
+        self.selection = Gtk.MultiSelection.new(self.model)
+        self.no_selection = Gtk.NoSelection.new(self.model)
+
+        self.track_list.set_model(self.no_selection)
+        self.track_list.set_factory(self._create_factory())
+
+        self.track_list.connect('activate', self._on_row_activated)
 
         self.delete_selected.set_sensitive(True)
 
-        self.select_all.connect(
-            'clicked', lambda _: self.track_list.select_all()
-        )
+        self.select_all_button.connect('clicked', lambda _: self.select_all())
+
+    def _create_factory(self):
+        factory = Gtk.SignalListItemFactory.new()
+        factory.connect('setup', self._setup_row)
+        factory.connect('bind', self._bind_row)
+        return factory
 
     @GObject.Property(type=bool, default=False)
     def selection_active(self):
@@ -62,54 +69,141 @@ class PlayQueue(Adw.Bin):
 
     @selection_active.setter
     def set_selection_active(self, value: bool):
+        self.unselect_all()
         self._selection_active = value
         if value:
+            self.track_list.set_model(self.selection)
             self.queue_header.set_css_classes(['header-accent'])
         else:
+            self.track_list.set_model(self.no_selection)
             self.queue_header.set_css_classes([])
+        # Trigger the notify::current-track callback in the queue rows so the current track
+        # highlight persists across the selection model changing.
+        self.current_index = self.current_index
+
+    def add_album(self, album: AlbumItem):
+        for track in album.tracks:
+            # GListStores hate having the same GObject inserted twice.
+            self.model.append(track.clone())
+
+    def add_track(self, track: TrackItem):
+        self.model.append(track.clone())
+
+    def select_all(self):
+        self.selection.select_all()
+
+    def unselect_all(self):
+        self.selection.unselect_all()
+
+    def clear(self):
+        self.model.remove_all()
+        self.current_index = -1
+
+    def restart(self):
+        self.current_index = 0
+
+    def empty(self) -> bool:
+        return len(self.model) == 0
+
+    def get_next_track(self) -> TrackItem | None:
+        if self.current_index_moved:
+            self.current_index_moved = False
+            return self.get_current_track()
+        self._move_current(Direction.NEXT)
+        return self.get_current_track()
+
+    def get_current_track(self) -> TrackItem | None:
+        if self.current_index == -1 and len(self.model) > 0:
+            self.current_index = 0
+        self.current_track = (
+            self.model[self.current_index]
+            if 0 <= self.current_index < len(self.model)
+            else None
+        )
+        return self.current_track
+
+    def next(self) -> bool:
+        if self.current_index_moved:
+            self.current_index_moved = False
+        else:
+            self._move_current(Direction.NEXT)
+        return 0 <= self.current_index < len(self.model)
+
+    def previous(self) -> bool:
+        self._move_current(Direction.PREV)
+        if self.current_index_moved:
+            self.current_index_moved = False
+        return 0 <= self.current_index < len(self.model)
 
     @Gtk.Template.Callback()
     def _on_queue_toggle(self, _):
-        self.track_list.selection_active = False
+        self.set_property('selection-active', False)
         # tell the main view that the queue should be closed
         self.emit('collapse')
 
     @Gtk.Template.Callback()
     def _remove_selected(self, _):
-        self.track_list.remove_selected()
+        i = 0
+        while i < len(self.model):
+            if self.selection.is_selected(i):
+                self.model.remove(i)
+                if i == self.current_index:
+                    self.current_index_moved = True
+                elif i < self.current_index:
+                    self.current_index -= 1
+                    self.current_track = self.get_current_track()
+            else:
+                i += 1
 
-    def get_current_track(self) -> TrackItem | None:
-        return self.track_list.get_current_track()
+    def _move_current(self, direction: Direction):
+        if direction == 'next':
+            self.current_index += 1
+        elif direction == 'prev':
+            if self.current_index >= len(self.model):
+                self.current_index = len(self.model) - 2
+            else:
+                self.current_index -= 1
 
-    def get_next_track(self) -> TrackItem | None:
-        return self.track_list.get_next_track()
+    def _on_row_activated(self, _, index: int):
+        if not self.selection_active:
+            self.current_index = index
+            self.current_track = self.get_current_track()
+            self.emit('jump-to-track')
 
-    def playing_track(self) -> TrackItem | None:
-        """Returns the currently playing track, regardless of if the queue is empty or not.
-        (track_list.current_track doesn't update to None until get_next_track is called on
-         an empty queue, while get_current_track returns None if the queue is empty)"""
-        return self.track_list.current_track
+    def _setup_row(self, _, item):
+        row = QueueRow()
+        item.set_child(row)
+        item.bind_property(
+            'selected',
+            row.checkbutton,
+            'active',
+            GObject.BindingFlags.DEFAULT,
+        )
+        item.bind_property(
+            'position',
+            row,
+            'position',
+            GObject.BindingFlags.DEFAULT,
+        )
+        self.bind_property(
+            'current-index',
+            row,
+            'current-index',
+            GObject.BindingFlags.DEFAULT,
+        )
+        self.bind_property(
+            'selection-active',
+            row,
+            'selection-active',
+            GObject.BindingFlags.DEFAULT,
+        )
 
-    def restart(self):
-        self.track_list.restart()
-
-    def clear(self):
-        self.track_list.clear()
-
-    def empty(self):
-        return self.track_list.empty()
-
-    def add_album(self, album: AlbumItem):
-        self.track_list.add_album(album)
-
-    def add_track(self, track: TrackItem):
-        self.track_list.add_track(track)
-
-    def next(self):
-        return self.track_list.next()
-
-    def previous(self):
-        return self.track_list.previous()
+    def _bind_row(self, _, item):
+        row = item.get_child()
+        track = item.get_item()
+        row.title = track.raw_title
+        row.subtitle = track.length
+        row.image_path = track.thumb
 
 
 @Gtk.Template(
@@ -148,170 +242,3 @@ class QueueRow(Adw.Bin):
                 parent.set_css_classes(
                     list(set(parent.get_css_classes()) - {'current-track'})
                 )
-
-
-class PlayQueueList(Gtk.ListView):
-    __gtype_name__ = 'RecordBoxPlayQueueList'
-
-    current_index = GObject.Property(type=int, default=-1)
-    current_index_moved = False
-
-    loop = GObject.property(type=bool, default=False)
-    current_track = GObject.Property(type=TrackItem)
-
-    jump_to_track = GObject.Signal()
-
-    _selection_active = False
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.model = Gio.ListStore.new(TrackItem)
-        self.selection = Gtk.MultiSelection.new(self.model)
-        self.no_selection = Gtk.NoSelection.new(self.model)
-        self.set_model(self.no_selection)
-
-        self.factory = Gtk.SignalListItemFactory.new()
-        self.factory.connect('setup', self._setup_row)
-        self.factory.connect('bind', self._bind_row)
-        self.set_factory(self.factory)
-
-        self.connect('activate', self._on_row_activated)
-
-    @GObject.Property(type=bool, default=False)
-    def selection_active(self):
-        return self._selection_active
-
-    @selection_active.setter
-    def set_selection_active(self, value: bool):
-        self.unselect_all()
-        self._selection_active = value
-        if value:
-            self.set_model(self.selection)
-        else:
-            self.set_model(self.no_selection)
-        # Trigger the notify::current-track callback in the queue rows so the current track
-        # highlight persists across the selection model changing.
-        self.current_index = self.current_index
-
-    def add_album(self, album: AlbumItem):
-        for track in album.tracks:
-            # GListStores hate having the same GObject inserted twice.
-            self.model.append(track.clone())
-
-    def add_track(self, track: TrackItem):
-        self.model.append(track.clone())
-
-    def select_all(self):
-        self.selection.select_all()
-
-    def unselect_all(self):
-        self.selection.unselect_all()
-
-    def remove_selected(self):
-        i = 0
-        while i < len(self.model):
-            if self.selection.is_selected(i):
-                self.model.remove(i)
-                if i == self.current_index:
-                    self.current_index_moved = True
-                elif i < self.current_index:
-                    self.current_index -= 1
-                    self.current_track = self.get_current_track()
-            else:
-                i += 1
-
-    def clear(self):
-        self.model.remove_all()
-        self.current_index = -1
-
-    def restart(self):
-        self.current_index = 0
-
-    def empty(self) -> bool:
-        return len(self.model) == 0
-
-    def get_next_track(self) -> TrackItem | None:
-        if self.current_index_moved:
-            self.current_index_moved = False
-            return self.get_current_track()
-        self._move_current('next')
-        return self.get_current_track()
-
-    def get_current_track(self) -> TrackItem | None:
-        if self.current_index == -1 and len(self.model) > 0:
-            self.current_index = 0
-        self.current_track = (
-            self.model[self.current_index]
-            if 0 <= self.current_index < len(self.model)
-            else None
-        )
-        return self.current_track
-
-    def next(self) -> bool:
-        if self.current_index_moved:
-            self.current_index_moved = False
-        else:
-            self._move_current('next', True)
-        return 0 <= self.current_index < len(self.model)
-
-    def previous(self) -> bool:
-        self._move_current('prev')
-        if self.current_index_moved:
-            self.current_index_moved = False
-        return 0 <= self.current_index < len(self.model)
-
-    def _setup_row(self, _, item):
-        row = QueueRow()
-        item.set_child(row)
-        item.bind_property(
-            'selected',
-            row.checkbutton,
-            'active',
-            GObject.BindingFlags.DEFAULT,
-        )
-        item.bind_property(
-            'position',
-            row,
-            'position',
-            GObject.BindingFlags.DEFAULT,
-        )
-        self.bind_property(
-            'current-index',
-            row,
-            'current-index',
-            GObject.BindingFlags.DEFAULT,
-        )
-        self.bind_property(
-            'selection-active',
-            row,
-            'selection-active',
-            GObject.BindingFlags.DEFAULT,
-        )
-
-    def _bind_row(self, _, item):
-        row = item.get_child()
-        track = item.get_item()
-        row.title = track.raw_title
-        row.subtitle = track.length
-        row.image_path = track.thumb
-
-    def _move_current(self, direction: str, allow_none=False):
-        if direction == 'next':
-            if self.current_index >= len(self.model):
-                self.current_index = 0 if self.loop else len(self.model)
-            else:
-                self.current_index += 1
-        elif direction == 'prev':
-            if self.current_index <= 0:
-                if allow_none:
-                    self.current_index = -1
-            elif self.current_index >= len(self.model):
-                self.current_index = len(self.model) - 2
-            else:
-                self.current_index -= 1
-
-    def _on_row_activated(self, _, index: int):
-        if not self.selection_active:
-            self.current_index = index
-            self.current_track = self.get_current_track()
-            self.emit('jump-to-track')

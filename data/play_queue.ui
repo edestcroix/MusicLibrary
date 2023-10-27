@@ -6,13 +6,15 @@
     <child>
       <object class="AdwToolbarView" id="queue_toolbar">
         <property name="reveal-bottom-bars">false</property>
-        <property name="reveal-bottom-bars" bind-source="track_list"
+        <property name="reveal-bottom-bars" bind-source="RecordBoxPlayQueue"
           bind-property="selection-active" />
         <child type="top">
           <object class="AdwHeaderBar" id="queue_header">
             <child type="start">
               <object class="GtkToggleButton" id="select_toggle">
                 <property name="icon-name">selection-mode-symbolic</property>
+                <property name="active" bind-source="RecordBoxPlayQueue"
+                  bind-property="selection-active" bind-flags='bidirectional' />
               </object>
             </child>
             <child type="end">
@@ -26,7 +28,7 @@
         <child type="bottom">
           <object class="GtkActionBar">
             <child type="start">
-              <object class="GtkButton" id="select_all">
+              <object class="GtkButton" id="select_all_button">
                 <property name="label" translatable="yes">Select All</property>
               </object>
             </child>
@@ -47,9 +49,7 @@
           <object class="GtkScrolledWindow">
             <property name="hscrollbar-policy">never</property>
             <child>
-              <object class="RecordBoxPlayQueueList" id="track_list">
-                <property name="selection-active" bind-source="select_toggle"
-                  bind-property="active" bind-flags="bidirectional" />
+              <object class="GtkListView" id="track_list">
                 <style>
                   <class name="navigation-sidebar" />
                 </style>
