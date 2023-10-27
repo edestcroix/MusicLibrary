@@ -38,7 +38,7 @@ class MainView(Adw.Bin):
 
     content_page = Gtk.Template.Child()
 
-    action_button = Gtk.Template.Child()
+    play_button = Gtk.Template.Child()
 
     queue_toggle = Gtk.Template.Child()
     queue_panel_split_view = Gtk.Template.Child()
@@ -76,7 +76,7 @@ class MainView(Adw.Bin):
     def update_album(self, album: AlbumItem):
         self.content_page.set_title(album.raw_name)
         self.album_overview.update_album(album)
-        self.action_button.set_sensitive(True)
+        self.play_button.set_sensitive(True)
 
     def send_toast(self, title: str, timeout=2):
         toast = Adw.Toast()
@@ -84,7 +84,8 @@ class MainView(Adw.Bin):
         toast.set_timeout(timeout)
         self.toast.add_toast(toast)
 
-    def play_album(self):
+    @Gtk.Template.Callback()
+    def play_album(self, *_):
         if album := self.album_overview.current_album:
             self._confirm_album_play(None, album)
 
@@ -107,8 +108,6 @@ class MainView(Adw.Bin):
     def _on_album_action(self, _, action_row):
         index = action_row.get_index()
         if index == 0:
-            self.play_album()
-        elif index == 1:
             self.queue_add()
         action_row.get_ancestor(Gtk.Popover).popdown()
 

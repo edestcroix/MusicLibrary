@@ -37,8 +37,9 @@
                           </object>
                         </child>
                         <child type="start">
-                          <object class="GtkMenuButton" id="action_button">
-                            <property name="icon-name">view-more-symbolic</property>
+                          <object class="AdwSplitButton" id="play_button">
+                            <property name="icon-name">media-playback-start-symbolic</property>
+                            <signal name="clicked" handler="play_album" />
                             <property name="sensitive">false</property>
                             <property name="popover">
                               <object class="GtkPopover">
@@ -49,21 +50,6 @@
                                   <object class="GtkListBox">
                                     <signal name="row-activated" handler="_on_album_action" />
                                     <property name="selection-mode">GTK_SELECTION_NONE</property>
-                                    <child>
-                                      <object class="GtkBox">
-                                        <property name="orientation">horizontal</property>
-                                        <child>
-                                          <object class="GtkImage">
-                                            <property name="icon-name">media-playback-start-symbolic</property>
-                                          </object>
-                                        </child>
-                                        <child>
-                                          <object class="GtkLabel">
-                                            <property name="label">Play Album</property>
-                                          </object>
-                                        </child>
-                                      </object>
-                                    </child>
                                     <child>
                                       <object class="GtkBox">
                                         <property name="orientation">horizontal</property>
