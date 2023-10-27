@@ -85,7 +85,7 @@ class AlbumView(Adw.BreakpointBin):
         return disc_row
 
     def _setup_row(self, track: TrackItem, disc_row: Adw.ExpanderRow):
-        row = self._create_row(track)
+        row = TrackRow(track=track)
         row.connect('play_track', self._play_track)
         row.connect('add_track', self._add_track)
         row.connect('start_from_track', self._start_from_track)
@@ -93,15 +93,6 @@ class AlbumView(Adw.BreakpointBin):
             disc_row.add_row(row)
         else:
             self.track_list.append(row)
-
-    def _create_row(self, track: TrackItem, parent_row=None):
-        row = TrackRow(track=track)
-        row.set_title_lines(1)
-        row.set_selectable(False)
-        if parent_row:
-            row.get_style_context().add_class('property')
-            parent_row.add_row(row)
-        return row
 
     def _play_track(self, _, track: TrackItem):
         self.emit('play_track', track)
@@ -125,10 +116,8 @@ class TrackRow(Adw.ActionRow):
     start_from_track = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
 
     def __init__(self, track: TrackItem, **kwargs):
-        super().__init__(**kwargs)
+        super().__init__(title_lines=1, selectable=False, **kwargs)
         self.track = track
-        track_num = track.track
-        self.set_title_lines(1)
 
         artists = f'\n{track.artists}' if (artists := track.artists) else ''
         self.set_title(
@@ -139,12 +128,15 @@ class TrackRow(Adw.ActionRow):
         self.set_subtitle(track.title)
         self.set_css_classes(self.get_css_classes() + ['property'])
         self.set_tooltip_text(track.raw_title)
+
+        self.popover = self._create_popover()
+
         btn = Gtk.MenuButton()
         btn.set_icon_name('view-more-symbolic')
         btn.set_css_classes(['flat'])
         btn.set_valign(Gtk.Align.CENTER)
-        self.popover = self._create_popover()
         btn.set_popover(self.popover)
+
         self.add_suffix(btn)
 
     def _create_popover(self) -> Gtk.Popover:
