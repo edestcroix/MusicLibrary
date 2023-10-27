@@ -116,17 +116,16 @@ class MusicDB:
             )
             artists = [a[0] for a in self.cursor.fetchall()]
             self.cursor.execute(
-                """SELECT artists.name 
-                FROM artists JOIN albums ON artists.name = albums.artist
-                WHERE path = ? AND albums.name = ?""",
-                (track[4], album),
+                """SELECT artist FROM albums
+                WHERE name = ?""",
+                (album,),
             )
             if albumartist := self.cursor.fetchone():
                 albumartist = albumartist[0]
             else:
-                albumartist = None
-            artists.remove(albumartist)
-            artists = ', '.join(artists)
+                albumartist = artists[0] if artists else ''
+            artists.remove(albumartist) if albumartist in artists else None
+            artists = ', '.join(artists) or ''
             tracks.append(
                 TrackItem(
                     *(track + (album, artists, albumartist, thumb, cover))
