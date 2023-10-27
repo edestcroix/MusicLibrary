@@ -143,6 +143,7 @@ class Player(GObject.GObject):
             'uri', self._prepare_url(self._play_queue.get_current_track())
         )
         self._player.set_state(Gst.State.PLAYING)
+        self.emit('state-changed', 'playing')
 
     def _on_about_to_finish(self, _):
         if self.loop == LoopMode.SINGLE and not self.single_repeated:
