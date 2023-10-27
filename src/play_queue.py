@@ -121,15 +121,30 @@ class QueueRow(Adw.Bin):
     checkbutton = Gtk.Template.Child()
 
     selection_active = GObject.Property(type=bool, default=False)
+    position = GObject.Property(type=int)
+
+    # Each row knows the current index so it can highlight itself when it's the current track.
+    current_index = GObject.Property(type=int)
+
     title = GObject.Property(type=str)
     subtitle = GObject.Property(type=str)
     image_path = GObject.Property(type=str)
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        self.connect('notify::current-index', self._check_current)
+
+    def _check_current(self, *_):
+        css = ['current-track'] if self.current_index == self.position else []
+        if parent := self.get_parent():
+            parent.set_css_classes(css)
 
 
 class PlayQueueList(Gtk.ListView):
     __gtype_name__ = 'RecordBoxPlayQueueList'
 
-    current_index = -1
+    current_index = GObject.Property(type=int, default=-1)
     current_index_moved = False
 
     loop = GObject.property(type=bool, default=False)
@@ -165,6 +180,9 @@ class PlayQueueList(Gtk.ListView):
             self.set_model(self.selection)
         else:
             self.set_model(self.no_selection)
+        # Trigger the notify::current-track callback in the queue rows so the current track
+        # highlight persists across the selection model changing.
+        self.current_index = self.current_index
 
     def add_album(self, album: AlbumItem):
         for track in album.tracks:
@@ -240,6 +258,18 @@ class PlayQueueList(Gtk.ListView):
             'selected',
             row.checkbutton,
             'active',
+            GObject.BindingFlags.DEFAULT,
+        )
+        item.bind_property(
+            'position',
+            row,
+            'position',
+            GObject.BindingFlags.DEFAULT,
+        )
+        self.bind_property(
+            'current-index',
+            row,
+            'current-index',
             GObject.BindingFlags.DEFAULT,
         )
         self.bind_property(
