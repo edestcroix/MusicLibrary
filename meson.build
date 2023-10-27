@@ -1,5 +1,5 @@
 project('recordbox',
-          version: '0.2.1',
+          version: '0.3.0-rc1',
     meson_version: '>= 0.62.0',
   default_options: [ 'warning_level=2', 'werror=false', ],
 )
