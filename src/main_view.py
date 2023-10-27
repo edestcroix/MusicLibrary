@@ -96,6 +96,11 @@ class MainView(Adw.Bin):
                 self.player.ready()
             self.send_toast('Queue Updated')
 
+    def replace_queue(self):
+        if self.album_overview.current_album:
+            self.play_queue.clear()
+            self.queue_add()
+
     def _setup_actions(self):
         self.play_queue.connect(
             'jump-to-track',
@@ -106,9 +111,11 @@ class MainView(Adw.Bin):
 
     @Gtk.Template.Callback()
     def _on_album_action(self, _, action_row):
-        index = action_row.get_index()
-        if index == 0:
-            self.queue_add()
+        match action_row.get_index():
+            case 0:
+                self.queue_add()
+            case 1:
+                self.replace_queue()
         action_row.get_ancestor(Gtk.Popover).popdown()
 
     @Gtk.Template.Callback()
