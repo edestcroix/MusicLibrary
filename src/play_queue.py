@@ -30,7 +30,6 @@ class PlayQueue(Adw.Bin):
     queue_header = Gtk.Template.Child()
     delete_selected = Gtk.Template.Child()
 
-    loop = GObject.property(type=bool, default=False)
     _selection_active = False
 
     jump_to_track = GObject.Signal()
@@ -156,9 +155,9 @@ class PlayQueue(Adw.Bin):
                 i += 1
 
     def _move_current(self, direction: Direction):
-        if direction == 'next':
+        if direction == Direction.NEXT:
             self.current_index += 1
-        elif direction == 'prev':
+        elif direction == Direction.PREV:
             if self.current_index >= len(self.model):
                 self.current_index = len(self.model) - 2
             else:
