@@ -1,21 +1,35 @@
 <interface>
-  <template class="GtkListItem">
-    <property name="child">
+  <template class="RecordBoxQueueRow" parent="AdwBin">
+    <property name="height-request">42</property>
+    <style>
+      <class name="queue-row" />
+    </style>
+    <child>
       <object class="GtkBox" id="header">
         <property name="valign">center</property>
         <property name="hexpand">False</property>
         <style>
-          <class name="library-row" />
+          <class name="header" />
         </style>
+        <child>
+          <object class="GtkCheckButton" id="checkbutton">
+            <property name="can-target">False</property>
+            <property name="visible" bind-source="RecordBoxQueueRow"
+              bind-property="selection-active" />
+            <style>
+              <class name="selection-mode" />
+            </style>
+          </object>
+        </child>
         <child>
           <object class="GtkImage" id="image">
             <property name="valign">center</property>
-            <property name="pixel-size">64</property>
+            <property name="pixel-size">32</property>
             <binding name="file">
-              <lookup name="thumb" type="AlbumItem">
-                <lookup name="item">GtkListItem</lookup>
-              </lookup>
+              <lookup name="image_path" type="RecordBoxQueueRow"></lookup>
             </binding>
+            <property name="visible" bind-source="RecordBoxQueueRow"
+              bind-property="selection-active" bind-flags='invert-boolean' />
           </object>
         </child>
         <child>
@@ -29,9 +43,7 @@
             <child>
               <object class="GtkLabel" id="title">
                 <binding name="label">
-                  <lookup name="raw-name" type="AlbumItem">
-                    <lookup name="item">GtkListItem</lookup>
-                  </lookup>
+                  <lookup name="title" type="RecordBoxQueueRow"></lookup>
                 </binding>
                 <property name="ellipsize">none</property>
                 <property name="lines">0</property>
@@ -46,9 +58,7 @@
             <child>
               <object class="GtkLabel" id="subtitle">
                 <binding name="label">
-                  <lookup name="summary" type="AlbumItem">
-                    <lookup name="item">GtkListItem</lookup>
-                  </lookup>
+                  <lookup name="subtitle" type="RecordBoxQueueRow"></lookup>
                 </binding>
                 <property name="ellipsize">none</property>
                 <property name="lines">0</property>
@@ -63,6 +73,6 @@
           </object>
         </child>
       </object>
-    </property>
+    </child>
   </template>
 </interface>

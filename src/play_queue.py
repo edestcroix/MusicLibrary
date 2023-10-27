@@ -18,6 +18,8 @@ class PlayQueue(Adw.Bin):
     track_list = Gtk.Template.Child()
     collapse = GObject.Signal()
 
+    select_all = Gtk.Template.Child()
+
     queue_header = Gtk.Template.Child()
     delete_selected = Gtk.Template.Child()
 
@@ -45,11 +47,10 @@ class PlayQueue(Adw.Bin):
             'jump-to-track', lambda _: self.emit('jump-to-track')
         )
 
-        self.track_list.connect(
-            'selected-rows-changed',
-            lambda _: self.delete_selected.set_sensitive(
-                len(self.track_list.get_selected_rows()) > 0
-            ),
+        self.delete_selected.set_sensitive(True)
+
+        self.select_all.connect(
+            'clicked', lambda _: self.track_list.select_all()
         )
 
     @GObject.Property(type=bool, default=False)
@@ -108,33 +109,49 @@ class PlayQueue(Adw.Bin):
         return self.track_list.previous()
 
 
-class PlayQueueList(Gtk.ListBox):
-    """A ListBox that contains the track list of the play queue, and
-    implements the functionality for tracking and advancing the current track,
-    and functions for removing tracks from the list. Implements a selection
-    mode that allows selecting tracks to remove."""
+@Gtk.Template(
+    resource_path='/com/github/edestcroix/RecordBox/lists/queue_row.ui'
+)
+class QueueRow(Adw.Bin):
+    """Really basic wrapper around the UI file that could be used
+    with a BuilderListItemFactory if we didn't need to bind the extra
+    selection-active property to swap visiblility of the thumbnail and checkbutton."""
 
+    __gtype_name__ = 'RecordBoxQueueRow'
+    checkbutton = Gtk.Template.Child()
+
+    selection_active = GObject.Property(type=bool, default=False)
+    title = GObject.Property(type=str)
+    subtitle = GObject.Property(type=str)
+    image_path = GObject.Property(type=str)
+
+
+class PlayQueueList(Gtk.ListView):
     __gtype_name__ = 'RecordBoxPlayQueueList'
 
     current_index = -1
-    # Set to true if the track at the currrent_index was removed, so that
-    # advancing to the next track doesn't skip a track.
     current_index_moved = False
-    current_track = GObject.Property(type=TrackItem)
 
     loop = GObject.property(type=bool, default=False)
-    _selection_active = False
-    all_selected = GObject.Property(type=bool, default=False)
+    current_track = GObject.Property(type=TrackItem)
+
     jump_to_track = GObject.Signal()
+
+    _selection_active = False
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.model = Gio.ListStore.new(TrackItem)
-        self.bind_model(self.model, self._create_row, None, None)
-        self.set_selection_mode(Gtk.SelectionMode.NONE)
-        self.set_activate_on_single_click(False)
+        self.selection = Gtk.MultiSelection.new(self.model)
+        self.no_selection = Gtk.NoSelection.new(self.model)
+        self.set_model(self.no_selection)
 
-        self.connect('row-activated', self._on_row_activated)
+        self.factory = Gtk.SignalListItemFactory.new()
+        self.factory.connect('setup', self._setup_row)
+        self.factory.connect('bind', self._bind_row)
+        self.set_factory(self.factory)
+
+        self.connect('activate', self._on_row_activated)
 
     @GObject.Property(type=bool, default=False)
     def selection_active(self):
@@ -143,31 +160,37 @@ class PlayQueueList(Gtk.ListBox):
     @selection_active.setter
     def set_selection_active(self, value: bool):
         self.unselect_all()
-        self.set_activate_on_single_click(value)
         self._selection_active = value
         if value:
-            self.set_selection_mode(Gtk.SelectionMode.MULTIPLE)
+            self.set_model(self.selection)
         else:
-            self.set_selection_mode(Gtk.SelectionMode.NONE)
-            self.all_selected = False
+            self.set_model(self.no_selection)
 
     def add_album(self, album: AlbumItem):
         for track in album.tracks:
-            self.model.append(track)
+            # GListStores hate having the same GObject inserted twice.
+            self.model.append(track.clone())
 
     def add_track(self, track: TrackItem):
-        self.model.append(track)
+        self.model.append(track.clone())
+
+    def select_all(self):
+        self.selection.select_all()
+
+    def unselect_all(self):
+        self.selection.unselect_all()
 
     def remove_selected(self):
-        for row in self.get_selected_rows():
-            if row.get_index() < self.current_index:
-                self.current_index -= 1
-            elif row.get_index() == self.current_index:
-                self.current_index_moved = True
-            self.model.remove(row.get_index())
-        if len(self.model) == 0:
-            self.current_index = -1
-        self.all_selected = False
+        i = 0
+        while i < len(self.model):
+            if self.selection.is_selected(i):
+                self.model.remove(i)
+                self.current_index_moved = i == self.current_index
+                if i < self.current_index:
+                    self.current_index -= 1
+                    self.current_track = self.get_current_track()
+            else:
+                i += 1
 
     def clear(self):
         self.model.remove_all()
@@ -177,7 +200,7 @@ class PlayQueueList(Gtk.ListBox):
         self.current_index = 0
 
     def empty(self) -> bool:
-        return self.current_index == -1
+        return len(self.model) == 0
 
     def get_next_track(self) -> TrackItem | None:
         if self.current_index_moved:
@@ -194,7 +217,6 @@ class PlayQueueList(Gtk.ListBox):
             if 0 <= self.current_index < len(self.model)
             else None
         )
-        self._highlight_current()
         return self.current_track
 
     def next(self) -> bool:
@@ -210,101 +232,30 @@ class PlayQueueList(Gtk.ListBox):
             self.current_index_moved = False
         return 0 <= self.current_index < len(self.model)
 
-    def _create_row(self, item: TrackItem, __, _) -> Adw.ActionRow:
-        """Callback for the ListBox's bind_model method to create row widgets for
-        newly added items to the model. Returns an Adw.ActionRow with a hidden
-        checkbox that can be used to select the row. Checkbox will become visible on
-        enabling selection mode."""
-        artists = (
-            f'{item.albumartist}, {item.artists}'
-            if item.artists
-            else item.albumartist
-        )
-        artists = GLib.markup_escape_text(artists)
-        row = Adw.ActionRow(
-            title=item.title,
-            subtitle=f'{item.length} - {artists}',
-            css_classes=['queue-row'],
-        )
-        checkbox = Gtk.CheckButton(
-            valign=Gtk.Align.CENTER,
-            visible=False,
-            css_classes=['selection-mode'],
-        )
-        image = Gtk.Image.new_from_file(item.thumb)
-        image.set_pixel_size(32)
-        row.add_prefix(image)
-        row.add_prefix(checkbox)
-        self._bind_row(row, checkbox, image)
-        return row
-
-    def _bind_row(
-        self, row: Adw.ActionRow, checkbox: Gtk.CheckButton, image: Gtk.Image
-    ):
-        """Binds the necessary properties to implement the selection mode, by
-        connection the checkbox's toggled state to the selection of the row,
-        allowing selection to be toggled by clicking on the row when the select mode
-        is active. Also set up so selection state resets when selection mode toggles."""
-
-        self.bind_property(
-            'selection-active',
-            checkbox,
-            'visible',
-            GObject.BindingFlags.DEFAULT,
-        )
-
-        self.bind_property(
-            'selection-active',
-            image,
-            'visible',
-            GObject.BindingFlags.INVERT_BOOLEAN,
-        )
-
-        # Enabling all-selected activates all checkboxes; default binding
-        # allows the checkbox to be (de)activated independently of the all-selected property.
-        self.bind_property(
-            'all-selected',
-            checkbox,
+    def _setup_row(self, _, item):
+        row = QueueRow()
+        item.set_child(row)
+        item.bind_property(
+            'selected',
+            row.checkbutton,
             'active',
             GObject.BindingFlags.DEFAULT,
         )
-
-        # Bind the checkbox to a callback to select the row when active
-        checkbox.connect(
-            'toggled',
-            self._select_action,
+        self.bind_property(
+            'selection-active',
             row,
+            'selection-active',
+            GObject.BindingFlags.DEFAULT,
         )
-        # and also bind the list to toggle checkboxes when rows are selected,
-        # to make sure selection state and checkbox state are always in sync
-        # (ListBoxRows don't have a 'selected' property to bind to)
-        self.connect(
-            'selected-rows-changed',
-            self._selection_changed,
-            row,
-            checkbox,
-        )
-        row.set_activatable_widget(checkbox)
-        # makes sure checkboxes are reset when selection mode is toggled
-        checkbox.connect('hide', lambda b: b.set_active(False))
-        checkbox.connect('show', lambda b: b.set_active(False))
 
-    def _select_action(self, button: Gtk.CheckButton, row: Adw.ActionRow):
-        if not self.selection_active:
-            return
-        if button.get_active():
-            self.select_row(row)
-        else:
-            self.unselect_row(row)
-
-    def _selection_changed(
-        self, _, row: Adw.ActionRow, checkbox: Gtk.CheckButton
-    ):
-        if checkbox.get_active():
-            checkbox.set_active(row.is_selected())
+    def _bind_row(self, _, item):
+        row = item.get_child()
+        track = item.get_item()
+        row.title = track.raw_title
+        row.subtitle = track.length
+        row.image_path = track.thumb
 
     def _move_current(self, direction: str, allow_none=False):
-        self._unhighlight_current()
         if direction == 'next':
             if self.current_index >= len(self.model):
                 self.current_index = 0 if self.loop else len(self.model)
@@ -319,29 +270,8 @@ class PlayQueueList(Gtk.ListBox):
             else:
                 self.current_index -= 1
 
-    def _highlight_current(self):
-        if 0 <= self.current_index < len(self.model):
-            current_row = self.get_row_at_index(self.current_index)
-            self._add_css(current_row, 'current-track')
-
-    def _unhighlight_current(self):
-        if 0 <= self.current_index < len(self.model):
-            current_row = self.get_row_at_index(self.current_index)
-            self._remove_css(current_row, 'current-track')
-
-    def _add_css(self, obj: Gtk.Widget, class_name: str):
-        obj.set_css_classes(obj.get_css_classes() + [class_name])
-
-    def _remove_css(self, obj: Gtk.Widget, class_name: str):
-        obj.set_css_classes(
-            [c for c in obj.get_css_classes() if c != class_name]
-        )
-
-    def _on_row_activated(self, _, row: Adw.ActionRow):
+    def _on_row_activated(self, _, index: int):
         if not self.selection_active:
-            # jump to track in queue
-            self._unhighlight_current()
-            self.current_index = row.get_index()
+            self.current_index = index
             self.current_track = self.get_current_track()
-            self._highlight_current()
             self.emit('jump-to-track')

@@ -26,11 +26,8 @@
         <child type="bottom">
           <object class="GtkActionBar">
             <child type="start">
-              <object class="GtkCheckButton" id="select_all">
+              <object class="GtkButton" id="select_all">
                 <property name="label" translatable="yes">Select All</property>
-                <style>
-                  <class name="selection-mode" />
-                </style>
               </object>
             </child>
             <child type="end">
@@ -52,8 +49,6 @@
             <child>
               <object class="RecordBoxPlayQueueList" id="track_list">
                 <property name="selection-active" bind-source="select_toggle"
-                  bind-property="active" bind-flags="bidirectional" />
-                <property name="all-selected" bind-source="select_all"
                   bind-property="active" bind-flags="bidirectional" />
                 <style>
                   <class name="navigation-sidebar" />

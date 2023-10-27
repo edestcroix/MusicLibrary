@@ -23,17 +23,17 @@ class TrackItem(GObject.Object):
 
     def __init__(
         self,
-        track,
-        discnumber,
-        discsubtitle,
-        title,
-        length,
-        path,
-        album,
-        artists,
-        albumartist,
-        thumb,
-        cover,
+        track=None,
+        discnumber=None,
+        discsubtitle=None,
+        title=None,
+        length=None,
+        path=None,
+        album=None,
+        artists=None,
+        albumartist=None,
+        thumb=None,
+        cover=None,
     ):
         super().__init__()
         track = int(track.split('/')[0]) if track else 0
@@ -41,15 +41,31 @@ class TrackItem(GObject.Object):
         discnumber = int(discnumber.split('/')[0]) if discnumber else 0
         self.discnumber = discnumber
         self.discsubtitle = discsubtitle
-        self.title = GLib.markup_escape_text(title)
+        self.title = GLib.markup_escape_text(title or '')
         self.raw_title = title
-        self.length = self.length_str(int(length))
+        self.length = self.length_str(int(length or 0))
         self.path = path
         self.album = album
         self.artists = artists
         self.albumartist = albumartist
         self.thumb = thumb
         self.cover = cover
+
+    def clone(self):
+        new = TrackItem()
+        new.track = self.track
+        new.discnumber = self.discnumber
+        new.discsubtitle = self.discsubtitle
+        new.title = self.title
+        new.raw_title = self.raw_title
+        new.length = self.length
+        new.path = self.path
+        new.album = self.album
+        new.artists = self.artists
+        new.albumartist = self.albumartist
+        new.thumb = self.thumb
+        new.cover = self.cover
+        return new
 
     def length_str(self, length):
         time = datetime.timedelta(seconds=length)

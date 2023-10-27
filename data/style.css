@@ -2,13 +2,16 @@
   margin: 10px;
 }
 
+.library-row {
+  min-height: 48px;
+}
+
 .library-row, .queue-row {
   padding-left: 0px;
 }
 
-.library-row > box.header {
-  padding-left: 0px;
-  margin-left: 0px;
+.library-row image, .queue-row image, .queue-row checkbutton {
+  padding-right: 8px;
 }
 
 .current-track {
