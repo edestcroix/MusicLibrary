@@ -108,6 +108,7 @@ class MainView(Adw.Bin):
         )
 
         self.player.connect('state-changed', self._on_player_state_changed)
+        self.player.connect('eos', self._on_player_eos)
 
     @Gtk.Template.Callback()
     def _on_album_action(self, _, action_row):
@@ -158,6 +159,7 @@ class MainView(Adw.Bin):
 
     @Gtk.Template.Callback()
     def _exit_player(self, _):
+        self.player.exit()
         self._set_controls_visible(False)
         self.play_queue.clear()
         self.queue_panel_split_view.set_show_sidebar(False)
@@ -211,12 +213,12 @@ class MainView(Adw.Bin):
         self.player.play()
 
     def _on_player_state_changed(self, _, state: str):
-        match state:
-            case 'playing' | 'paused':
-                GLib.idle_add(self._set_controls_visible, True)
-            case 'stopped':
-                if not self.player.current_track and self.clear_queue:
-                    GLib.idle_add(self._exit_player, None)
+        if state in {'playing', 'paused'}:
+            GLib.idle_add(self._set_controls_visible, True)
+
+    def _on_player_eos(self, _):
+        if self.clear_queue:
+            GLib.idle_add(self._exit_player, None)
 
     def _set_controls_visible(self, visible: bool):
         self.toolbar_view.set_reveal_bottom_bars(visible)

@@ -54,6 +54,7 @@ class RecordBoxPlayerControls(Gtk.Box):
         self._player.connect('notify::loop', self._update_loop_icon)
         self._player.connect('state-changed', self._update_state)
         self._player.connect('stream-start', self.set_current_track)
+        self._player.connect('eos', self.set_current_track)
 
     def activate(self, playing=True):
         self._monitor.start()
@@ -90,7 +91,9 @@ class RecordBoxPlayerControls(Gtk.Box):
     @Gtk.Template.Callback()
     def _stop(self, _):
         if self.stop_exits:
-            self._player.exit()
+            # don't exit the player here because the main view handles that.
+            # (It's callback for this signal will do it because that callback
+            # can also get called for other reasons and it's dumb to call exit twice)
             self.emit('exit-player')
         else:
             self._player.stop()

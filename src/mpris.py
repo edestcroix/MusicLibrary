@@ -204,6 +204,7 @@ class MPRIS(Server):
         self._player.connect('seeked', self._on_seeked)
         self._player.connect('notify::volume', self._on_volume_changed)
         self._player.connect('notify::loop', self._on_loop_changed)
+        self._player.connect('eos', self._on_eos)
 
     def Raise(self):
         self._app.props.active_window.present()
@@ -432,7 +433,7 @@ class MPRIS(Server):
         except Exception as e:
             print(f'MPRIS::__on_current_changed(): {e}')
 
-    def _on_state_changed(self, _, __):
+    def _on_state_changed(self, *_):
         if self._player.current_track is None:
             properties = {
                 'Metadata': GLib.Variant('a{sv}', self._metadata),
@@ -446,4 +447,12 @@ class MPRIS(Server):
             properties = {
                 'PlaybackStatus': GLib.Variant('s', self._get_status())
             }
+        self.PropertiesChanged(self._MPRIS_PLAYER_IFACE, properties, [])
+
+    def _on_eos(self, *_):
+        self._update_metadata()
+        properties = {
+            'Metadata': GLib.Variant('a{sv}', self._metadata),
+            'PlaybackStatus': GLib.Variant('s', self._get_status()),
+        }
         self.PropertiesChanged(self._MPRIS_PLAYER_IFACE, properties, [])

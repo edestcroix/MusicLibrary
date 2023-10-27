@@ -23,6 +23,7 @@ class Player(GObject.GObject):
     volume = GObject.Property(type=float, default=1.0)
     muted = GObject.Property(type=bool, default=False)
 
+    eos = GObject.Signal()
     stream_start = GObject.Signal()
     seeked = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
     player_error = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
@@ -86,8 +87,7 @@ class Player(GObject.GObject):
                 self._player.set_state(Gst.State.PLAYING)
                 self.emit('state_changed', 'playing')
             case Gst.State.NULL:
-                if not self._play_queue.empty():
-                    self._play_queue.restart()
+                if self.current_track:
                     self.play()
 
     def toggle_mute(self):
@@ -177,6 +177,13 @@ class Player(GObject.GObject):
         t = message.type
         if t == Gst.MessageType.EOS:
             self.stop()
+            # set the current track to the start of the queue if it exists
+            # so the UI and MPRIS will update to show the first track again, signifying
+            # that the queue has ended and playing will start over.
+            if not self._play_queue.empty():
+                self._play_queue.restart()
+                self.current_track = self._play_queue.get_current_track()
+            self.emit('eos')
         elif t == Gst.MessageType.ASYNC_DONE and self._seeking:
             self._seeking = False
         elif message.type == Gst.MessageType.STREAM_START:
