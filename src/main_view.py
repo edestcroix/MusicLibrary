@@ -94,13 +94,13 @@ class MainView(Adw.Bin):
             if self.player.state == 'stopped':
                 self.player.ready()
             self.send_toast('Queue Updated')
+
     def _setup_actions(self):
         self.play_queue.connect(
             'jump-to-track',
             self.player.jump_to_track,
         )
 
-        self.player.connect('stream_start', self._on_stream_start)
         self.player.connect('state-changed', self._on_player_state_changed)
 
     @Gtk.Template.Callback()
@@ -198,37 +198,24 @@ class MainView(Adw.Bin):
         self.play_queue.add_track(track)
         self.player.play()
 
-    def _on_stream_start(self, _):
-        self.player_controls.set_current_track(
-            self.play_queue.get_current_track()
-        )
-
-    # TODO: Split up state changes so that the state of
-    # player_controls is handled by itself, and only MainView's
-    # state should be handled here.
     def _on_player_state_changed(self, _, state: str):
-        if state == 'playing':
-            GLib.idle_add(self._set_controls_active, True, True)
-            self.player_controls.stop_exits = False
-        elif state in 'paused':
-            GLib.idle_add(self._set_controls_active, True, False)
-        elif state == 'stopped':
-            print('stopped')
-            GLib.idle_add(self._set_controls_stopped)
+        match state:
+            case 'playing' | 'paused':
+                GLib.idle_add(self._set_controls_visible, True)
+            case 'stopped':
+                GLib.idle_add(self._set_controls_stopped)
 
     def _set_controls_stopped(self):
         if not self.player.current_track:
             if self.clear_queue or self.player_controls.stop_exits:
-                self._set_controls_active(False)
+                self._set_controls_visible(False)
                 self.play_queue.clear()
                 self.queue_panel_split_view.set_show_sidebar(False)
             else:
                 self.play_queue.restart()
                 self.player.ready()
-        self.player_controls.deactivate()
 
-    def _set_controls_active(self, active: bool, playing=False):
-        self.toolbar_view.set_reveal_bottom_bars(active)
-        self.queue_toggle.set_sensitive(active)
-        self.return_to_album.set_sensitive(active)
-        self.player_controls.activate(active and playing)
+    def _set_controls_visible(self, visible: bool):
+        self.toolbar_view.set_reveal_bottom_bars(visible)
+        self.queue_toggle.set_sensitive(visible)
+        self.return_to_album.set_sensitive(visible)
