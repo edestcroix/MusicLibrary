@@ -86,6 +86,15 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         if self.app.settings.get_boolean('sync-on-startup'):
             self.sync_library(None)
 
+        self.artist_list.connect(
+            'focus-next', lambda _: self.album_list.grab_focus()
+        )
+        self.album_list.connect(
+            'focus-prev', lambda _: self.artist_list.grab_focus()
+        )
+
+        self.artist_list.grab_focus()
+
     def _bind_state(self):
         self._bind('width', self, 'default-width')
         self._bind('height', self, 'default-height')
