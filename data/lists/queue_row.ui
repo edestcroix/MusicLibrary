@@ -17,25 +17,12 @@
               <class name="prefix" />
             </style>
             <child>
-              <object class="GtkCheckButton" id="checkbutton">
-                <property name="can-target">False</property>
-                <property name="halign">center</property>
-                <property name="visible" bind-source="RecordBoxQueueRow"
-                  bind-property="selection-active" />
-                <style>
-                  <class name="selection-mode" />
-                </style>
-              </object>
-            </child>
-            <child>
               <object class="GtkImage" id="image">
                 <property name="valign">center</property>
                 <property name="pixel-size">32</property>
                 <binding name="file">
                   <lookup name="image_path" type="RecordBoxQueueRow"></lookup>
                 </binding>
-                <property name="visible" bind-source="RecordBoxQueueRow"
-                  bind-property="selection-active" bind-flags='invert-boolean' />
               </object>
             </child>
           </object>

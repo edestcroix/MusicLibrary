@@ -27,10 +27,7 @@ class PlayQueue(Adw.Bin):
 
     select_all_button = Gtk.Template.Child()
 
-    queue_header = Gtk.Template.Child()
     delete_selected = Gtk.Template.Child()
-
-    _selection_active = False
 
     jump_to_track = GObject.Signal()
 
@@ -45,9 +42,8 @@ class PlayQueue(Adw.Bin):
 
         self.model = Gio.ListStore.new(TrackItem)
         self.selection = Gtk.MultiSelection.new(self.model)
-        self.no_selection = Gtk.NoSelection.new(self.model)
 
-        self.track_list.set_model(self.no_selection)
+        self.track_list.set_model(self.selection)
         self.track_list.set_factory(self._create_factory())
 
         self.track_list.connect('activate', self._on_row_activated)
@@ -61,24 +57,6 @@ class PlayQueue(Adw.Bin):
         factory.connect('setup', self._setup_row)
         factory.connect('bind', self._bind_row)
         return factory
-
-    @GObject.Property(type=bool, default=False)
-    def selection_active(self):
-        return self._selection_active
-
-    @selection_active.setter
-    def set_selection_active(self, value: bool):
-        self.unselect_all()
-        self._selection_active = value
-        if value:
-            self.track_list.set_model(self.selection)
-            self.queue_header.set_css_classes(['header-accent'])
-        else:
-            self.track_list.set_model(self.no_selection)
-            self.queue_header.set_css_classes([])
-        # Trigger the notify::current-track callback in the queue rows so the current track
-        # highlight persists across the selection model changing.
-        self.current_index = self.current_index
 
     def add_album(self, album: AlbumItem):
         for track in album.tracks:
@@ -135,12 +113,6 @@ class PlayQueue(Adw.Bin):
         return 0 <= self.current_index < len(self.model)
 
     @Gtk.Template.Callback()
-    def _on_queue_toggle(self, _):
-        self.set_property('selection-active', False)
-        # tell the main view that the queue should be closed
-        self.emit('collapse')
-
-    @Gtk.Template.Callback()
     def _remove_selected(self, _):
         i = 0
         while i < len(self.model):
@@ -164,21 +136,14 @@ class PlayQueue(Adw.Bin):
                 self.current_index -= 1
 
     def _on_row_activated(self, _, index: int):
-        if not self.selection_active:
-            self.current_index = index
-            self.current_track = self.get_current_track()
-            self.emit('jump-to-track')
+        self.current_index = index
+        self.current_track = self.get_current_track()
+        self.emit('jump-to-track')
 
     def _setup_row(self, _, item):
         row = QueueRow()
         item.set_child(row)
         item.bind_property(
-            'selected',
-            row.checkbutton,
-            'active',
-            GObject.BindingFlags.DEFAULT,
-        )
-        item.bind_property(
             'position',
             row,
             'position',
@@ -188,12 +153,6 @@ class PlayQueue(Adw.Bin):
             'current-index',
             row,
             'current-index',
-            GObject.BindingFlags.DEFAULT,
-        )
-        self.bind_property(
-            'selection-active',
-            row,
-            'selection-active',
             GObject.BindingFlags.DEFAULT,
         )
 
@@ -210,16 +169,10 @@ class PlayQueue(Adw.Bin):
 )
 class QueueRow(Adw.Bin):
     """Really basic wrapper around the UI file that could be used
-    with a BuilderListItemFactory if we didn't need to bind the extra
-    selection-active property to swap visiblility of the thumbnail and checkbutton."""
+    with a BuilderListItemFactory if we didn't need to bind the current-index"""
 
     __gtype_name__ = 'RecordBoxQueueRow'
-    checkbutton = Gtk.Template.Child()
-
-    selection_active = GObject.Property(type=bool, default=False)
     position = GObject.Property(type=int)
-
-    # Each row knows the current index so it can highlight itself when it's the current track.
     current_index = GObject.Property(type=int)
 
     title = GObject.Property(type=str)

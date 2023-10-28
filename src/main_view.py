@@ -147,9 +147,6 @@ class MainView(Adw.Bin):
         self.queue_panel_split_view.set_show_sidebar(
             not self.queue_panel_split_view.get_show_sidebar()
         )
-        # no way to turn off selection mode when the sidebar closes itself
-        # because it doesn't emit a signal, so turn it off when opening it again.
-        self.play_queue.selection_active = False
 
     @Gtk.Template.Callback()
     def _on_return_to_album(self, _):

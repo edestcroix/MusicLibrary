@@ -5,26 +5,7 @@
   <template class="RecordBoxPlayQueue" parent="AdwBin">
     <child>
       <object class="AdwToolbarView" id="queue_toolbar">
-        <property name="reveal-bottom-bars">false</property>
-        <property name="reveal-bottom-bars" bind-source="RecordBoxPlayQueue"
-          bind-property="selection-active" />
-        <child type="top">
-          <object class="AdwHeaderBar" id="queue_header">
-            <child type="start">
-              <object class="GtkToggleButton" id="select_toggle">
-                <property name="icon-name">selection-mode-symbolic</property>
-                <property name="active" bind-source="RecordBoxPlayQueue"
-                  bind-property="selection-active" bind-flags='bidirectional' />
-              </object>
-            </child>
-            <child type="end">
-              <object class="GtkButton">
-                <property name="icon-name">go-next-symbolic</property>
-                <signal name="clicked" handler="_on_queue_toggle" />
-              </object>
-            </child>
-          </object>
-        </child>
+        <property name="reveal-bottom-bars">true</property>
         <child type="bottom">
           <object class="GtkActionBar">
             <child type="start">
@@ -37,6 +18,7 @@
                 <property name="icon-name">user-trash-symbolic</property>
                 <property name="valign">center</property>
                 <property name="sensitive">false</property>
+                <property name="tooltip-markup" translatable="yes">Remove Selected</property>
                 <signal name="clicked" handler="_remove_selected" />
                 <style>
                   <class name="destructive-action" />
