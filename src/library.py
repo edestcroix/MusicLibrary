@@ -256,6 +256,7 @@ class AlbumList(Gtk.ListView):
         for album in album_list:
             self.append(album)
         self._update_sort()
+        self.scroll_to(0, Gtk.ListScrollFlags.FOCUS)
 
     def filter_on_artist(self, artist: str):
         self.filter_model.set_filter(
