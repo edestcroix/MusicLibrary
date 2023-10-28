@@ -131,13 +131,6 @@ class RecordBoxWindow(Adw.ApplicationWindow):
             'return-to-playing', self.main_view.return_to_playing
         )
 
-        self.lists_toggle.connect(
-            'clicked',
-            lambda _: self.outer_split.set_show_sidebar(
-                not self.outer_split.get_show_sidebar()
-            ),
-        )
-
         self.main_view.player.connect(
             'state-changed',
             self._on_player_state_changed,

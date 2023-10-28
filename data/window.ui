@@ -33,6 +33,8 @@
         <property name="max-sidebar-width">1000</property>
         <property name="sidebar-width-fraction">0.4</property>
         <property name="show-sidebar">true</property>
+        <property name="show-sidebar" bind-source="lists_toggle" bind-property="active"
+          bind-flags="bidirectional" />
         <property name="sidebar">
           <object class="AdwNavigationPage">
             <property name="title" translatable="yes">Sidebar</property>
@@ -153,7 +155,7 @@
                 <child type="top">
                   <object class="AdwHeaderBar">
                     <child type="start">
-                      <object class="GtkButton" id="lists_toggle">
+                      <object class="GtkToggleButton" id="lists_toggle">
                         <property name="icon-name">sidebar-show-symbolic</property>
                         <property name="visible">False</property>
                       </object>
