@@ -120,7 +120,9 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         )
 
     def _setup_actions(self):
-        self.play_action = self.create_action('play-album', self.play_album)
+        self.play_action = self.create_action(
+            'play-album', self.main_view.play_album
+        )
         self.queue_add = self.create_action(
             'add-album', self.main_view.queue_add
         )
@@ -173,11 +175,6 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         self.artist_list.populate(db.get_artists(self._show_all_artists))
         self.album_list.populate(db.get_albums())
         db.close()
-
-    def play_album(self, *_):
-        self.main_view.play_album()
-        self.return_to_playing.set_enabled(True)
-        self.queue_toggle.set_sensitive(True)
 
     @Gtk.Template.Callback()
     def select_album(self, _, album: AlbumItem):
