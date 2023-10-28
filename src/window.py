@@ -56,6 +56,11 @@ class RecordBoxWindow(Adw.ApplicationWindow):
 
     filter_all = Gtk.Template.Child()
 
+    play_button = Gtk.Template.Child()
+
+    lists_toggle = Gtk.Template.Child()
+    queue_toggle = Gtk.Template.Child()
+
     _show_all_artists = False
 
     @GObject.Property(type=bool, default=False)
@@ -106,7 +111,18 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         )
 
     def _setup_actions(self):
-        self.main_view.lists_toggle.connect(
+        self.play_action = self.create_action('play-album', self.play_album)
+        self.queue_add = self.create_action(
+            'add-album', self.main_view.queue_add
+        )
+        self.replace_queue = self.create_action(
+            'replace-queue', self.main_view.replace_queue
+        )
+        self.return_to_playing = self.create_action(
+            'return-to-playing', self.main_view.return_to_playing
+        )
+
+        self.lists_toggle.connect(
             'clicked',
             lambda _: self.outer_split.set_show_sidebar(
                 not self.outer_split.get_show_sidebar()
@@ -115,10 +131,12 @@ class RecordBoxWindow(Adw.ApplicationWindow):
 
         self.main_view.player.connect(
             'state-changed',
-            lambda _, state: self.set_hide_on_close(
-                self.app.settings.get_boolean('background-playback')
-                and state in ['playing', 'paused']
-            ),
+            self._on_player_state_changed,
+        )
+
+        self.main_view.player_controls.connect(
+            'exit-player',
+            self._exit_player,
         )
 
         self.parser.bind_property(
@@ -128,12 +146,12 @@ class RecordBoxWindow(Adw.ApplicationWindow):
             GObject.BindingFlags.DEFAULT,
         )
 
-        self.breakpoint2.connect(
-            'apply', lambda _: self.main_view.lists_toggle.set_visible(True)
-        )
-        self.breakpoint2.connect(
-            'unapply', lambda _: self.main_view.lists_toggle.set_visible(False)
-        )
+    def create_action(self, name, callback, enabled=False):
+        action = Gio.SimpleAction.new(name, None)
+        action.connect('activate', callback)
+        action.set_enabled(enabled)
+        self.add_action(action)
+        return action
 
     def sync_library(self, _):
         self.thread = threading.Thread(target=self.update_db)
@@ -154,12 +172,22 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         self.album_list.populate(db.get_albums())
         db.close()
 
+    def play_album(self, *_):
+        self.main_view.play_album()
+        self.return_to_playing.set_enabled(True)
+        self.queue_toggle.set_sensitive(True)
+
     @Gtk.Template.Callback()
     def select_album(self, _, album: AlbumItem):
         self.main_view.update_album(album)
+        self.main_page.set_title(album.raw_name)
         self.outer_split.set_show_sidebar(
             self.outer_split.get_collapsed() == False
         )
+
+        self.play_button.set_sensitive(True)
+        self.play_action.set_enabled(True)
+        self.queue_add.set_enabled(True)
 
     @Gtk.Template.Callback()
     def select_artist(self, _, selected: ArtistItem):
@@ -202,7 +230,7 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         self._select_row_with_title(self.album_list, album.name)
 
     @Gtk.Template.Callback()
-    def _on_album_activated(self, _, __):
+    def _on_album_activated(self, *_):
         # album row activation only happens on double-click, and the row
         # gets selected on the first click, setting the main_view's album,
         # so we can just call the play_album callback.
@@ -218,3 +246,18 @@ class RecordBoxWindow(Adw.ApplicationWindow):
             cur = row_list.get_row_at_index(i)
         if cur:
             row_list.scroll_to(i, Gtk.ListScrollFlags.SELECT, None)
+
+    def _on_player_state_changed(self, _, state):
+        self.set_hide_on_close(
+            self.app.settings.get_boolean('background-playback')
+            and state in ['playing', 'paused']
+        )
+        if state != 'stopped':
+            self.replace_queue.set_enabled(True)
+            self.queue_toggle.set_sensitive(True)
+            self.return_to_playing.set_enabled(True)
+
+    def _exit_player(self, *_):
+        self.return_to_playing.set_enabled(False)
+        self.queue_toggle.set_sensitive(False)
+        self.replace_queue.set_enabled(False)

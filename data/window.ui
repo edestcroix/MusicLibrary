@@ -24,6 +24,7 @@
         <setter object="inner_split" property="collapsed">True</setter>
         <setter object="album_return" property="visible">true</setter>
         <setter object="artist_return" property="visible">true</setter>
+        <setter object="lists_toggle" property="visible">true</setter>
       </object>
     </child>
     <property name="content">
@@ -148,8 +149,49 @@
             <property name="title" translatable="yes">Tracks</property>
             <property name="tag">track-view</property>
             <property name="child">
-              <object class="MainView" id="main_view">
-                <signal name="album_changed" handler="_on_album_changed" />
+              <object class="AdwToolbarView">
+                <child type="top">
+                  <object class="AdwHeaderBar">
+                    <child type="start">
+                      <object class="GtkButton" id="lists_toggle">
+                        <property name="icon-name">sidebar-show-symbolic</property>
+                        <property name="visible">False</property>
+                      </object>
+                    </child>
+                    <child type="start">
+                      <object class="AdwSplitButton" id="play_button">
+                        <property name="icon-name">media-playback-start-symbolic</property>
+                        <property name="action-name">win.play-album</property>
+                        <property name="sensitive">false</property>
+                        <property name="popover">
+                          <object class="GtkPopoverMenu">
+                            <property name="menu-model">album-menu</property>
+                          </object>
+                        </property>
+                      </object>
+                    </child>
+                    <child type="end">
+                      <object class="GtkToggleButton" id="queue_toggle">
+                        <property name="icon-name">view-list-symbolic</property>
+                        <property name="sensitive">false</property>
+                      </object>
+                    </child>
+                    <child type="end">
+                      <object class="GtkButton" id="return_to_album">
+                        <property name="icon-name">document-revert-symbolic</property>
+                        <property name="tooltip-text" translatable="yes">Show Playing Album</property>
+                        <property name="action-name">win.return-to-playing</property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+                <property name="content">
+                  <object class="MainView" id="main_view">
+                    <signal name="album_changed" handler="_on_album_changed" />
+                    <property name="show-queue" bind-source="queue_toggle" bind-property="active"
+                      bind-flags="bidirectional" />
+                  </object>
+                </property>
               </object>
             </property>
           </object>
@@ -163,12 +205,12 @@
         <attribute name="label" translatable="yes">_Sync Library</attribute>
         <attribute name="action">app.refresh</attribute>
       </item>
+    </section>
+    <section>
       <item>
         <attribute name="label" translatable="yes">_Preferences</attribute>
         <attribute name="action">app.preferences</attribute>
       </item>
-    </section>
-    <section>
       <item>
         <attribute name="label" translatable="yes">_Keyboard Shortcuts</attribute>
         <attribute name="action">win.show-help-overlay</attribute>
@@ -180,6 +222,18 @@
       <item>
         <attribute name="label" translatable="yes">_Quit</attribute>
         <attribute name="action">app.quit</attribute>
+      </item>
+    </section>
+  </menu>
+  <menu id="album-menu">
+    <section>
+      <item>
+        <attribute name="label" translatable="yes">_Add to Queue</attribute>
+        <attribute name="action">win.add-album</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">_Replace Queue</attribute>
+        <attribute name="action">win.replace-queue</attribute>
       </item>
     </section>
   </menu>

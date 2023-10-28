@@ -9,13 +9,14 @@
         <property name="collapsed">True</property>
         <property name="min-sidebar-width">300</property>
         <property name="sidebar-width-fraction">0.43</property>
+        <property name="pin-sidebar">True</property>
+        <property name="show-sidebar" bind-source="MainView" bind-property="show_queue"
+          bind-flags="bidirectional" />
         <property name="sidebar">
           <object class="AdwNavigationPage">
             <property name="title" translatable="yes">Play Queue</property>
             <property name="child">
-              <object class="RecordBoxPlayQueue" id="play_queue">
-                <signal name="collapse" handler="_on_queue_toggle" />
-              </object>
+              <object class="RecordBoxPlayQueue" id="play_queue" />
             </property>
           </object>
         </property>
@@ -28,81 +29,6 @@
                   <object class="AdwToolbarView" id="toolbar_view">
                     <property name="reveal-bottom-bars">false</property>
                     <property name="bottom-bar-style">ADW_TOOLBAR_RAISED_BORDER</property>
-                    <child type="top">
-                      <object class="AdwHeaderBar">
-                        <child type="start">
-                          <object class="GtkButton" id="lists_toggle">
-                            <property name="icon-name">sidebar-show-symbolic</property>
-                            <property name="visible">False</property>
-                          </object>
-                        </child>
-                        <child type="start">
-                          <object class="AdwSplitButton" id="play_button">
-                            <property name="icon-name">media-playback-start-symbolic</property>
-                            <signal name="clicked" handler="play_album" />
-                            <property name="sensitive">false</property>
-                            <property name="popover">
-                              <object class="GtkPopover">
-                                <style>
-                                  <class name="menu" />
-                                </style>
-                                <child>
-                                  <object class="GtkListBox">
-                                    <signal name="row-activated" handler="_on_album_action" />
-                                    <property name="selection-mode">GTK_SELECTION_NONE</property>
-                                    <child>
-                                      <object class="GtkBox">
-                                        <property name="orientation">horizontal</property>
-                                        <child>
-                                          <object class="GtkImage">
-                                            <property name="icon-name">list-add-symbolic</property>
-                                          </object>
-                                        </child>
-                                        <child>
-                                          <object class="GtkLabel">
-                                            <property name="label">Add to Queue</property>
-                                          </object>
-                                        </child>
-                                      </object>
-                                    </child>
-                                    <child>
-                                      <object class="GtkBox">
-                                        <property name="orientation">horizontal</property>
-                                        <child>
-                                          <object class="GtkImage">
-                                            <property name="icon-name">view-refresh-symbolic</property>
-                                          </object>
-                                        </child>
-                                        <child>
-                                          <object class="GtkLabel">
-                                            <property name="label">Replace Queue</property>
-                                          </object>
-                                        </child>
-                                      </object>
-                                    </child>
-                                  </object>
-                                </child>
-                              </object>
-                            </property>
-                          </object>
-                        </child>
-                        <child type="end">
-                          <object class="GtkButton" id="queue_toggle">
-                            <property name="icon-name">view-list-symbolic</property>
-                            <property name="sensitive">false</property>
-                            <signal name="clicked" handler="_on_queue_toggle" />
-                          </object>
-                        </child>
-                        <child type="end">
-                          <object class="GtkButton" id="return_to_album">
-                            <property name="icon-name">document-revert-symbolic</property>
-                            <property name="sensitive">false</property>
-                            <property name="tooltip-text" translatable="yes">Return to playing album</property>
-                            <signal name="clicked" handler="_on_return_to_album" />
-                          </object>
-                        </child>
-                      </object>
-                    </child>
                     <child type="bottom">
                       <object class="RecordBoxPlayerControls" id="player_controls">
                         <signal name="exit-player" handler="_exit_player" />
