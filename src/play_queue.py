@@ -3,15 +3,13 @@ import gi
 from .library import AlbumItem, TrackItem
 from enum import Enum
 
-
 Direction = Enum('Direction', 'NEXT PREV')
 
 gi.require_version('Gtk', '4.0')
 
 
-# TODO: Combine the PlayQueue and PlayQueueList classes.
-
-
+# TODO: Write unit tests for this class, especially for the delete_selected method
+# to ensure the current index is updated correctly.
 @Gtk.Template(resource_path='/com/github/edestcroix/RecordBox/play_queue.ui')
 class PlayQueue(Adw.Bin):
     """A containter for the play queue, containing the entire view around the track list itself,
@@ -37,6 +35,8 @@ class PlayQueue(Adw.Bin):
 
     jump_to_track = GObject.Signal()
 
+    selected = []
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -47,8 +47,7 @@ class PlayQueue(Adw.Bin):
         self.track_list.set_factory(self._create_factory())
 
         self.track_list.connect('activate', self._on_row_activated)
-
-        self.delete_selected.set_sensitive(True)
+        self.selection.connect('selection-changed', self._check_selection)
 
         self.select_all_button.connect('clicked', lambda _: self.select_all())
 
@@ -74,6 +73,7 @@ class PlayQueue(Adw.Bin):
 
     def clear(self):
         self.model.remove_all()
+        self.selected = []
         self.current_index = -1
 
     def restart(self):
@@ -114,17 +114,30 @@ class PlayQueue(Adw.Bin):
 
     @Gtk.Template.Callback()
     def _remove_selected(self, _):
-        i = 0
-        while i < len(self.model):
-            if self.selection.is_selected(i):
-                self.model.remove(i)
-                if i == self.current_index:
-                    self.current_index_moved = True
-                elif i < self.current_index:
-                    self.current_index -= 1
-                    self.current_track = self.get_current_track()
+        """Remove the selected tracks from the queue. Sorts the selected indicies
+        and removes segments of sequential indicies with splice() instead of
+        each track individually, since splice() is much more efficent."""
+        if not self.selected:
+            return
+
+        self.selected.sort()
+        old_index = self.current_index
+        segment, removed = [], 0
+        for i in self.selected:
+            self.current_index -= i < old_index
+            self.current_index_moved |= i == old_index
+            if not segment or i == segment[-1] + 1:
+                segment.append(i)
             else:
-                i += 1
+                self.model.splice(segment[0] - removed, len(segment), [])
+                removed += len(segment)
+                segment = [i]
+        if segment:
+            self.model.splice(segment[0] - removed, len(segment), [])
+        self.selected = []
+        self.current_track = self.get_current_track()
+        # triggers an update of the current track highlight
+        self.current_index = self.current_index
 
     def _move_current(self, direction: Direction):
         if direction == Direction.NEXT:
@@ -162,6 +175,18 @@ class PlayQueue(Adw.Bin):
         row.title = track.raw_title
         row.subtitle = track.length
         row.image_path = track.thumb
+
+    def _check_selection(self, _, start, range_size):
+        """Maintain a list of selected rows so we can delete them later.
+        (Could just iterate over the list to find selected items on delete, but this
+        way the delete button's sensitivity can be updated too."""
+        for i in range(start, start + range_size):
+            if self.selection.is_selected(i):
+                if i not in self.selected:
+                    self.selected.append(i)
+            elif i in self.selected:
+                self.selected.remove(i)
+        self.delete_selected.set_sensitive(len(self.selected) > 0)
 
 
 @Gtk.Template(
