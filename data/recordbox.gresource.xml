@@ -13,4 +13,8 @@
     <file preprocess="xml-stripblanks">lists/queue_row.ui</file>
     <file>style.css</file>
   </gresource>
+  <gresource prefix="/com/github/edestcroix/RecordBox/icons/scalable">
+    <file preprocess="xml-stripblanks" alias="/actions/playlist-symbolic.svg">icons/playlist-symbolic.svg</file>
+    <file preprocess="xml-stripblanks" alias="/actions/step-back-symbolic.svg">icons/step-back-symbolic.svg</file>
+  </gresource>
 </gresources>
