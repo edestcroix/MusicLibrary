@@ -13,11 +13,7 @@ gi.require_version('Gtk', '4.0')
 @Gtk.Template(resource_path='/com/github/edestcroix/RecordBox/play_queue.ui')
 class PlayQueue(Adw.Bin):
     """A containter for the play queue, containing the entire view around the track list itself,
-    so the functionality for determining when to enable or disable the track list's selection mode can be
-    contained within this class instead of strewn across the MainView class.
-    Most of it's functions and properties just pass through to it's child track list, since most
-    property bindings are defined in the ui file.
-    """
+    and the operations to manage the queue and maintain current track state."""
 
     __gtype_name__ = 'RecordBoxPlayQueue'
     track_list = Gtk.Template.Child()
@@ -48,8 +44,6 @@ class PlayQueue(Adw.Bin):
 
         self.track_list.connect('activate', self._on_row_activated)
         self.selection.connect('selection-changed', self._check_selection)
-
-        self.select_all_button.connect('clicked', lambda _: self.select_all())
 
     def _create_factory(self):
         factory = Gtk.SignalListItemFactory.new()
@@ -111,6 +105,13 @@ class PlayQueue(Adw.Bin):
         if self.current_index_moved:
             self.current_index_moved = False
         return 0 <= self.current_index < len(self.model)
+
+    @Gtk.Template.Callback()
+    def toggle_selection(self, button):
+        if button.get_active():
+            self.select_all()
+        else:
+            self.unselect_all()
 
     @Gtk.Template.Callback()
     def _remove_selected(self, _):
@@ -186,7 +187,12 @@ class PlayQueue(Adw.Bin):
                     self.selected.append(i)
             elif i in self.selected:
                 self.selected.remove(i)
+
         self.delete_selected.set_sensitive(len(self.selected) > 0)
+        self.select_all_button.set_inconsistent(
+            self.select_all_button.get_active()
+            and len(self.selected) != len(self.model)
+        )
 
 
 @Gtk.Template(

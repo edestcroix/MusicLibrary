@@ -9,8 +9,12 @@
         <child type="bottom">
           <object class="GtkActionBar">
             <child type="start">
-              <object class="GtkButton" id="select_all_button">
+              <object class="GtkCheckButton" id="select_all_button">
                 <property name="label" translatable="yes">Select All</property>
+                <signal name="toggled" handler="toggle_selection" />
+                <style>
+                  <class name="selection-mode" />
+                </style>
               </object>
             </child>
             <child type="end">
