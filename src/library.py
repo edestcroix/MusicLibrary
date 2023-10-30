@@ -1,6 +1,20 @@
 from gi.repository import Adw, Gtk, GLib, GObject, Gio
 import gi
 import datetime
+from enum import Enum
+
+
+class ArtistSort(Enum):
+    NAME_ASC = 'name-ascending'
+    NAME_DESC = 'name-descending'
+
+
+class AlbumSort(Enum):
+    NAME_ASC = 'name-ascending'
+    NAME_DESC = 'name-descending'
+    DATE_ASC = 'date-ascending'
+    DATE_DESC = 'date-descending'
+
 
 gi.require_version('Gtk', '4.0')
 
@@ -69,7 +83,7 @@ class TrackItem(GObject.Object):
 
     def length_str(self, length):
         time = datetime.timedelta(seconds=length)
-        return str(time) if length // 60 > 60 else str(time)[2:]
+        return str(time) if length >= 3600 else str(time)[2:]
 
 
 class AlbumItem(GObject.Object):
@@ -102,7 +116,7 @@ class AlbumItem(GObject.Object):
 
     def length_str(self):
         time = datetime.timedelta(seconds=self.length)
-        return str(time) if self.length // 60 > 60 else str(time)[2:]
+        return str(time) if self.length >= 3600 else str(time)[2:]
 
     def copy(self):
         return AlbumItem(
@@ -135,18 +149,18 @@ class ArtistItem(GObject.Object):
 class ArtistList(Gtk.ListView):
     __gtype_name__ = 'RecordBoxArtistList'
 
-    _sort_type = 0
-
     artist_selected = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
     focus_next = GObject.Signal()
 
+    sort = GObject.Property(type=str)
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.set_tab_behavior(Gtk.ListTabBehavior.ITEM)
+        # self.set_tab_behavior(Gtk.ListTabBehavior.ITEM)
 
         self.model = Gio.ListStore.new(ArtistItem)
         self.selection_model = Gtk.SingleSelection.new(self.model)
-        self.selection_model.set_autoselect(False)
+        self.selection_model.set_can_unselect(True)
         self.selection_model.connect(
             'selection_changed', self._artist_selected
         )
@@ -158,18 +172,11 @@ class ArtistList(Gtk.ListView):
         )
         self.set_factory(factory)
 
+        self.connect('notify::sort', lambda *_: self._update_sort())
+
         event_controller = Gtk.EventControllerKey.new()
         event_controller.connect('key-pressed', self._key_press)
         self.add_controller(event_controller)
-
-    @GObject.Property(type=int)
-    def sort(self):
-        return self._sort_type
-
-    @sort.setter
-    def set_sort(self, value: int):
-        self._sort_type = value
-        self._update_sort()
 
     def append(self, artist: ArtistItem):
         self.model.append(artist)
@@ -179,8 +186,10 @@ class ArtistList(Gtk.ListView):
         for artist in artist_list:
             self.append(artist)
         self._update_sort()
+        self.scroll_to(0, Gtk.ListScrollFlags.FOCUS)
 
     def unselect_all(self):
+        # for some reason unselect_all() doesn't work on a SingleSelection
         self.selection_model.unselect_item(self.selection_model.get_selected())
 
     def remove_all(self):
@@ -193,12 +202,13 @@ class ArtistList(Gtk.ListView):
         self.selection_model.select_item(index, True)
 
     def _update_sort(self):
-        if self._sort_type == 0:
-            self.model.sort(lambda a, b: a.sort > b.sort)
-        elif self._sort_type == 1:
-            self.model.sort(lambda a, b: a.sort < b.sort)
+        match ArtistSort(self.sort):
+            case ArtistSort.NAME_ASC:
+                self.model.sort(lambda a, b: a.sort < b.sort)
+            case ArtistSort.NAME_DESC:
+                self.model.sort(lambda a, b: a.sort > b.sort)
 
-    def _artist_selected(self, selection_model, position, _):
+    def _artist_selected(self, selection_model, *_):
         if selected := selection_model.get_selected_item():
             self.emit('artist-selected', selected)
 
@@ -210,22 +220,21 @@ class ArtistList(Gtk.ListView):
 class AlbumList(Gtk.ListView):
     __gtype_name__ = 'RecordBoxAlbumList'
 
-    _sort_type = 0
-
     album_selected = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
     focus_next = GObject.Signal()
     focus_prev = GObject.Signal()
 
+    sort = GObject.Property(type=str)
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.set_tab_behavior(Gtk.ListTabBehavior.ITEM)
+        # self.set_tab_behavior(Gtk.ListTabBehavior.ITEM)
 
         self.model = Gio.ListStore.new(AlbumItem)
         self.filter_model = Gtk.FilterListModel.new(self.model, None)
 
         self.selection_model = Gtk.SingleSelection.new(self.filter_model)
         self.selection_model.connect('selection_changed', self._album_selected)
-        self.selection_model.set_autoselect(False)
         self.set_model(self.selection_model)
 
         factory = Gtk.BuilderListItemFactory.new_from_resource(
@@ -238,14 +247,7 @@ class AlbumList(Gtk.ListView):
         event_controller.connect('key-pressed', self._key_press)
         self.add_controller(event_controller)
 
-    @GObject.Property(type=int)
-    def sort(self):
-        return self._sort_type
-
-    @sort.setter
-    def set_sort(self, value: int):
-        self._sort_type = value
-        self._update_sort()
+        self.connect('notify::sort', lambda *_: self._update_sort())
 
     def append(self, album: AlbumItem):
         self.model.append(album)
@@ -262,6 +264,7 @@ class AlbumList(Gtk.ListView):
         self.filter_model.set_filter(
             Gtk.CustomFilter.new(lambda r: artist in r.artists)
         )
+        self._album_selected()
 
     def find_album(self, album_name: str):
         return next(
@@ -278,24 +281,24 @@ class AlbumList(Gtk.ListView):
         self.selection_model.unselect_item(self.selection_model.get_selected())
 
     def filter_all(self):
-        self.unselect_all()
         self.filter_model.set_filter(None)
 
     def remove_all(self):
         self.model.remove_all()
 
     def _update_sort(self):
-        if self._sort_type == 0:
-            self.model.sort(lambda a, b: a.name > b.name)
-        elif self._sort_type == 1:
-            self.model.sort(lambda a, b: a.name < b.name)
-        elif self._sort_type == 2:
-            self.model.sort(lambda a, b: a.date < b.date)
-        elif self._sort_type == 3:
-            self.model.sort(lambda a, b: a.date > b.date)
+        match AlbumSort(self.sort):
+            case AlbumSort.NAME_ASC:
+                self.model.sort(lambda a, b: a.name < b.name)
+            case AlbumSort.NAME_DESC:
+                self.model.sort(lambda a, b: a.name > b.name)
+            case AlbumSort.DATE_ASC:
+                self.model.sort(lambda a, b: a.date > b.date)
+            case AlbumSort.DATE_DESC:
+                self.model.sort(lambda a, b: a.date < b.date)
 
-    def _album_selected(self, selection_model, position, _):
-        if selected := selection_model.get_selected_item():
+    def _album_selected(self, *_):
+        if selected := self.selection_model.get_selected_item():
             self.emit('album-selected', selected)
 
     def _key_press(self, key_controller, keyval, keycode, state):

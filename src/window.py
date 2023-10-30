@@ -17,6 +17,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from collections.abc import Callable
 from gi.repository import Adw, Gtk, GLib, Gio, GObject
 import gi
 import threading
@@ -53,8 +54,6 @@ class RecordBoxWindow(Adw.ApplicationWindow):
     main_view = Gtk.Template.Child()
 
     breakpoint2 = Gtk.Template.Child()
-
-    filter_all = Gtk.Template.Child()
 
     play_button = Gtk.Template.Child()
 
@@ -102,8 +101,9 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         self._bind('is-fullscreen', self, 'fullscreened')
 
     def _bind_settings(self):
-        self._bind('artist-sort', self.artist_list, 'sort')
-        self._bind('album-sort', self.album_list, 'sort')
+        self._set('artist-sort', self.artist_list, 'sort')
+        self._set('album-sort', self.album_list, 'sort')
+
         self._bind('clear-queue', self.main_view, 'clear_queue')
         self._bind(
             'expand-discs', self.main_view.album_overview, 'expand_discs'
@@ -119,6 +119,9 @@ class RecordBoxWindow(Adw.ApplicationWindow):
             key, obj, property, Gio.SettingsBindFlags.DEFAULT
         )
 
+    def _set(self, key: str, obj: GObject.Object, property: str):
+        obj.set_property(property, self.app.settings.get_value(key).unpack())
+
     def _setup_actions(self):
         self.play_action = self.create_action(
             'play-album', self.main_view.play_album
@@ -132,6 +135,24 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         self.return_to_playing = self.create_action(
             'return-to-playing', self.main_view.return_to_playing
         )
+
+        self.filter_all_albums = self.create_action(
+            'filter-all', self.filter_all
+        )
+
+        self.album_sort = Gio.PropertyAction.new(
+            'album-sort',
+            self.album_list,
+            'sort',
+        )
+        self.add_action(self.album_sort)
+
+        self.artist_sort = Gio.PropertyAction.new(
+            'artist-sort',
+            self.artist_list,
+            'sort',
+        )
+        self.add_action(self.artist_sort)
 
         self.main_view.player.connect(
             'state-changed',
@@ -176,6 +197,12 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         self.album_list.populate(db.get_albums())
         db.close()
 
+    def filter_all(self, *_):
+        self.album_list.filter_all()
+        self.filter_all_albums.set_enabled(False)
+        self.album_list_page.set_title('Albums')
+        self.artist_list.unselect_all()
+
     @Gtk.Template.Callback()
     def select_album(self, _, album: AlbumItem):
         self.main_view.update_album(album)
@@ -192,8 +219,8 @@ class RecordBoxWindow(Adw.ApplicationWindow):
     def select_artist(self, _, selected: ArtistItem):
         self.album_list.filter_on_artist(selected.raw_name)
         self.album_list_page.set_title(selected.raw_name)
+        self.filter_all_albums.set_enabled(True)
         self.inner_split.set_show_content('album_view')
-        self.filter_all.set_sensitive(True)
 
     @Gtk.Template.Callback()
     def _on_artist_return(self, _):
@@ -202,13 +229,6 @@ class RecordBoxWindow(Adw.ApplicationWindow):
     @Gtk.Template.Callback()
     def _on_album_return(self, _):
         self.outer_split.set_show_sidebar(False)
-
-    @Gtk.Template.Callback()
-    def _on_filter_all(self, _):
-        self.album_list.filter_all()
-        self.filter_all.set_sensitive(False)
-        self.album_list_page.set_title('Artists')
-        self.artist_list.unselect_all()
 
     @Gtk.Template.Callback()
     def _on_album_changed(self, _, album_name: str):

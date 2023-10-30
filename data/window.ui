@@ -68,6 +68,9 @@
                                     <property name="visible">False</property>
                                     <property name="icon-name">go-next-symbolic</property>
                                     <signal name="clicked" handler="_on_artist_return" />
+                                    <property name="can-focus" bind-source="artist_return"
+                                      bind-property="visible"
+                                      bind-flags="bidirectional" />
                                   </object>
                                 </child>
                                 <child type="end">
@@ -105,16 +108,12 @@
                           <object class="AdwToolbarView">
                             <child type="top">
                               <object class="AdwHeaderBar">
-                                <child type="start">
-                                  <object class="GtkButton" id="filter_all">
-                                    <property name="icon-name">edit-select-all-symbolic</property>
-                                    <property name="sensitive">false</property>
-                                    <signal name="clicked" handler="_on_filter_all" />
-                                  </object>
-                                </child>
                                 <child type="end">
                                   <object class="GtkButton" id="album_return">
                                     <property name="visible">False</property>
+                                    <property name="can-focus" bind-source="album_return"
+                                      bind-property="visible"
+                                      bind-flags="bidirectional" />
                                     <property name="icon-name">go-next-symbolic</property>
                                     <signal name="clicked" handler="_on_album_return" />
                                   </object>
@@ -204,9 +203,58 @@
   <menu id="primary_menu">
     <section>
       <item>
-        <attribute name="label" translatable="yes">_Sync Library</attribute>
+        <attribute name="label" translatable="yes">S_ync Library</attribute>
         <attribute name="action">app.refresh</attribute>
       </item>
+    </section>
+    <section>
+      <item>
+        <attribute name="label" translatable="yes">Show _All Albums</attribute>
+        <attribute name="action">win.filter-all</attribute>
+      </item>
+      <submenu>
+        <attribute name="label" translatable="yes">_Sort</attribute>
+        <submenu>
+          <attribute name="label" translatable="yes">_Artists</attribute>
+          <item>
+            <attribute name="label">Name (_A-Z)</attribute>
+            <attribute name="action">win.artist-sort</attribute>
+            <attribute name="target">name-descending</attribute>
+          </item>
+          <item>
+            <attribute name="label">Name (_Z-A)</attribute>
+            <attribute name="action">win.artist-sort</attribute>
+            <attribute name="target">name-ascending</attribute>
+          </item>
+        </submenu>
+        <submenu>
+          <attribute name="label" translatable="yes">A_lbums</attribute>
+          <section>
+            <item>
+              <attribute name="label">Name (_A-Z)</attribute>
+              <attribute name="action">win.album-sort</attribute>
+              <attribute name="target">name-descending</attribute>
+            </item>
+            <item>
+              <attribute name="label">Name (_Z-A)</attribute>
+              <attribute name="action">win.album-sort</attribute>
+              <attribute name="target">name-ascending</attribute>
+            </item>
+          </section>
+          <section>
+            <item>
+              <attribute name="label">Date (_Most Recent)</attribute>
+              <attribute name="action">win.album-sort</attribute>
+              <attribute name="target">date-descending</attribute>
+            </item>
+            <item>
+              <attribute name="label" translatable="yes">Date (_Least Recent)</attribute>
+              <attribute name="action">win.album-sort</attribute>
+              <attribute name="target">date-ascending</attribute>
+            </item>
+          </section>
+        </submenu>
+      </submenu>
     </section>
     <section>
       <item>

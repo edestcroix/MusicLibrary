@@ -1,6 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <schemalist gettext-domain="recordbox">
 
+  <enum id="com.github.edestcroix.RecordBox.artist-sort">
+    <value nick="name-descending" value="0" />
+    <value nick="name-ascending" value="1" />
+  </enum>
+
+  <enum id="com.github.edestcroix.RecordBox.album-sort">
+    <value nick="name-ascending" value="0" />
+    <value nick="name-descending" value="1" />
+    <value nick="date-descending" value="2" />
+    <value nick="date-ascending" value="3" />
+  </enum>
+
   <schema id="com.github.edestcroix.RecordBox" path="/com/github/edestcroix/recordbox/">
     <key name="width" type="i">
       <default>1200</default>
@@ -74,17 +86,16 @@
         Show all artists in the library, not just album-artists
       </description>
     </key>
-    <key name="artist-sort" type="i">
-      <default>0</default>
-      <range min="0" max="3" />
+    <key name="artist-sort" enum="com.github.edestcroix.RecordBox.artist-sort">
+      <default>"name-descending"</default>
       <summary>Artist sort</summary>
       <description>
         Control how artists are sorted in the library
       </description>
     </key>
-    <key name="album-sort" type="i">
-      <default>2</default>
-      <range min="0" max="3" />
+
+    <key name="album-sort" enum="com.github.edestcroix.RecordBox.album-sort">
+      <default>"date-descending"</default>
       <summary>Album sort</summary>
       <description>
         Control how albums are sorted in the library

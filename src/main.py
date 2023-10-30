@@ -117,6 +117,8 @@ class RecordBoxApplication(Adw.Application):
             'win.return-to-playing', ['<primary>BackSpace']
         )
 
+        self.set_accels_for_action('win.filter-all', ['<primary>slash'])
+
     def player(self):
         """Return the application's player object."""
         return self.props.active_window.main_view.player
