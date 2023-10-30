@@ -12,24 +12,20 @@ gi.require_version('Gtk', '4.0')
 # to ensure the current index is updated correctly.
 @Gtk.Template(resource_path='/com/github/edestcroix/RecordBox/play_queue.ui')
 class PlayQueue(Adw.Bin):
+    __gtype_name__ = 'RecordBoxPlayQueue'
     """A containter for the play queue, containing the entire view around the track list itself,
     and the operations to manage the queue and maintain current track state."""
 
-    __gtype_name__ = 'RecordBoxPlayQueue'
     track_list = Gtk.Template.Child()
-    collapse = GObject.Signal()
-
     select_all_button = Gtk.Template.Child()
-
     delete_selected = Gtk.Template.Child()
-
-    jump_to_track = GObject.Signal()
 
     current_index = GObject.Property(type=int, default=-1)
     current_index_moved = False
     current_track = GObject.Property(type=TrackItem)
 
     jump_to_track = GObject.Signal()
+    collapse = GObject.Signal()
 
     selected = []
 
@@ -42,7 +38,6 @@ class PlayQueue(Adw.Bin):
         self.track_list.set_model(self.selection)
         self.track_list.set_factory(self._create_factory())
 
-        self.track_list.connect('activate', self._on_row_activated)
         self.selection.connect('selection-changed', self._check_selection)
 
     def _create_factory(self):
@@ -52,12 +47,21 @@ class PlayQueue(Adw.Bin):
         return factory
 
     def add_album(self, album: AlbumItem):
-        for track in album.tracks:
-            # GListStores hate having the same GObject inserted twice.
-            self.model.append(track.clone())
+        self.model.splice(
+            len(self.model), 0, [t.clone() for t in album.tracks]
+        )
+
+    def replace_album(self, album: AlbumItem):
+        self.selected = []
+        self.model.splice(
+            0, len(self.model), [t.clone() for t in album.tracks]
+        )
 
     def add_track(self, track: TrackItem):
         self.model.append(track.clone())
+
+    def add_after_current(self, track: TrackItem):
+        self.model.splice(self.current_index + 1, 0, [track.clone()])
 
     def select_all(self):
         self.selection.select_all()
@@ -113,6 +117,35 @@ class PlayQueue(Adw.Bin):
         else:
             self.unselect_all()
 
+    def _setup_row(self, _, item):
+        row = QueueRow()
+        item.set_child(row)
+        item.bind_property(
+            'position',
+            row,
+            'position',
+            GObject.BindingFlags.DEFAULT,
+        )
+        self.bind_property(
+            'current-index',
+            row,
+            'current-index',
+            GObject.BindingFlags.DEFAULT,
+        )
+
+    def _bind_row(self, _, item):
+        row = item.get_child()
+        track = item.get_item()
+        row.title = track.raw_title
+        row.subtitle = track.length
+        row.image_path = track.thumb
+
+    @Gtk.Template.Callback()
+    def _on_row_activated(self, _, index: int):
+        self.current_index = index
+        self.current_track = self.get_current_track()
+        self.emit('jump-to-track')
+
     @Gtk.Template.Callback()
     def _remove_selected(self, _):
         """Remove the selected tracks from the queue. Sorts the selected indicies
@@ -148,34 +181,6 @@ class PlayQueue(Adw.Bin):
                 self.current_index = len(self.model) - 2
             else:
                 self.current_index -= 1
-
-    def _on_row_activated(self, _, index: int):
-        self.current_index = index
-        self.current_track = self.get_current_track()
-        self.emit('jump-to-track')
-
-    def _setup_row(self, _, item):
-        row = QueueRow()
-        item.set_child(row)
-        item.bind_property(
-            'position',
-            row,
-            'position',
-            GObject.BindingFlags.DEFAULT,
-        )
-        self.bind_property(
-            'current-index',
-            row,
-            'current-index',
-            GObject.BindingFlags.DEFAULT,
-        )
-
-    def _bind_row(self, _, item):
-        row = item.get_child()
-        track = item.get_item()
-        row.title = track.raw_title
-        row.subtitle = track.length
-        row.image_path = track.thumb
 
     def _check_selection(self, _, start, range_size):
         """Maintain a list of selected rows so we can delete them later.

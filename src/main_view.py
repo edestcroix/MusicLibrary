@@ -91,8 +91,7 @@ class MainView(Adw.Bin):
 
     def replace_queue(self, *_):
         if self.album_overview.current_album:
-            self.play_queue.clear()
-            self.queue_add()
+            self.play_queue.replace_album(self.album_overview.current_album)
 
     def _setup_actions(self):
         self.play_queue.connect(
@@ -118,6 +117,13 @@ class MainView(Adw.Bin):
             return
         dialog = self._play_dialog(track.title)
         dialog.choose(self.cancellable, self._on_dialog_track_response, track)
+
+    @Gtk.Template.Callback()
+    def _on_add_track_next(self, _, track: TrackItem):
+        self.play_queue.add_after_current(track)
+        if self.player.state == 'stopped':
+            self.player.ready()
+        self.send_toast('Queue Updated')
 
     @Gtk.Template.Callback()
     def _on_add_track(self, _, track: TrackItem):

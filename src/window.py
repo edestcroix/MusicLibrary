@@ -17,7 +17,6 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from collections.abc import Callable
 from gi.repository import Adw, Gtk, GLib, Gio, GObject
 import gi
 import threading
@@ -60,16 +59,7 @@ class RecordBoxWindow(Adw.ApplicationWindow):
     lists_toggle = Gtk.Template.Child()
     queue_toggle = Gtk.Template.Child()
 
-    _show_all_artists = False
-
-    @GObject.Property(type=bool, default=False)
-    def show_all_artists(self):
-        return self._show_all_artists
-
-    @show_all_artists.setter
-    def set_show_all_artists(self, value: bool):
-        self._show_all_artists = value
-        self.refresh_lists()
+    show_all_artists = GObject.Property(type=bool, default=False)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -82,6 +72,10 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         self._bind_settings()
         self._setup_actions()
 
+        self.connect(
+            'notify::show-all-artists', lambda *_: self.refresh_lists()
+        )
+
         if self.app.settings.get_boolean('sync-on-startup'):
             self.sync_library(None)
 
@@ -91,6 +85,8 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         self.album_list.connect(
             'focus-prev', lambda _: self.artist_list.grab_focus()
         )
+
+        self.refresh_lists()
 
         self.artist_list.grab_focus()
 
@@ -111,7 +107,6 @@ class RecordBoxWindow(Adw.ApplicationWindow):
 
         self._bind('confirm-play', self.main_view, 'confirm_play')
 
-        # binding this refreshes the lists on initial startup, so it doesn't have to be done on init.
         self._bind('show-all-artists', self, 'show_all_artists')
 
     def _bind(self, key: str, obj: GObject.Object, property: str):
@@ -123,22 +118,28 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         obj.set_property(property, self.app.settings.get_value(key).unpack())
 
     def _setup_actions(self):
-        self.play_action = self.create_action(
+        self.play_action = self._create_action(
             'play-album', self.main_view.play_album
         )
-        self.queue_add = self.create_action(
+        self.queue_add = self._create_action(
             'add-album', self.main_view.queue_add
         )
-        self.replace_queue = self.create_action(
+        self.replace_queue = self._create_action(
             'replace-queue', self.main_view.replace_queue
         )
-        self.return_to_playing = self.create_action(
+        self.return_to_playing = self._create_action(
             'return-to-playing', self.main_view.return_to_playing
         )
 
-        self.filter_all_albums = self.create_action(
+        self.filter_all_albums = self._create_action(
             'filter-all', self.filter_all
         )
+        self.artist_sort = Gio.PropertyAction.new(
+            'artist-sort',
+            self.artist_list,
+            'sort',
+        )
+        self.add_action(self.artist_sort)
 
         self.album_sort = Gio.PropertyAction.new(
             'album-sort',
@@ -146,13 +147,6 @@ class RecordBoxWindow(Adw.ApplicationWindow):
             'sort',
         )
         self.add_action(self.album_sort)
-
-        self.artist_sort = Gio.PropertyAction.new(
-            'artist-sort',
-            self.artist_list,
-            'sort',
-        )
-        self.add_action(self.artist_sort)
 
         self.main_view.player.connect(
             'state-changed',
@@ -171,7 +165,7 @@ class RecordBoxWindow(Adw.ApplicationWindow):
             GObject.BindingFlags.DEFAULT,
         )
 
-    def create_action(self, name, callback, enabled=False):
+    def _create_action(self, name, callback, enabled=False):
         action = Gio.SimpleAction.new(name, None)
         action.connect('activate', callback)
         action.set_enabled(enabled)
@@ -193,7 +187,7 @@ class RecordBoxWindow(Adw.ApplicationWindow):
 
     def refresh_lists(self):
         db = MusicDB()
-        self.artist_list.populate(db.get_artists(self._show_all_artists))
+        self.artist_list.populate(db.get_artists(self.show_all_artists))
         self.album_list.populate(db.get_albums())
         db.close()
 

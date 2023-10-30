@@ -68,9 +68,6 @@
                                     <property name="visible">False</property>
                                     <property name="icon-name">go-next-symbolic</property>
                                     <signal name="clicked" handler="_on_artist_return" />
-                                    <property name="can-focus" bind-source="artist_return"
-                                      bind-property="visible"
-                                      bind-flags="bidirectional" />
                                   </object>
                                 </child>
                                 <child type="end">
@@ -111,9 +108,6 @@
                                 <child type="end">
                                   <object class="GtkButton" id="album_return">
                                     <property name="visible">False</property>
-                                    <property name="can-focus" bind-source="album_return"
-                                      bind-property="visible"
-                                      bind-flags="bidirectional" />
                                     <property name="icon-name">go-next-symbolic</property>
                                     <signal name="clicked" handler="_on_album_return" />
                                   </object>

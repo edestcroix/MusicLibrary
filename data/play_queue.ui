@@ -36,6 +36,7 @@
             <property name="hscrollbar-policy">never</property>
             <child>
               <object class="GtkListView" id="track_list">
+                <signal name="activate" handler="_on_row_activated" />
                 <style>
                   <class name="navigation-sidebar" />
                 </style>
