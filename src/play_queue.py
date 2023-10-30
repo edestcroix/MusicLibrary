@@ -1,3 +1,4 @@
+from collections import deque
 from gi.repository import Adw, Gtk, GLib, GObject, Gio
 import gi
 from .library import AlbumItem, TrackItem
@@ -32,6 +33,8 @@ class PlayQueue(Adw.Bin):
         super().__init__(**kwargs)
 
         self.model = Gio.ListStore.new(TrackItem)
+        self.backups = deque(maxlen=10)
+
         self.selection = Gtk.MultiSelection.new(self.model)
 
         self.track_list.set_model(self.selection)
@@ -46,21 +49,31 @@ class PlayQueue(Adw.Bin):
         return factory
 
     def add_album(self, album: AlbumItem):
+        self._backup_queue()
         self.model.splice(
             len(self.model), 0, [t.clone() for t in album.tracks]
         )
 
     def replace_album(self, album: AlbumItem):
+        # replacing the current album invalidates the current index,
+        # so we need to save that too.
+        self._backup_queue(save_index=True)
         self.selected = []
         self.model.splice(
             0, len(self.model), [t.clone() for t in album.tracks]
         )
         self.current_index = 0
 
+    # TODO: Redo?
+    def undo(self, *_):
+        self._restore_queue()
+
     def add_track(self, track: TrackItem):
+        self._backup_queue()
         self.model.append(track.clone())
 
     def add_after_current(self, track: TrackItem):
+        self._backup_queue()
         self.model.splice(self.current_index + 1, 0, [track.clone()])
 
     def select_all(self):
@@ -77,7 +90,7 @@ class PlayQueue(Adw.Bin):
     def restart(self):
         self.current_index = 0
 
-    def empty(self) -> bool:
+    def is_empty(self) -> bool:
         return len(self.model) == 0
 
     def index_synced(self) -> bool:
@@ -127,6 +140,9 @@ class PlayQueue(Adw.Bin):
         else:
             self.unselect_all()
 
+    def remove_backups(self):
+        self.backups.clear()
+
     def _setup_row(self, _, item):
         row = QueueRow()
         item.set_child(row)
@@ -164,13 +180,18 @@ class PlayQueue(Adw.Bin):
         if not self.selected:
             return
 
+        self._backup_queue()
+
         self.selected.sort()
         old_index = self.current_index
         segment, removed = [], 0
         for i in self.selected:
             self.current_index -= i < old_index
+            # append to segment if the current i is sequential to the previous
             if not segment or i == segment[-1] + 1:
                 segment.append(i)
+            # when a non-sequential index is reached, splice the segment
+            # of sequential inidices out of the queue and reset the segment
             else:
                 self.model.splice(segment[0] - removed, len(segment), [])
                 removed += len(segment)
@@ -207,6 +228,28 @@ class PlayQueue(Adw.Bin):
             self.select_all_button.get_active()
             and len(self.selected) != len(self.model)
         )
+
+    def _backup_queue(self, save_index=False):
+        # don't backup if the queue is empty (undoing to an empty queue
+        # is annoying, and bothers me so I'm preventing it.)
+        if self.model:
+            backup = Gio.ListStore.new(TrackItem)
+            backup.splice(0, len(backup), self.model)
+            if save_index:
+                self.backups.append((backup, self.current_index))
+            else:
+                self.backups.append((backup, -1))
+
+    def _restore_queue(self):
+        if self.backups:
+            backup, index = self.backups.pop()
+            self.model.splice(0, len(self.model), backup)
+            if index > -1:
+                self.current_index = index
+            else:
+                # need to trigger a notify on the QueueRows to redraw
+                # the current track indicator
+                self.current_index = self.current_index
 
 
 @Gtk.Template(

@@ -180,7 +180,7 @@ class Player(GObject.GObject):
             # set the current track to the start of the queue if it exists
             # so the UI and MPRIS will update to show the first track again, signifying
             # that the queue has ended and playing will start over.
-            if not self._play_queue.empty():
+            if not self._play_queue.is_empty():
                 self._play_queue.restart()
                 self.current_track = self._play_queue.get_current_track()
             self.emit('eos')

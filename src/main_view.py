@@ -24,12 +24,18 @@ from .player import Player
 from .monitor import ProgressMonitor
 from .play_queue import PlayQueue
 
+from collections import deque
+
 gi.require_version('Gtk', '4.0')
 gi.require_version('Gst', '1.0')
 
 
 @Gtk.Template(resource_path='/com/github/edestcroix/RecordBox/main_view.ui')
 class MainView(Adw.Bin):
+    """The main view is the widget container that handles the album overview, play queue, and player controls,
+    coordinating communication between them. It's also currently where the player itself is created, although this
+    might get moved to the application class in the future."""
+
     __gtype_name__ = 'MainView'
 
     album_overview = Gtk.Template.Child()
@@ -50,6 +56,8 @@ class MainView(Adw.Bin):
     album_changed = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
 
     show_queue = GObject.Property(type=bool, default=False)
+
+    undo_toasts = deque(maxlen=10)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -72,10 +80,19 @@ class MainView(Adw.Bin):
         self.content_page.set_title(album.raw_name)
         self.album_overview.update_album(album)
 
-    def send_toast(self, title: str, timeout=2):
-        toast = Adw.Toast()
-        toast.set_title(title)
-        toast.set_timeout(timeout)
+    def send_toast(
+        self,
+        title: str,
+        timeout=2,
+        undo=False,
+        priority=Adw.ToastPriority.HIGH,
+    ):
+        toast = Adw.Toast(title=title, priority=priority)
+        toast.set_timeout(max(timeout, 3) if undo else timeout)
+        if undo:
+            toast.set_button_label('Undo')
+            toast.set_action_name('win.undo-queue')
+            self.undo_toasts.append(toast)
         self.toast.add_toast(toast)
 
     def play_album(self, *_):
@@ -84,14 +101,22 @@ class MainView(Adw.Bin):
 
     def queue_add(self, *_):
         if album := self.album_overview.current_album:
+            was_empty = self.play_queue.is_empty()
             self.play_queue.add_album(album)
             if self.player.state == 'stopped':
                 self.player.ready()
-            self.send_toast('Queue Updated')
+            self.send_toast('Queue Updated', undo=not was_empty)
 
     def replace_queue(self, *_):
         if self.album_overview.current_album:
+            was_empty = self.play_queue.is_empty()
             self.play_queue.replace_album(self.album_overview.current_album)
+            self.send_toast('Queue Replaced', undo=not was_empty)
+
+    def undo(self, *_):
+        if self.undo_toasts:
+            self.undo_toasts.pop().dismiss()
+        self.play_queue.undo()
 
     def _setup_actions(self):
         self.play_queue.connect(
@@ -120,17 +145,19 @@ class MainView(Adw.Bin):
 
     @Gtk.Template.Callback()
     def _on_add_track_next(self, _, track: TrackItem):
+        was_empty = self.play_queue.is_empty()
         self.play_queue.add_after_current(track)
         if self.player.state == 'stopped':
             self.player.ready()
-        self.send_toast('Queue Updated')
+        self.send_toast('Track Inserted', undo=not was_empty)
 
     @Gtk.Template.Callback()
     def _on_add_track(self, _, track: TrackItem):
+        was_empty = self.play_queue.is_empty()
         self.play_queue.add_track(track)
         if self.player.state == 'stopped':
             self.player.ready()
-        self.send_toast('Queue Updated')
+        self.send_toast('Track Added to Queue', undo=not was_empty)
 
     def return_to_playing(self, *_):
         if current_track := self.player.current_track:
@@ -183,13 +210,18 @@ class MainView(Adw.Bin):
             self.send_toast('Queue Updated')
 
     def _play_album(self, album: AlbumItem):
-        self.play_queue.clear()
-        self.play_queue.add_album(album)
+        self.play_queue.replace_album(album)
+        # Backups are for modifications to the queue starting at the first played/added album.
+        # Playing a new album is not a modification, but a reset and replacement of the queue.
+        # (Undo's don't re-play the track that was playing before the undo, so it's weird
+        # to undo a play action without undoing the play, which I don't want to do anyway.)
+        self.play_queue.remove_backups()
         self.player.play()
 
     def _play_track(self, track: TrackItem):
         self.play_queue.clear()
         self.play_queue.add_track(track)
+        self.play_queue.remove_backups()
         self.player.play()
 
     def _on_player_state_changed(self, _, state: str):

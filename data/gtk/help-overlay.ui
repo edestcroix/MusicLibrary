@@ -38,6 +38,12 @@
                 <property name="action-name">win.replace-queue</property>
               </object>
             </child>
+            <child>
+              <object class="GtkShortcutsShortcut">
+                <property name="title" translatable="yes" context="shortcut window">Undo Queue Action</property>
+                <property name="action-name">win.undo-queue</property>
+              </object>
+            </child>
           </object>
         </child>
         <child>

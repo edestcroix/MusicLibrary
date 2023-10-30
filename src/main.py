@@ -33,7 +33,8 @@ from .mpris import MPRIS
 class RecordBoxApplication(Adw.Application):
     """The main application singleton class."""
 
-    def __init__(self):
+    def __init__(self, version):
+        self.version = version
         super().__init__(
             application_id='com.github.edestcroix.RecordBox',
             flags=Gio.ApplicationFlags.DEFAULT_FLAGS,
@@ -73,7 +74,7 @@ class RecordBoxApplication(Adw.Application):
             application_name='RecordBox',
             application_icon='com.github.edestcroix.RecordBox',
             developer_name='Emmett de St. Croix',
-            version='0.3.0',
+            version=self.version,
             developers=['Emmett de St. Croix'],
             copyright='© 2023 Emmett de St. Croix',
             website='https://github.com/edestcroix/RecordBox/',
@@ -119,6 +120,8 @@ class RecordBoxApplication(Adw.Application):
 
         self.set_accels_for_action('win.filter-all', ['<primary>slash'])
 
+        self.set_accels_for_action('win.undo-queue', ['<primary>z'])
+
     def player(self):
         """Return the application's player object."""
         return self.props.active_window.main_view.player
@@ -126,5 +129,5 @@ class RecordBoxApplication(Adw.Application):
 
 def main(version):
     """The application's entry point."""
-    app = RecordBoxApplication()
+    app = RecordBoxApplication(version)
     return app.run(sys.argv)

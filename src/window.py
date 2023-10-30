@@ -130,6 +130,9 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         self.return_to_playing = self._create_action(
             'return-to-playing', self.main_view.return_to_playing
         )
+        self.undo_queue = self._create_action(
+            'undo-queue', self.main_view.undo, enabled=True
+        )
 
         self.filter_all_albums = self._create_action(
             'filter-all', self.filter_all
