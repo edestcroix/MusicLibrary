@@ -264,7 +264,7 @@ class RecordBoxWindow(Adw.ApplicationWindow):
             i += 1
             cur = row_list.get_row_at_index(i)
         if cur:
-            row_list.scroll_to(i, Gtk.ListScrollFlags.SELECT, None)
+            row_list.scroll_to(i, Gtk.ListScrollFlags.SELECT)
 
     def _on_player_state_changed(self, _, state):
         self.set_hide_on_close(

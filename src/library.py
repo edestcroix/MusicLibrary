@@ -146,31 +146,29 @@ class ArtistItem(GObject.Object):
         self.albums = f'{num_albums} album{"s" if num_albums > 1 else ""}'
 
 
-class ArtistList(Gtk.ListView):
-    __gtype_name__ = 'RecordBoxArtistList'
+class LibraryList(Gtk.ListView):
+    """Base class for artist and album lists, since they're almost identical other than
+    the album list needing a filter model."""
 
-    artist_selected = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
-    focus_next = GObject.Signal()
+    __gtype_name__ = 'RecordBoxLibraryList'
 
     sort = GObject.Property(type=str)
+    selected = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
+    focus_next = GObject.Signal()
+    focus_prev = GObject.Signal()
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        # self.set_tab_behavior(Gtk.ListTabBehavior.ITEM)
+    model: Gio.ListStore
+    template: str
 
-        self.model = Gio.ListStore.new(ArtistItem)
-        self.selection_model = Gtk.SingleSelection.new(self.model)
-        self.selection_model.set_can_unselect(True)
-        self.selection_model.connect(
-            'selection_changed', self._artist_selected
+    def __init__(self):
+        super().__init__()
+
+        self._setup_model()
+        self.set_factory(
+            Gtk.BuilderListItemFactory.new_from_resource(
+                Gtk.BuilderCScope(), self.template
+            )
         )
-        self.set_model(self.selection_model)
-
-        factory = Gtk.BuilderListItemFactory.new_from_resource(
-            Gtk.BuilderCScope(),
-            '/com/github/edestcroix/RecordBox/lists/artist_row.ui',
-        )
-        self.set_factory(factory)
 
         self.connect('notify::sort', lambda *_: self._update_sort())
 
@@ -178,13 +176,12 @@ class ArtistList(Gtk.ListView):
         event_controller.connect('key-pressed', self._key_press)
         self.add_controller(event_controller)
 
-    def append(self, artist: ArtistItem):
-        self.model.append(artist)
+    def append(self, item: GObject.Object):
+        self.model.append(item)
 
-    def populate(self, artist_list: list[ArtistItem]):
+    def populate(self, items: list[GObject.Object]):
         self.model.remove_all()
-        for artist in artist_list:
-            self.append(artist)
+        self.model.splice(0, 0, items)
         self._update_sort()
         self.scroll_to(0, Gtk.ListScrollFlags.FOCUS)
 
@@ -195,11 +192,37 @@ class ArtistList(Gtk.ListView):
     def remove_all(self):
         self.model.remove_all()
 
-    def get_row_at_index(self, index: int):
+    def get_row_at_index(self, index: int) -> GObject.Object:
         return self.model[index]
 
     def select_index(self, index: int):
         self.selection_model.select_item(index, True)
+
+    def _setup_model(self):
+        self.selection_model = Gtk.SingleSelection.new(self.model)
+        self.selection_model.set_can_unselect(True)
+        self.selection_model.connect('selection_changed', self._item_selected)
+        self.set_model(self.selection_model)
+
+    def _item_selected(self, *_):
+        if selected := self.selection_model.get_selected_item():
+            self.emit('selected', selected)
+
+    def _key_press(self, key_controller, keyval, keycode, state):
+        if keycode == 114:
+            self.emit('focus-next')
+        elif keycode == 113:
+            self.emit('focus-prev')
+
+    def _update_sort(self):
+        pass
+
+
+class ArtistList(LibraryList):
+    __gtype_name__ = 'RecordBoxArtistList'
+
+    model = Gio.ListStore.new(ArtistItem)
+    template = '/com/github/edestcroix/RecordBox/lists/artist_row.ui'
 
     def _update_sort(self):
         match ArtistSort(self.sort):
@@ -208,83 +231,35 @@ class ArtistList(Gtk.ListView):
             case ArtistSort.NAME_DESC:
                 self.model.sort(lambda a, b: a.sort > b.sort)
 
-    def _artist_selected(self, selection_model, *_):
-        if selected := selection_model.get_selected_item():
-            self.emit('artist-selected', selected)
 
-    def _key_press(self, key_controller, keyval, keycode, state):
-        if keycode == 114:
-            self.emit('focus-next')
-
-
-class AlbumList(Gtk.ListView):
+class AlbumList(LibraryList):
     __gtype_name__ = 'RecordBoxAlbumList'
 
-    album_selected = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
-    focus_next = GObject.Signal()
-    focus_prev = GObject.Signal()
+    model = Gio.ListStore.new(AlbumItem)
+    template = '/com/github/edestcroix/RecordBox/lists/album_row.ui'
 
-    sort = GObject.Property(type=str)
+    def get_row_at_index(self, index: int):
+        return self.filter_model[index]
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        # self.set_tab_behavior(Gtk.ListTabBehavior.ITEM)
-
-        self.model = Gio.ListStore.new(AlbumItem)
-        self.filter_model = Gtk.FilterListModel.new(self.model, None)
-
-        self.selection_model = Gtk.SingleSelection.new(self.filter_model)
-        self.selection_model.connect('selection_changed', self._album_selected)
-        self.set_model(self.selection_model)
-
-        factory = Gtk.BuilderListItemFactory.new_from_resource(
-            Gtk.BuilderCScope(),
-            '/com/github/edestcroix/RecordBox/lists/album_row.ui',
-        )
-        self.set_factory(factory)
-
-        event_controller = Gtk.EventControllerKey.new()
-        event_controller.connect('key-pressed', self._key_press)
-        self.add_controller(event_controller)
-
-        self.connect('notify::sort', lambda *_: self._update_sort())
-
-    def append(self, album: AlbumItem):
-        self.model.append(album)
-
-    def populate(self, album_list: list[AlbumItem]):
-        self.model.remove_all()
+    def filter_all(self):
         self.filter_model.set_filter(None)
-        for album in album_list:
-            self.append(album)
-        self._update_sort()
-        self.scroll_to(0, Gtk.ListScrollFlags.FOCUS)
 
     def filter_on_artist(self, artist: str):
         self.filter_model.set_filter(
             Gtk.CustomFilter.new(lambda r: artist in r.artists)
         )
-        self._album_selected()
+        self._item_selected()
 
-    def find_album(self, album_name: str):
+    def find_album(self, album_name: str) -> AlbumItem | None:
         return next(
             (row for row in self.model if row.raw_name == album_name), None
         )
 
-    def get_row_at_index(self, index: int):
-        return self.filter_model[index]
-
-    def select_index(self, index: int):
-        self.selection_model.select_item(index, True)
-
-    def unselect_all(self):
-        self.selection_model.unselect_item(self.selection_model.get_selected())
-
-    def filter_all(self):
-        self.filter_model.set_filter(None)
-
-    def remove_all(self):
-        self.model.remove_all()
+    def _setup_model(self):
+        self.filter_model = Gtk.FilterListModel.new(self.model, None)
+        self.selection_model = Gtk.SingleSelection.new(self.filter_model)
+        self.selection_model.connect('selection_changed', self._item_selected)
+        self.set_model(self.selection_model)
 
     def _update_sort(self):
         match AlbumSort(self.sort):
@@ -296,11 +271,3 @@ class AlbumList(Gtk.ListView):
                 self.model.sort(lambda a, b: a.date > b.date)
             case AlbumSort.DATE_DESC:
                 self.model.sort(lambda a, b: a.date < b.date)
-
-    def _album_selected(self, *_):
-        if selected := self.selection_model.get_selected_item():
-            self.emit('album-selected', selected)
-
-    def _key_press(self, key_controller, keyval, keycode, state):
-        if keycode == 113:
-            self.emit('focus-prev')
