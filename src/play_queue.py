@@ -21,7 +21,6 @@ class PlayQueue(Adw.Bin):
     delete_selected = Gtk.Template.Child()
 
     current_index = GObject.Property(type=int, default=-1)
-    current_index_moved = False
     current_track = GObject.Property(type=TrackItem)
 
     jump_to_track = GObject.Signal()
@@ -56,6 +55,7 @@ class PlayQueue(Adw.Bin):
         self.model.splice(
             0, len(self.model), [t.clone() for t in album.tracks]
         )
+        self.current_index = 0
 
     def add_track(self, track: TrackItem):
         self.model.append(track.clone())
@@ -80,34 +80,44 @@ class PlayQueue(Adw.Bin):
     def empty(self) -> bool:
         return len(self.model) == 0
 
+    def index_synced(self) -> bool:
+        """Checks if the current_track and the track at current_index are the same.
+        When they are not, it means the current track was changed outside of normal
+        queue advancement like get_next_track(), jumping to a track, or next() and previous().
+        (E.g the current track was deleted from the queue or a restored backup changed current_index)"""
+        return (
+            self.model and self.current_track == self.model[self.current_index]
+        )
+
     def get_next_track(self) -> TrackItem | None:
-        if self.current_index_moved:
-            self.current_index_moved = False
-            return self.get_current_track()
-        self._move_current(Direction.NEXT)
+        # Only advance if the index is synced, because otherwise
+        # the next track is already at the current index
+        if self.index_synced():
+            self._move_current(Direction.NEXT)
         return self.get_current_track()
 
     def get_current_track(self) -> TrackItem | None:
+        """Retrieves the current track from the queue, and sets self.current_track
+        to the value retrieved. Uses self.current_index to determine the track to
+        get, meaning that if the two values are unsynced, they will resync after the next call
+        to this method."""
+
         if self.current_index == -1 and len(self.model) > 0:
             self.current_index = 0
-        self.current_track = (
-            self.model[self.current_index]
-            if 0 <= self.current_index < len(self.model)
-            else None
-        )
+        if 0 <= self.current_index < len(self.model):
+            self.current_track = self.model[self.current_index]
+        else:
+            self.current_track = None
         return self.current_track
 
     def next(self) -> bool:
-        if self.current_index_moved:
-            self.current_index_moved = False
-        else:
+        # don't advance if the index is unsynced, same as get_next_track()
+        if self.index_synced():
             self._move_current(Direction.NEXT)
         return 0 <= self.current_index < len(self.model)
 
     def previous(self) -> bool:
         self._move_current(Direction.PREV)
-        if self.current_index_moved:
-            self.current_index_moved = False
         return 0 <= self.current_index < len(self.model)
 
     @Gtk.Template.Callback()
@@ -159,7 +169,6 @@ class PlayQueue(Adw.Bin):
         segment, removed = [], 0
         for i in self.selected:
             self.current_index -= i < old_index
-            self.current_index_moved |= i == old_index
             if not segment or i == segment[-1] + 1:
                 segment.append(i)
             else:
@@ -169,7 +178,7 @@ class PlayQueue(Adw.Bin):
         if segment:
             self.model.splice(segment[0] - removed, len(segment), [])
         self.selected = []
-        self.current_track = self.get_current_track()
+        # self.current_track = self.get_current_track()
         # triggers an update of the current track highlight
         self.current_index = self.current_index
 
