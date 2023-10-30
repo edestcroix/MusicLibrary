@@ -31,8 +31,8 @@
             </child>
             <child>
               <object class="AdwSwitchRow" id="confirm_play">
-                <property name="title" translatable="yes">Confirm _Overwrite</property>
-                <property name="subtitle" translatable="yes">Show confirmation dialog before overwriting the currently playing queue.</property>
+                <property name="title" translatable="yes">Confirm Song _Change</property>
+                <property name="subtitle" translatable="yes">Show a confirmation dialog before attempting to play an album or track when one is already playing.</property>
                 <property name="use_underline">True</property>
               </object>
             </child>
@@ -138,7 +138,7 @@
             <child>
               <object class="AdwComboRow" id="artist_sort">
                 <property name="title" translatable="yes">Artist Sort</property>
-                <property name="subtitle" translatable="yes">The default sort for the artist list.</property>
+                <property name="subtitle" translatable="yes">The default sort used for the artist list on startup.</property>
                 <property name="model">
                   <object class="GtkStringList">
                     <items>
@@ -152,7 +152,7 @@
             <child>
               <object class="AdwComboRow" id="album_sort">
                 <property name="title" translatable="yes">Album Sort</property>
-                <property name="subtitle" translatable="yes">The default sort for the album list.</property>
+                <property name="subtitle" translatable="yes">The default sort used for the album list on startup.</property>
                 <property name="model">
                   <object class="GtkStringList">
                     <items>
