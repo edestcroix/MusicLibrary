@@ -4,28 +4,28 @@
   <requires lib="Adw" version="1.0" />
   <template class="MainView" parent="AdwBin">
     <child>
-      <object class="AdwOverlaySplitView" id="queue_panel_split_view">
-        <property name="sidebar-position">end</property>
-        <property name="collapsed">True</property>
-        <property name="min-sidebar-width">300</property>
-        <property name="sidebar-width-fraction">0.43</property>
-        <property name="pin-sidebar">True</property>
-        <property name="show-sidebar" bind-source="MainView" bind-property="show_queue"
-          bind-flags="bidirectional" />
-        <property name="sidebar">
-          <object class="AdwNavigationPage">
-            <property name="title" translatable="yes">Play Queue</property>
-            <property name="child">
-              <object class="RecordBoxPlayQueue" id="play_queue" />
+      <object class="AdwToastOverlay" id="toast">
+        <child>
+          <object class="AdwOverlaySplitView" id="queue_panel_split_view">
+            <property name="sidebar-position">end</property>
+            <property name="collapsed">True</property>
+            <property name="min-sidebar-width">300</property>
+            <property name="sidebar-width-fraction">0.43</property>
+            <property name="pin-sidebar">True</property>
+            <property name="show-sidebar" bind-source="MainView" bind-property="show_queue"
+              bind-flags="bidirectional" />
+            <property name="sidebar">
+              <object class="AdwNavigationPage">
+                <property name="title" translatable="yes">Play Queue</property>
+                <property name="child">
+                  <object class="RecordBoxPlayQueue" id="play_queue" />
+                </property>
+              </object>
             </property>
-          </object>
-        </property>
-        <property name="content">
-          <object class="AdwNavigationPage" id="content_page">
-            <property name="title" translatable="yes">Overview</property>
-            <property name="child">
-              <object class="AdwToastOverlay" id="toast">
-                <child>
+            <property name="content">
+              <object class="AdwNavigationPage" id="content_page">
+                <property name="title" translatable="yes">Overview</property>
+                <property name="child">
                   <object class="AdwToolbarView" id="toolbar_view">
                     <property name="reveal-bottom-bars">false</property>
                     <property name="bottom-bar-style">ADW_TOOLBAR_RAISED_BORDER</property>
@@ -43,11 +43,11 @@
                       </object>
                     </property>
                   </object>
-                </child>
+                </property>
               </object>
             </property>
           </object>
-        </property>
+        </child>
       </object>
     </child>
   </template>
