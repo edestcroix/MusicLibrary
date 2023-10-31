@@ -154,8 +154,6 @@ class LibraryList(Gtk.ListView):
 
     sort = GObject.Property(type=str)
     selected = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
-    focus_next = GObject.Signal()
-    focus_prev = GObject.Signal()
 
     model: Gio.ListStore
     template: str
@@ -164,17 +162,13 @@ class LibraryList(Gtk.ListView):
         super().__init__()
 
         self._setup_model()
+        self.set_tab_behavior(Gtk.ListTabBehavior.ITEM)
         self.set_factory(
             Gtk.BuilderListItemFactory.new_from_resource(
                 Gtk.BuilderCScope(), self.template
             )
         )
-
         self.connect('notify::sort', lambda *_: self._update_sort())
-
-        event_controller = Gtk.EventControllerKey.new()
-        event_controller.connect('key-pressed', self._key_press)
-        self.add_controller(event_controller)
 
     def append(self, item: GObject.Object):
         self.model.append(item)

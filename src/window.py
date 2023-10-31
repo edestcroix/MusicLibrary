@@ -26,9 +26,9 @@ from .parser import MusicParser
 from .play_queue import PlayQueue
 from .player import Player
 from .main_view import MainView
-from .library import ArtistList
 
 gi.require_version('Gtk', '4.0')
+gi.require_version('Adw', '1')
 
 
 @Gtk.Template(resource_path='/com/github/edestcroix/RecordBox/window.ui')
@@ -79,16 +79,7 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         if self.app.settings.get_boolean('sync-on-startup'):
             self.sync_library(None)
 
-        self.artist_list.connect(
-            'focus-next', lambda _: self.album_list.grab_focus()
-        )
-        self.album_list.connect(
-            'focus-prev', lambda _: self.artist_list.grab_focus()
-        )
-
         self.refresh_lists()
-
-        self.artist_list.grab_focus()
 
     def _bind_state(self):
         self._bind('width', self, 'default-width')
