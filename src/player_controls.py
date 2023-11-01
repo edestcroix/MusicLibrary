@@ -53,6 +53,7 @@ class RecordBoxPlayerControls(Gtk.Box):
         self._player.connect('state-changed', self._update_state)
         self._player.connect('stream-start', self.set_current_track)
         self._player.connect('eos', self.set_current_track)
+        self._update_volume_icon()
 
     def activate(self, playing=True):
         self._monitor.start()
