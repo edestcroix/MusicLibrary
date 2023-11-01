@@ -122,14 +122,13 @@ class TrackRow(Adw.ActionRow):
         super().__init__(title_lines=1, selectable=False, **kwargs)
         self.track = track
 
-        artists = f'\n{track.artists}' if (artists := track.artists) else ''
-        self.set_title(
+        artists = f'\n{track.artists}' if track.artists else ''
+        self.set_subtitle(
             GLib.markup_escape_text(
                 f'{track.track:0>2} - {track.length}{artists}'
             )
         )
-        self.set_subtitle(track.title)
-        self.set_css_classes(self.get_css_classes() + ['property'])
+        self.set_title(track.title)
         self.set_tooltip_text(track.raw_title)
 
         self.popover = self._create_popover()

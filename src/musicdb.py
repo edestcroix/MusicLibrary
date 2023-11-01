@@ -113,7 +113,7 @@ class MusicDB:
         for track in self.cursor.fetchall():
             self.cursor.execute(
                 'SELECT name FROM artists WHERE path = ?',
-                (track[4],),
+                (track[5],),
             )
             artists = [a[0] for a in self.cursor.fetchall()]
             self.cursor.execute(
