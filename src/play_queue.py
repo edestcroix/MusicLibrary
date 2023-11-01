@@ -1,7 +1,7 @@
 from collections import deque
 from gi.repository import Adw, Gtk, GLib, GObject, Gio
 import gi
-from .library import AlbumItem, TrackItem
+from .items import AlbumItem, TrackItem
 from enum import Enum
 
 Direction = Enum('Direction', 'NEXT PREV')

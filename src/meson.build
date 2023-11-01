@@ -21,6 +21,7 @@ recordbox_sources = [
   'main.py',
   'window.py',
   'library.py',
+  'items.py',
   'main_view.py',
   'album_view.py',
   'player_controls.py',

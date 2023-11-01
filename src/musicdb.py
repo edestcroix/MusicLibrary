@@ -3,7 +3,7 @@ import os
 import sqlite3
 from collections import namedtuple
 
-from .library import AlbumItem, ArtistItem, TrackItem
+from .items import TrackItem, AlbumItem, ArtistItem
 
 
 ArtistTags = namedtuple('ArtistTags', ['name', 'sort', 'path'])
@@ -97,14 +97,14 @@ class MusicDB:
             )
             artists = [a[0] for a in self.cursor.fetchall()]
             tracks = self.get_tracks(album[0], album[3], album[4])
-            albums.append(AlbumItem(*(album + (artists, tracks))))
+            albums.append(AlbumItem(*album, artists=artists, tracks=tracks))
         return albums
 
     def get_tracks(
         self, album: str, thumb: str, cover: str
     ) -> list[TrackItem]:
         self.cursor.execute(
-            """SELECT track, discnumber, discsubtitle, title, length, path 
+            """SELECT track, title, discnumber, discsubtitle, length, path 
                 FROM tracks 
                 WHERE album = ? ORDER BY discnumber, track""",
             (album,),

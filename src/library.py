@@ -1,7 +1,6 @@
 from gi.repository import Adw, Gtk, GLib, GObject, Gio
-import gi
-import datetime
 from enum import Enum
+from .items import TrackItem, AlbumItem, ArtistItem
 
 
 class ArtistSort(Enum):
@@ -14,136 +13,6 @@ class AlbumSort(Enum):
     NAME_DESC = 'name-descending'
     DATE_ASC = 'date-ascending'
     DATE_DESC = 'date-descending'
-
-
-gi.require_version('Gtk', '4.0')
-
-
-class TrackItem(GObject.Object):
-    __gtype_name__ = 'TrackItem'
-
-    track = GObject.Property(type=int)
-    discnumber = GObject.Property(type=int)
-    discsubtitle = GObject.Property(type=str)
-    title = GObject.Property(type=str)
-    raw_title = GObject.Property(type=str)
-    length = GObject.Property(type=str)
-    path = GObject.Property(type=str)
-    album = GObject.Property(type=str)
-    artists = GObject.Property(type=str)
-    albumartist = GObject.Property(type=str)
-    thumb = GObject.Property(type=str)
-    cover = GObject.Property(type=str)
-
-    def __init__(
-        self,
-        track=None,
-        discnumber=None,
-        discsubtitle=None,
-        title=None,
-        length=None,
-        path=None,
-        album=None,
-        artists=None,
-        albumartist=None,
-        thumb=None,
-        cover=None,
-    ):
-        super().__init__()
-        track = int(track.split('/')[0]) if track else 0
-        self.track = track
-        discnumber = int(discnumber.split('/')[0]) if discnumber else 0
-        self.discnumber = discnumber
-        self.discsubtitle = discsubtitle
-        self.title = GLib.markup_escape_text(title or '')
-        self.raw_title = title
-        self.length = self.length_str(int(length or 0))
-        self.path = path
-        self.album = album
-        self.artists = artists
-        self.albumartist = albumartist
-        self.thumb = thumb
-        self.cover = cover
-
-    def clone(self):
-        new = TrackItem()
-        new.track = self.track
-        new.discnumber = self.discnumber
-        new.discsubtitle = self.discsubtitle
-        new.title = self.title
-        new.raw_title = self.raw_title
-        new.length = self.length
-        new.path = self.path
-        new.album = self.album
-        new.artists = self.artists
-        new.albumartist = self.albumartist
-        new.thumb = self.thumb
-        new.cover = self.cover
-        return new
-
-    def length_str(self, length):
-        time = datetime.timedelta(seconds=length)
-        return str(time) if length >= 3600 else str(time)[2:]
-
-
-class AlbumItem(GObject.Object):
-    __gtype_name__ = 'AlbumItem'
-
-    name = GObject.Property(type=str)
-    raw_name = GObject.Property(type=str)
-    length = GObject.Property(type=int)
-    date = GObject.Property(type=str)
-    thumb = GObject.Property(type=str)
-    cover = GObject.Property(type=str)
-    num_tracks = GObject.Property(type=int)
-    summary = GObject.Property(type=str)
-    artists: list[str]
-    tracks: list[TrackItem]
-
-    def __init__(self, name, length, date, thumb, cover, artists, tracks):
-        super().__init__()
-        self.name = GLib.markup_escape_text(name)
-        self.raw_name = name
-        self.length = length
-        self.date = date
-        self.thumb = thumb
-        self.cover = cover
-        self.artists = artists
-        self.track_num = len(tracks)
-        self.tracks = tracks
-        self.tracks.sort(key=lambda t: (t.discnumber, t.track))
-        self.summary = f'{date} - {self.track_num} tracks\n{self.length_str()}'
-
-    def length_str(self):
-        time = datetime.timedelta(seconds=self.length)
-        return str(time) if self.length >= 3600 else str(time)[2:]
-
-    def copy(self):
-        return AlbumItem(
-            self.name,
-            self.length,
-            self.date,
-            self.thumb,
-            self.cover,
-            self.artists,
-            self.tracks,
-        )
-
-
-class ArtistItem(GObject.Object):
-    __gtype_name__ = 'ArtistItem'
-
-    name = GObject.Property(type=str)
-    raw_name = GObject.Property(type=str)
-    sort = GObject.Property(type=str)
-    albums = GObject.Property(type=str)
-
-    def __init__(self, name, sort, num_albums):
-        super().__init__()
-        self.name = GLib.markup_escape_text(name)
-        self.raw_name = name
-        self.sort = sort or name
-        self.albums = f'{num_albums} album{"s" if num_albums > 1 else ""}'
 
 
 class LibraryList(Gtk.ListView):
@@ -252,6 +121,8 @@ class AlbumList(LibraryList):
     def _setup_model(self):
         self.filter_model = Gtk.FilterListModel.new(self.model, None)
         self.selection_model = Gtk.SingleSelection.new(self.filter_model)
+        self.selection_model.set_can_unselect(True)
+        self.selection_model.set_autoselect(False)
         self.selection_model.connect('selection_changed', self._item_selected)
         self.set_model(self.selection_model)
 

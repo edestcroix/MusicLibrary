@@ -20,7 +20,7 @@ import gi
 
 gi.require_version('Gtk', '4.0')
 
-from .library import AlbumItem, TrackItem
+from .items import AlbumItem, TrackItem
 
 START_ICON = 'media-playback-start-symbolic'
 ADD_ICON = 'list-add-symbolic'
@@ -104,7 +104,7 @@ class AlbumView(Adw.BreakpointBin):
 
     def _start_from_track(self, _, track: TrackItem):
         if self.current_album:
-            new_album = self.current_album.copy()
+            new_album = self.current_album.clone()
             new_album.tracks = new_album.tracks[
                 new_album.tracks.index(track) :
             ]
