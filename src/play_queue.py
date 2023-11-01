@@ -55,8 +55,6 @@ class PlayQueue(Adw.Bin):
         )
 
     def replace_album(self, album: AlbumItem):
-        # replacing the current album invalidates the current index,
-        # so we need to save that too.
         self._backup_queue(save_index=True)
         self.selected = []
         self.model.splice(
@@ -238,18 +236,13 @@ class PlayQueue(Adw.Bin):
             if save_index:
                 self.backups.append((backup, self.current_index))
             else:
-                self.backups.append((backup, -1))
+                self.backups.append((backup, None))
 
     def _restore_queue(self):
         if self.backups:
             backup, index = self.backups.pop()
             self.model.splice(0, len(self.model), backup)
-            if index > -1:
-                self.current_index = index
-            else:
-                # need to trigger a notify on the QueueRows to redraw
-                # the current track indicator
-                self.current_index = self.current_index
+            self.current_index = index or self.current_index
 
 
 @Gtk.Template(

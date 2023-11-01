@@ -34,12 +34,10 @@ class RecordBoxPlayerControls(Gtk.Box):
 
     exit_player = GObject.Signal()
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self):
+        super().__init__()
         self.volume_slider.set_range(0, 1)
         self.progress.set_increments(1, 5)
-
-        self.loop.connect('clicked', self._cycle_loop_mode)
         self.connect('notify::stop_exits', lambda *_: self._update_stop)
 
     def attach_to_player(self, player):
@@ -58,6 +56,8 @@ class RecordBoxPlayerControls(Gtk.Box):
 
     def activate(self, playing=True):
         self._monitor.start()
+        self.stop_button.set_icon_name('media-playback-stop-symbolic')
+        self.set_property('stop-exits', False)
         if playing:
             self.play_pause.set_icon_name('media-playback-pause-symbolic')
             self.progress.set_sensitive(True)
@@ -65,6 +65,7 @@ class RecordBoxPlayerControls(Gtk.Box):
             self.play_pause.set_icon_name('media-playback-start-symbolic')
 
     def deactivate(self):
+        self.stop_button.set_icon_name('application-exit-symbolic')
         self.play_pause.set_icon_name('media-playback-start-symbolic')
         self.progress.set_sensitive(False)
         self.set_property('stop-exits', True)
@@ -123,27 +124,18 @@ class RecordBoxPlayerControls(Gtk.Box):
         )
         self._player.set_property('volume', value)
 
-    def _update_state(self, _, state: str):
-        match state:
-            case 'playing':
-                self._update_stop(False)
-                self.activate(playing=True)
-            case 'paused':
-                self._update_stop(False)
-                self.activate(playing=False)
-            case 'stopped':
-                self._update_stop(True)
-                self.deactivate()
-
+    @Gtk.Template.Callback()
     def _cycle_loop_mode(self, _):
         self._player.loop = LoopMode((self._player.loop.value + 1) % 3)
 
-    def _update_stop(self, state):
-        self.stop_exits = state
-        if self.stop_exits:
-            self.stop_button.set_icon_name('application-exit-symbolic')
-        else:
-            self.stop_button.set_icon_name('media-playback-stop-symbolic')
+    def _update_state(self, _, state: str):
+        match state:
+            case 'playing':
+                self.activate(playing=True)
+            case 'paused':
+                self.activate(playing=False)
+            case 'stopped':
+                self.deactivate()
 
     def _update_volume(self, *_):
         value = GstAudio.StreamVolume.convert_volume(

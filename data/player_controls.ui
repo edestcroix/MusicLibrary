@@ -71,6 +71,7 @@
             <child>
               <object class="GtkButton" id="loop">
                 <property name="icon-name">media-playlist-consecutive-symbolic</property>
+                <signal name="clicked" handler="_cycle_loop_mode" />
               </object>
             </child>
             <child>
