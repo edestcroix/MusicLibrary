@@ -11,7 +11,6 @@
       <object class="AdwBreakpoint" id="breakpoint1">
         <condition>max-width: 1050sp</condition>
         <setter object="inner_split" property="collapsed">True</setter>
-        <setter object="album_return" property="visible">false</setter>
         <setter object="outer_split" property="min-sidebar-width">160</setter>
         <setter object="outer_split" property="max-sidebar-width">300</setter>
       </object>
@@ -23,7 +22,6 @@
         <setter object="outer_split" property="collapsed">True</setter>
         <setter object="inner_split" property="collapsed">True</setter>
         <setter object="album_return" property="visible">true</setter>
-        <setter object="artist_return" property="visible">true</setter>
         <setter object="lists_toggle" property="visible">true</setter>
       </object>
     </child>
@@ -66,6 +64,8 @@
                                 <child type="end">
                                   <object class="GtkButton" id="artist_return">
                                     <property name="visible">False</property>
+                                    <property name="visible" bind-source="outer_split"
+                                      bind-property="collapsed" />
                                     <property name="icon-name">go-next-symbolic</property>
                                     <signal name="clicked" handler="_on_artist_return" />
                                   </object>
@@ -108,6 +108,8 @@
                                 <child type="end">
                                   <object class="GtkButton" id="album_return">
                                     <property name="visible">False</property>
+                                    <property name="visible" bind-source="outer_split"
+                                      bind-property="collapsed" />
                                     <property name="icon-name">go-next-symbolic</property>
                                     <signal name="clicked" handler="_on_album_return" />
                                   </object>
