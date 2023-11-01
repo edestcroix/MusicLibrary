@@ -51,7 +51,13 @@ class Player(GObject.GObject):
         self.bus = self._player.get_bus()
         self.bus.add_signal_watch()
         self.bus.connect('message', self._on_message)
+
         self._play_queue = play_queue
+        self._play_queue.connect(
+            'jump-to-track',
+            self.jump_to_track,
+        )
+
         self._seeking = False
 
         self.state = 'stopped'

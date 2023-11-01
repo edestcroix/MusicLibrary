@@ -53,10 +53,9 @@ class MainView(Adw.Bin):
 
     confirm_play = GObject.Property(type=bool, default=True)
     clear_queue = GObject.Property(type=bool, default=False)
-    album_changed = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
-
     show_queue = GObject.Property(type=bool, default=False)
 
+    album_changed = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
     undo_toasts = deque(maxlen=10)
 
     def __init__(self, **kwargs):
@@ -65,16 +64,12 @@ class MainView(Adw.Bin):
         self.player = Player(self.play_queue)
         self.player_controls.attach_to_player(self.player)
 
-        self._setup_actions()
-
-        self.play_queue.connect(
-            'jump-to-track',
-            self.player.jump_to_track,
-        )
         self.player.connect(
             'player-error',
             lambda _, err: self.send_toast(f'Playback Error: {err}'),
         )
+        self.player.connect('state-changed', self._on_player_state_changed)
+        self.player.connect('eos', self._on_player_eos)
 
     def update_album(self, album: AlbumItem):
         self.content_page.set_title(album.raw_name)
@@ -117,15 +112,6 @@ class MainView(Adw.Bin):
         if self.undo_toasts:
             self.undo_toasts.pop().dismiss()
         self.play_queue.undo()
-
-    def _setup_actions(self):
-        self.play_queue.connect(
-            'jump-to-track',
-            self.player.jump_to_track,
-        )
-
-        self.player.connect('state-changed', self._on_player_state_changed)
-        self.player.connect('eos', self._on_player_eos)
 
     @Gtk.Template.Callback()
     def _confirm_album_play(self, _, album: AlbumItem):
