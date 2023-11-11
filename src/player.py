@@ -33,6 +33,7 @@ class Player(GObject.GObject):
     )
 
     loop = GObject.Property(type=GObject.TYPE_PYOBJECT)
+    state = GObject.Property(type=str)
 
     single_repeated = False
 
@@ -133,6 +134,7 @@ class Player(GObject.GObject):
         # set seeking to True. This will be turned False by the message handler
         # the next time it receives an ASYNC_DONE message and _seeking is True.
         # This way, scrolling the seekbar doesn't trigger overlapping seeks.
+        # (Which I think can happen)
         self._seeking = True
         self._player.seek_simple(
             Gst.Format.TIME, Gst.SeekFlags.FLUSH, position
@@ -180,22 +182,22 @@ class Player(GObject.GObject):
         return result
 
     def _on_message(self, _, message):
-        t = message.type
-        if t == Gst.MessageType.EOS:
-            self.stop()
-            # set the current track to the start of the queue if it exists
-            # so the UI and MPRIS will update to show the first track again, signifying
-            # that the queue has ended and playing will start over.
-            if not self._play_queue.is_empty():
-                self._play_queue.restart()
+        match message.type:
+            case Gst.MessageType.EOS:
+                self.stop()
+                # set the current track to the start of the queue if it exists
+                # so the UI and MPRIS will update to show the first track again, signifying
+                # that the queue has ended and playing will start over.
+                if not self._play_queue.is_empty():
+                    self._play_queue.restart()
+                    self.current_track = self._play_queue.get_current_track()
+                self.emit('eos')
+            case Gst.MessageType.STREAM_START:
                 self.current_track = self._play_queue.get_current_track()
-            self.emit('eos')
-        elif t == Gst.MessageType.ASYNC_DONE and self._seeking:
-            self._seeking = False
-        elif message.type == Gst.MessageType.STREAM_START:
-            self.current_track = self._play_queue.get_current_track()
-            self.emit('stream_start')
-        elif t == Gst.MessageType.ERROR:
-            self._player.set_state(Gst.State.NULL)
-            err, _ = message.parse_error()
-            self.player_error.emit(err)
+                self.emit('stream_start')
+            case Gst.MessageType.ASYNC_DONE if self._seeking:
+                self._seeking = False
+            case Gst.MessageType.ERROR:
+                self._player.set_state(Gst.State.NULL)
+                err, _ = message.parse_error()
+                self.player_error.emit(err)
