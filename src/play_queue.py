@@ -1,14 +1,9 @@
 from collections import deque
-from collections.abc import Generator
 from gi.repository import Adw, Gtk, GLib, GObject, Gio
 import gi
-from .items import AlbumItem, TrackItem
-from enum import Enum
-
-Direction = Enum('Direction', 'NEXT PREV')
+from .items import TrackItem
 
 gi.require_version('Gtk', '4.0')
-
 
 # TODO: Write unit tests for this class, especially for the delete_selected method
 # to ensure the current index is updated correctly.
@@ -26,7 +21,6 @@ class PlayQueue(Adw.Bin):
     current_track = GObject.Property(type=TrackItem)
 
     jump_to_track = GObject.Signal()
-    collapse = GObject.Signal()
 
     selected = []
 
@@ -59,7 +53,11 @@ class PlayQueue(Adw.Bin):
         self.model.splice(self.current_index + 1, 0, [track.clone()])
 
     def set_index(self, index: int):
-        self.current_index = index
+        # We want to avoid setting the current_index value
+        # as much as possible because it triggers a reload of the current
+        # track css which can crash GTK if done too frequently.
+        if index != self.current_index:
+            self.current_index = index
 
     # TODO: Redo?
     def undo(self, *_):
@@ -88,14 +86,13 @@ class PlayQueue(Adw.Bin):
         queue advancement like get_next_track(), jumping to a track, or next() and previous().
         (E.g the current track was deleted from the queue or a restored backup changed current_index)"""
         return (
-            self.model and self.current_track == self.model[self.current_index]
+            self.model
+            and 0 <= self.current_index < len(self.model)
+            and self.current_track == self.model[self.current_index]
         )
 
     def get_next_track(self) -> TrackItem | None:
-        # Only advance if the index is synced, because otherwise
-        # the next track is already at the current index
-        if self.index_synced():
-            self._move_current(Direction.NEXT)
+        self.next()
         return self.get_current_track()
 
     def get_current_track(self) -> TrackItem | None:
@@ -104,22 +101,29 @@ class PlayQueue(Adw.Bin):
         get, meaning that if the two values are unsynced, they will resync after the next call
         to this method."""
 
+        # An index of -1 is used to inidicate to the previous()
+        # function that the queue was already at the start. If the
+        # queue isn't empty then it should be considered a 0.
         if self.current_index == -1 and len(self.model) > 0:
             self.current_index = 0
         if 0 <= self.current_index < len(self.model):
-            self.current_track = self.model[self.current_index]
+            if self.current_track != self.model[self.current_index]:
+                self.current_track = self.model[self.current_index]
         else:
             self.current_track = None
         return self.current_track
 
     def next(self) -> bool:
-        # don't advance if the index is unsynced, same as get_next_track()
+        # Only advance if the index is synced, because otherwise
+        # the next track is already at the current index
         if self.index_synced():
-            self._move_current(Direction.NEXT)
+            # use set_index here because we don't want to trigger
+            # the current_index::notify signal if the value doesn't change
+            self.set_index(min(self.current_index + 1, len(self.model)))
         return 0 <= self.current_index < len(self.model)
 
     def previous(self) -> bool:
-        self._move_current(Direction.PREV)
+        self.set_index(max(self.current_index - 1, 0))
         return 0 <= self.current_index < len(self.model)
 
     @Gtk.Template.Callback()
@@ -163,8 +167,8 @@ class PlayQueue(Adw.Bin):
 
     @Gtk.Template.Callback()
     def _on_row_activated(self, _, index: int):
-        self.current_index = index
-        self.current_track = self.get_current_track()
+        self.set_index(index)
+        self.get_current_track()
         self.emit('jump-to-track')
 
     @Gtk.Template.Callback()
@@ -195,17 +199,12 @@ class PlayQueue(Adw.Bin):
             self.model.splice(segment[0] - removed, len(segment), [])
         self.selected = []
         self.select_all_button.set_active(False)
-        # triggers an update of the current track highlight
+        self.delete_selected.set_sensitive(False)
+        # triggers an update of the current track highlight, unlike other times
+        # the current_index is set this time we want it to trigger the notify signal
+        # because the track at the current index could have been deleted and the
+        # new one needs to have the highlight applied.
         self.current_index = self.current_index
-
-    def _move_current(self, direction: Direction):
-        if direction == Direction.NEXT:
-            self.current_index += 1
-        elif direction == Direction.PREV:
-            if self.current_index >= len(self.model):
-                self.current_index = len(self.model) - 2
-            else:
-                self.current_index -= 1
 
     def _check_selection(self, _, start, range_size):
         """Maintain a list of selected rows so we can delete them later.
@@ -217,7 +216,9 @@ class PlayQueue(Adw.Bin):
                     self.selected.append(i)
             elif i in self.selected:
                 self.selected.remove(i)
+        self._update_selection_controls()
 
+    def _update_selection_controls(self):
         self.delete_selected.set_sensitive(len(self.selected) > 0)
         self.select_all_button.set_inconsistent(
             self.select_all_button.get_active()
