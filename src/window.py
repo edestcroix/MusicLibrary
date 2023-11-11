@@ -1,5 +1,3 @@
-# window.py
-#
 # Copyright 2023 Emmett de St. Croix
 #
 # This program is free software: you can redistribute it and/or modify
@@ -41,33 +39,25 @@ TrackList = list[TrackItem]
 class RecordBoxWindow(Adw.ApplicationWindow):
     __gtype_name__ = 'RecordBoxWindow'
 
-    # outer_split is the AdwOverlaySplitView with the artist/album lists as it's sidebar
-    outer_split = Gtk.Template.Child()
+    library_split = Gtk.Template.Child()
+    queue_panel_split_view = Gtk.Template.Child()
 
+    # Major UI components
     library = Gtk.Template.Child()
-
-    main_page = Gtk.Template.Child()
-
-    play_button = Gtk.Template.Child()
-
-    lists_toggle = Gtk.Template.Child()
-    queue_toggle = Gtk.Template.Child()
-
     album_overview = Gtk.Template.Child()
+    player_controls = Gtk.Template.Child()
+    play_queue = Gtk.Template.Child()
+
+    # the AdwNavigationPage in the content part of the library_split
+    main_page = Gtk.Template.Child()
 
     toolbar_view = Gtk.Template.Child()
 
-    content_page = Gtk.Template.Child()
+    play_button = Gtk.Template.Child()
+    queue_toggle = Gtk.Template.Child()
 
-    queue_panel_split_view = Gtk.Template.Child()
-    play_queue = Gtk.Template.Child()
+    toast_overlay = Gtk.Template.Child()
 
-    player_controls = Gtk.Template.Child()
-
-    toast = Gtk.Template.Child()
-
-    confirm_play = GObject.Property(type=bool, default=True)
-    album_changed = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
     undo_toasts = deque(maxlen=10)
 
     def __init__(self, **kwargs):
@@ -103,7 +93,7 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         self.player.connect('eos', self._on_player_eos)
 
     def update_album(self, album: AlbumItem):
-        self.content_page.set_title(album.raw_name)
+        self.main_page.set_title(album.raw_name)
         self.album_overview.update_album(album)
 
     def send_toast(
@@ -119,10 +109,11 @@ class RecordBoxWindow(Adw.ApplicationWindow):
             toast.set_button_label('Undo')
             toast.set_action_name('win.undo-queue')
             self.undo_toasts.append(toast)
-        self.toast.add_toast(toast)
+        self.toast_overlay.add_toast(toast)
 
     ### Action Callbacks ###
 
+    @Gtk.Template.Callback()
     def play_album(self, *_):
         if album := self.album_overview.current_album:
             self._confirm_play(PlayRequest(album.tracks, 0), album.raw_name)
@@ -170,8 +161,8 @@ class RecordBoxWindow(Adw.ApplicationWindow):
     def _album_selected(self, _, album: AlbumItem):
         self.update_album(album)
         self.main_page.set_title(album.raw_name)
-        self.outer_split.set_show_sidebar(
-            self.outer_split.get_collapsed() == False
+        self.library_split.set_show_sidebar(
+            self.library_split.get_collapsed() == False
         )
 
         self.play_button.set_sensitive(True)
@@ -180,19 +171,12 @@ class RecordBoxWindow(Adw.ApplicationWindow):
 
     @Gtk.Template.Callback()
     def _close_sidebar(self, _):
-        self.outer_split.set_show_sidebar(False)
-
-    @Gtk.Template.Callback()
-    def _album_activated(self, *_):
-        # album row activation only happens on double-click, and the row
-        # gets selected on the first click, setting album,
-        # so we can just call the play_album callback.
-        self.play_album()
+        self.library_split.set_show_sidebar(False)
 
     @Gtk.Template.Callback()
     def _exit_player(self, _):
         self.player.exit()
-        self._set_controls_visible(False)
+        self.toolbar_view.set_reveal_bottom_bars(False)
         self.play_queue.clear()
         self.queue_panel_split_view.set_show_sidebar(False)
         self.return_to_playing.set_enabled(False)
@@ -264,26 +248,21 @@ class RecordBoxWindow(Adw.ApplicationWindow):
             self.send_toast('Queue Updated', undo=not was_empty)
 
     # player specific methods #
-
-    def _set_controls_visible(self, visible: bool):
-        self.toolbar_view.set_reveal_bottom_bars(visible)
+    def _on_player_state_changed(self, _, state):
+        if state in {'playing', 'paused'}:
+            self.toolbar_view.set_reveal_bottom_bars(True)
+            self.set_hide_on_close(
+                self.app.settings.get_boolean('background-playback')
+            )
+            self.replace_queue.set_enabled(True)
+            self.queue_toggle.set_sensitive(True)
+            self.return_to_playing.set_enabled(True)
+        else:
+            self.set_hide_on_close(False)
 
     def _on_player_eos(self, _):
         if self.app.settings.get_boolean('clear-queue'):
             GLib.idle_add(self._exit_player, None)
-
-    def _on_player_state_changed(self, _, state):
-        if state in {'playing', 'paused'}:
-            GLib.idle_add(self._set_controls_visible, True)
-
-        self.set_hide_on_close(
-            self.app.settings.get_boolean('background-playback')
-            and state in ['playing', 'paused']
-        )
-        if state != 'stopped':
-            self.replace_queue.set_enabled(True)
-            self.queue_toggle.set_sensitive(True)
-            self.return_to_playing.set_enabled(True)
 
     # action and settings setup/binding #
 

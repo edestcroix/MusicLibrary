@@ -11,36 +11,35 @@
       <object class="AdwBreakpoint">
         <condition>max-width: 1050sp</condition>
         <setter object="library" property="collapsed">True</setter>
-        <setter object="outer_split" property="min-sidebar-width">160</setter>
-        <setter object="outer_split" property="max-sidebar-width">300</setter>
+        <setter object="library_split" property="min-sidebar-width">160</setter>
+        <setter object="library_split" property="max-sidebar-width">300</setter>
       </object>
     </child>
     <child>
       <object class="AdwBreakpoint">
         <condition>max-width: 640sp</condition>
-        <setter object="outer_split" property="pin-sidebar">false</setter>
-        <setter object="outer_split" property="collapsed">True</setter>
+        <setter object="library_split" property="pin-sidebar">false</setter>
+        <setter object="library_split" property="collapsed">True</setter>
         <setter object="library" property="collapsed">True</setter>
         <setter object="lists_toggle" property="visible">true</setter>
       </object>
     </child>
     <property name="content">
-      <object class="AdwOverlaySplitView" id="outer_split">
+      <object class="AdwOverlaySplitView" id="library_split">
         <property name="min-sidebar-width">380</property>
         <property name="max-sidebar-width">1000</property>
         <property name="sidebar-width-fraction">0.4</property>
-        <property name="show-sidebar">true</property>
         <property name="show-sidebar" bind-source="lists_toggle" bind-property="active"
-          bind-flags="bidirectional" />
+          bind-flags="bidirectional">true</property>
         <property name="sidebar">
           <object class="AdwNavigationPage">
             <property name="title" translatable="yes">Sidebar</property>
             <property name="child">
               <object class="RecordBoxMusicLibrary" id="library">
-                <property name='minimized' bind-source='outer_split' bind-property='collapsed'
+                <property name='minimized' bind-source='library_split' bind-property='collapsed'
                   bind-flags='bidirectional' />
                 <signal name="album-selected" handler="_album_selected" />
-                <signal name="album-activated" handler="_album_activated" />
+                <signal name="album-activated" handler="play_album" />
                 <signal name="close" handler="_close_sidebar" />
               </object>
             </property>
@@ -89,7 +88,7 @@
                   </object>
                 </child>
                 <property name="content">
-                  <object class="AdwToastOverlay" id="toast">
+                  <object class="AdwToastOverlay" id="toast_overlay">
                     <child>
                       <object class="AdwOverlaySplitView" id="queue_panel_split_view">
                         <property name="sidebar-position">end</property>
@@ -108,7 +107,7 @@
                           </object>
                         </property>
                         <property name="content">
-                          <object class="AdwNavigationPage" id="content_page">
+                          <object class="AdwNavigationPage" id="overview_page">
                             <property name="title" translatable="yes">Overview</property>
                             <property name="child">
                               <object class="AdwToolbarView" id="toolbar_view">
