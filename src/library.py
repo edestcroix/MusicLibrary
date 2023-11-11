@@ -38,6 +38,7 @@ class MusicLibrary(Adw.Bin):
 
     close = GObject.Signal()
     album_selected = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
+    album_activated = GObject.Signal()
 
     def __init__(self):
         super().__init__()
@@ -117,7 +118,7 @@ class MusicLibrary(Adw.Bin):
 
     @Gtk.Template.Callback()
     def _on_album_activated(self, *_):
-        pass
+        self.emit('album-activated')
 
     def _select_row_with_title(
         self, row_list: AlbumList | ArtistList, title: str

@@ -23,7 +23,6 @@ recordbox_sources = [
   'library.py',
   'library_lists.py',
   'items.py',
-  'main_view.py',
   'album_view.py',
   'player_controls.py',
   'play_queue.py',

@@ -124,7 +124,7 @@ class RecordBoxApplication(Adw.Application):
 
     def player(self):
         """Return the application's player object."""
-        return self.props.active_window.main_view.player
+        return self.props.active_window.player
 
 
 def main(version):
