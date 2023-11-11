@@ -1,4 +1,5 @@
 from collections import deque
+from collections.abc import Generator
 from gi.repository import Adw, Gtk, GLib, GObject, Gio
 import gi
 from .items import AlbumItem, TrackItem
@@ -42,37 +43,27 @@ class PlayQueue(Adw.Bin):
 
         self.selection.connect('selection-changed', self._check_selection)
 
-    def _create_factory(self):
-        factory = Gtk.SignalListItemFactory.new()
-        factory.connect('setup', self._setup_row)
-        factory.connect('bind', self._bind_row)
-        return factory
-
-    def add_album(self, album: AlbumItem):
+    def append(self, tracks: list[TrackItem]):
         self._backup_queue()
-        self.model.splice(
-            len(self.model), 0, [t.clone() for t in album.tracks]
-        )
+        self.model.splice(len(self.model), 0, [t.clone() for t in tracks])
 
-    def replace_album(self, album: AlbumItem):
+    def overwrite(self, tracks: list[TrackItem]):
         self._backup_queue(save_index=True)
+        self.model.splice(0, len(self.model), [t.clone() for t in tracks])
         self.selected = []
-        self.model.splice(
-            0, len(self.model), [t.clone() for t in album.tracks]
-        )
+        self.select_all_button.set_active(False)
         self.current_index = 0
-
-    # TODO: Redo?
-    def undo(self, *_):
-        self._restore_queue()
-
-    def add_track(self, track: TrackItem):
-        self._backup_queue()
-        self.model.append(track.clone())
 
     def add_after_current(self, track: TrackItem):
         self._backup_queue()
         self.model.splice(self.current_index + 1, 0, [track.clone()])
+
+    def set_index(self, index: int):
+        self.current_index = index
+
+    # TODO: Redo?
+    def undo(self, *_):
+        self._restore_queue()
 
     def select_all(self):
         self.selection.select_all()
@@ -141,6 +132,12 @@ class PlayQueue(Adw.Bin):
     def remove_backups(self):
         self.backups.clear()
 
+    def _create_factory(self):
+        factory = Gtk.SignalListItemFactory.new()
+        factory.connect('setup', self._setup_row)
+        factory.connect('bind', self._bind_row)
+        return factory
+
     def _setup_row(self, _, item):
         row = QueueRow()
         item.set_child(row)
@@ -197,7 +194,7 @@ class PlayQueue(Adw.Bin):
         if segment:
             self.model.splice(segment[0] - removed, len(segment), [])
         self.selected = []
-        # self.current_track = self.get_current_track()
+        self.select_all_button.set_active(False)
         # triggers an update of the current track highlight
         self.current_index = self.current_index
 

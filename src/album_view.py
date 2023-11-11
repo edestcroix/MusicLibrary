@@ -15,6 +15,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from collections import namedtuple
 from gi.repository import Adw, Gtk, GLib, GObject
 import gi
 
@@ -24,6 +25,10 @@ from .items import AlbumItem, TrackItem
 
 START_ICON = 'media-playback-start-symbolic'
 ADD_ICON = 'list-add-symbolic'
+
+
+# Return type for the play request signal
+PlayRequest = namedtuple('PlayRequest', ['tracks', 'index'])
 
 
 @Gtk.Template(resource_path='/com/github/edestcroix/RecordBox/album_view.ui')
@@ -44,10 +49,9 @@ class AlbumView(Adw.BreakpointBin):
 
     expand_discs = GObject.Property(type=bool, default=False)
 
-    play_track = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
+    play_request = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
     add_track = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
     add_track_next = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
-    start_from_track = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
 
     def update_cover(self, cover_path: str):
         self.cover_image.set_from_file(cover_path)
@@ -88,27 +92,19 @@ class AlbumView(Adw.BreakpointBin):
     def _setup_row(self, track: TrackItem, disc_row: Adw.ExpanderRow):
         row = TrackRow(track=track)
         row.connect('play_track', self._play_track)
-        row.connect('add_track', self._add_track)
+        row.connect('add_track', lambda _, t: self.add_track.emit(t))
         row.connect('add_track_next', lambda _, t: self.add_track_next.emit(t))
-        row.connect('start_from_track', self._start_from_track)
         if disc_row:
             disc_row.add_row(row)
         else:
             self.track_list.append(row)
 
     def _play_track(self, _, track: TrackItem):
-        self.emit('play_track', track)
-
-    def _add_track(self, _, track: TrackItem):
-        self.emit('add_track', track)
-
-    def _start_from_track(self, _, track: TrackItem):
-        if self.current_album:
-            new_album = self.current_album.clone()
-            new_album.tracks = new_album.tracks[
-                new_album.tracks.index(track) :
-            ]
-            self.emit('start_from_track', new_album)
+        if album := self.current_album:
+            self.emit(
+                'play_request',
+                PlayRequest(album.tracks, album.tracks.index(track)),
+            )
 
 
 class TrackRow(Adw.ActionRow):
@@ -147,7 +143,6 @@ class TrackRow(Adw.ActionRow):
         popover.set_css_classes(['menu'])
         box = Gtk.ListBox()
         box.append(self._create_menu_option(START_ICON, 'Play Track'))
-        box.append(self._create_menu_option(START_ICON, 'Start Here'))
         box.append(self._create_menu_option(ADD_ICON, 'Insert Next'))
         box.append(self._create_menu_option(ADD_ICON, 'Append to Queue'))
         box.connect('row-activated', self._popover_selected)
@@ -170,8 +165,6 @@ class TrackRow(Adw.ActionRow):
             case 0:
                 self.emit('play_track', self.track)
             case 1:
-                self.emit('start_from_track', self.track)
-            case 2:
                 self.emit('add_track_next', self.track)
-            case 3:
+            case 2:
                 self.emit('add_track', self.track)

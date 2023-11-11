@@ -17,8 +17,8 @@
 
 from gi.repository import Adw, Gtk, GLib, Gst, Gio, GObject
 import gi
-from .library import AlbumItem, TrackItem
-from .album_view import AlbumView
+from .library_lists import AlbumItem, TrackItem
+from .album_view import AlbumView, PlayRequest
 from .player_controls import RecordBoxPlayerControls
 from .player import Player
 from .monitor import ProgressMonitor
@@ -28,6 +28,8 @@ from collections import deque
 
 gi.require_version('Gtk', '4.0')
 gi.require_version('Gst', '1.0')
+
+TrackList = list[TrackItem]
 
 
 @Gtk.Template(resource_path='/com/github/edestcroix/RecordBox/main_view.ui')
@@ -90,44 +92,40 @@ class MainView(Adw.Bin):
             self.undo_toasts.append(toast)
         self.toast.add_toast(toast)
 
+    ### Callbacks for the album action menu ###
+
     def play_album(self, *_):
         if album := self.album_overview.current_album:
-            self._confirm_album_play(None, album)
+            self._confirm_play(PlayRequest(album.tracks, 0), album.raw_name)
 
-    def queue_add(self, *_):
-        if album := self.album_overview.current_album:
-            was_empty = self.play_queue.is_empty()
-            self.play_queue.add_album(album)
-            if self.player.state == 'stopped':
-                self.player.ready()
-            self.send_toast('Queue Updated', undo=not was_empty)
+    def append_queue(self, *_):
+        self._add_to_queue(self._current_album_tracks())
 
-    def replace_queue(self, *_):
-        if self.album_overview.current_album:
-            was_empty = self.play_queue.is_empty()
-            self.play_queue.replace_album(self.album_overview.current_album)
-            self.send_toast('Queue Replaced', undo=not was_empty)
+    def overwrite_queue(self, *_):
+        self._add_to_queue(self._current_album_tracks(), overwrite=True)
+
+    ## Misc callbacks ##
 
     def undo(self, *_):
         if self.undo_toasts:
             self.undo_toasts.pop().dismiss()
         self.play_queue.undo()
 
-    @Gtk.Template.Callback()
-    def _confirm_album_play(self, _, album: AlbumItem):
-        if self.player.state == 'stopped' or not self.confirm_play:
-            self._play_album(album)
-            return
-        dialog = self._play_dialog(album.raw_name)
-        dialog.choose(self.cancellable, self._on_dialog_response, album)
+    def return_to_playing(self, *_):
+        if current_track := self.player.current_track:
+            current_album = current_track.album
+            self.emit('album_changed', current_album)
+
+    ## UI Callbacks ##
 
     @Gtk.Template.Callback()
-    def _confirm_track_play(self, _, track: TrackItem):
-        if self.player.state == 'stopped' or not self.confirm_play:
-            self._play_track(track)
-            return
-        dialog = self._play_dialog(track.title)
-        dialog.choose(self.cancellable, self._on_dialog_track_response, track)
+    def _on_play_request(self, _, play_request: PlayRequest):
+        tracks, track_index = play_request
+        self._confirm_play(play_request, tracks[track_index].title)
+
+    @Gtk.Template.Callback()
+    def _on_add_track(self, _, track: TrackItem):
+        self._add_to_queue([track])
 
     @Gtk.Template.Callback()
     def _on_add_track_next(self, _, track: TrackItem):
@@ -138,24 +136,20 @@ class MainView(Adw.Bin):
         self.send_toast('Track Inserted', undo=not was_empty)
 
     @Gtk.Template.Callback()
-    def _on_add_track(self, _, track: TrackItem):
-        was_empty = self.play_queue.is_empty()
-        self.play_queue.add_track(track)
-        if self.player.state == 'stopped':
-            self.player.ready()
-        self.send_toast('Track Added to Queue', undo=not was_empty)
-
-    def return_to_playing(self, *_):
-        if current_track := self.player.current_track:
-            current_album = current_track.album
-            self.emit('album_changed', current_album)
-
-    @Gtk.Template.Callback()
     def _exit_player(self, _):
         self.player.exit()
         self._set_controls_visible(False)
         self.play_queue.clear()
         self.queue_panel_split_view.set_show_sidebar(False)
+
+    ## Private methods ##
+
+    def _confirm_play(self, play_request: PlayRequest, name: str):
+        if self.player.state == 'stopped' or not self.confirm_play:
+            self._play_tracks(play_request)
+            return
+        dialog = self._play_dialog(name)
+        dialog.choose(self.cancellable, self._on_dialog_response, play_request)
 
     def _play_dialog(self, name: str) -> Adw.MessageDialog:
         dialog = Adw.MessageDialog(
@@ -167,7 +161,7 @@ class MainView(Adw.Bin):
 
         dialog.add_response('cancel', 'Cancel')
         dialog.set_default_response('cancel')
-        dialog.add_response('append', 'Add at End')
+        dialog.add_response('append', 'Append To Queue')
         dialog.add_response('accept', 'Clear Queue and Play')
         dialog.set_response_appearance(
             'accept', Adw.ResponseAppearance.DESTRUCTIVE
@@ -178,37 +172,36 @@ class MainView(Adw.Bin):
         return dialog
 
     def _on_dialog_response(
-        self, dialog: Adw.MessageDialog, response, album: AlbumItem
+        self, dialog: Adw.MessageDialog, response, play_request: PlayRequest
     ):
         result = dialog.choose_finish(response)
         if result == 'accept':
-            self._play_album(album)
+            self._play_tracks(play_request)
         elif result == 'append':
-            self.play_queue.add_album(album)
-            self.send_toast('Queue Updated')
+            self._add_to_queue(play_request.tracks)
 
-    def _on_dialog_track_response(self, dialog, response, track):
-        result = dialog.choose_finish(response)
-        if result == 'accept':
-            self._play_track(track)
-        elif result == 'append':
-            self.play_queue.add_track(track)
-            self.send_toast('Queue Updated')
-
-    def _play_album(self, album: AlbumItem):
-        self.play_queue.replace_album(album)
-        # Backups are for modifications to the queue starting at the first played/added album.
-        # Playing a new album is not a modification, but a reset and replacement of the queue.
-        # (Undo's don't re-play the track that was playing before the undo, so it's weird
-        # to undo a play action without undoing the play, which I don't want to do anyway.)
+    def _play_tracks(self, play_request: PlayRequest):
+        self._add_to_queue(play_request.tracks, overwrite=True, toast=False)
+        self.play_queue.set_index(play_request.index)
         self.play_queue.remove_backups()
         self.player.play()
 
-    def _play_track(self, track: TrackItem):
-        self.play_queue.clear()
-        self.play_queue.add_track(track)
-        self.play_queue.remove_backups()
-        self.player.play()
+    def _current_album_tracks(self) -> TrackList:
+        if current_album := self.album_overview.current_album:
+            return current_album.tracks
+        else:
+            return []
+
+    def _add_to_queue(self, tracks: TrackList, overwrite=False, toast=True):
+        was_empty = self.play_queue.is_empty()
+        if overwrite:
+            self.play_queue.overwrite(tracks)
+        else:
+            self.play_queue.append(tracks)
+            if self.player.state == 'stopped':
+                self.player.ready()
+        if toast:
+            self.send_toast('Queue Updated', undo=not was_empty)
 
     def _on_player_state_changed(self, _, state: str):
         if state in {'playing', 'paused'}:

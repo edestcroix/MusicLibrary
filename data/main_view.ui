@@ -36,10 +36,9 @@
                     </child>
                     <property name="content">
                       <object class="RecordBoxAlbumView" id="album_overview">
-                        <signal name="play_track" handler="_confirm_track_play" />
+                        <signal name="play_request" handler="_on_play_request" />
                         <signal name="add_track" handler="_on_add_track" />
                         <signal name="add_track_next" handler="_on_add_track_next" />
-                        <signal name="start_from_track" handler="_confirm_album_play" />
                       </object>
                     </property>
                   </object>
