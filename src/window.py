@@ -88,7 +88,11 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         self._bind('expand-discs', self.album_overview, 'expand_discs')
         self._bind('show-all-artists', self.library, 'show_all_artists')
 
-        self.player = Player(self.play_queue)
+        self._setup_actions()
+
+    def attach_to_player(self, player: Player):
+        self.player = player
+        self.player.attach_to_play_queue(self.play_queue)
         self.player_controls.attach_to_player(self.player)
 
         self.player.connect(
@@ -97,8 +101,6 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         )
         self.player.connect('state-changed', self._on_player_state_changed)
         self.player.connect('eos', self._on_player_eos)
-
-        self._setup_actions()
 
     def update_album(self, album: AlbumItem):
         self.content_page.set_title(album.raw_name)
@@ -328,11 +330,6 @@ class RecordBoxWindow(Adw.ApplicationWindow):
             'album-sort',
         )
         self.add_action(self.album_sort)
-
-        self.player.connect(
-            'state-changed',
-            self._on_player_state_changed,
-        )
 
     def _create_action(self, name, callback, enabled=False):
         action = Gio.SimpleAction.new(name, None)

@@ -182,7 +182,7 @@ class MPRIS(Server):
 
     def __init__(self, app):
         self._app = app
-        self._player = app.player()
+        self._player = app.player
         self._volume = 0.0
         self._metadata = {
             'mpris:trackid': GLib.Variant(

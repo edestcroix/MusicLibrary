@@ -20,6 +20,9 @@ class LoopMode(Enum):
 
 
 class Player(GObject.GObject):
+    """The player class handles playback control and manages the GStreamer
+    pipeline. Must be connected to a play queue to function."""
+
     volume = GObject.Property(type=float, default=1.0)
     muted = GObject.Property(type=bool, default=False)
 
@@ -37,7 +40,7 @@ class Player(GObject.GObject):
 
     single_repeated = False
 
-    def __init__(self, play_queue, **kwargs):
+    def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._player = Gst.parse_launch(
             'playbin audio-sink="rgvolume album-mode=\\"true\\" ! autoaudiosink"'
@@ -52,17 +55,17 @@ class Player(GObject.GObject):
         self.bus = self._player.get_bus()
         self.bus.add_signal_watch()
         self.bus.connect('message', self._on_message)
+        self._seeking = False
 
+        self.state = 'stopped'
+        self.loop = LoopMode.NONE
+
+    def attach_to_play_queue(self, play_queue):
         self._play_queue = play_queue
         self._play_queue.connect(
             'jump-to-track',
             self.jump_to_track,
         )
-
-        self._seeking = False
-
-        self.state = 'stopped'
-        self.loop = LoopMode.NONE
 
     @GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
     def state_changed(self, state):

@@ -28,6 +28,7 @@ from gi.repository import Gtk, Gio, Adw
 from .window import RecordBoxWindow
 from .preferences import RecordBoxPreferencesWindow
 from .mpris import MPRIS
+from .player import Player
 
 
 class RecordBoxApplication(Adw.Application):
@@ -46,8 +47,9 @@ class RecordBoxApplication(Adw.Application):
         )
         self.create_action('refresh', self.on_refresh_action, ['<primary>r'])
 
+        self.player = Player()
+        MPRIS(self)
         self.settings = Gio.Settings.new('com.github.edestcroix.RecordBox')
-        self.mpris = None
 
     def do_activate(self):
         """Called when the application is activated.
@@ -59,12 +61,9 @@ class RecordBoxApplication(Adw.Application):
             win = self.props.active_window
         else:
             win = RecordBoxWindow(application=self)
+            win.attach_to_player(self.player)
             win.set_title('RecordBox')
             self.bind_window_actions()
-
-            if not self.mpris:
-                self.mpris = MPRIS(self)
-
         win.present()
 
     def on_about_action(self, widget, _):
@@ -121,10 +120,6 @@ class RecordBoxApplication(Adw.Application):
         self.set_accels_for_action('win.filter-all', ['<primary>slash'])
 
         self.set_accels_for_action('win.undo-queue', ['<primary>z'])
-
-    def player(self):
-        """Return the application's player object."""
-        return self.props.active_window.player
 
 
 def main(version):
