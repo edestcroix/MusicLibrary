@@ -1,6 +1,6 @@
 from gi.repository import Adw, Gtk, GLib, GObject, Gio
 from enum import Enum
-from .items import TrackItem, AlbumItem, ArtistItem
+from .items import AlbumItem, ArtistItem
 
 
 class ArtistSort(Enum):
@@ -71,12 +71,6 @@ class LibraryList(Gtk.ListView):
     def _item_selected(self, *_):
         if selected := self.selection_model.get_selected_item():
             self.emit('selected', selected)
-
-    def _key_press(self, key_controller, keyval, keycode, state):
-        if keycode == 114:
-            self.emit('focus-next')
-        elif keycode == 113:
-            self.emit('focus-prev')
 
     def _update_sort(self):
         pass

@@ -16,7 +16,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from collections import namedtuple
-from gi.repository import Adw, Gtk, GLib, GObject
+from gi.repository import Adw, Gtk, GLib, GObject, Gio
 import gi
 
 gi.require_version('Gtk', '4.0')
@@ -25,10 +25,6 @@ from .items import AlbumItem, TrackItem
 
 START_ICON = 'media-playback-start-symbolic'
 ADD_ICON = 'list-add-symbolic'
-
-
-# Return type for the play request signal
-PlayRequest = namedtuple('PlayRequest', ['tracks', 'index'])
 
 
 @Gtk.Template(resource_path='/com/github/edestcroix/RecordBox/album_view.ui')
@@ -48,10 +44,6 @@ class AlbumView(Adw.BreakpointBin):
     current_album = None
 
     expand_discs = GObject.Property(type=bool, default=False)
-
-    play_request = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
-    add_track = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
-    add_track_next = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
 
     def update_cover(self, cover_path: str):
         self.cover_image.set_from_file(cover_path)
@@ -127,44 +119,18 @@ class TrackRow(Adw.ActionRow):
         self.set_title(track.title)
         self.set_tooltip_text(track.raw_title)
 
-        self.popover = self._create_popover()
+        self.menu_model = Gio.Menu.new()
+        self.menu_model.append('Play Track', f'win.play({track.track - 1})')
+        self.menu_model.append(
+            'Add to Queue', f'win.append({track.track - 1})'
+        )
+        self.menu_model.append('Insert Next', f'win.insert({track.track - 1})')
+        self.new_popover = Gtk.PopoverMenu.new_from_model(self.menu_model)
 
         btn = Gtk.MenuButton()
         btn.set_icon_name('view-more-symbolic')
         btn.set_css_classes(['flat'])
         btn.set_valign(Gtk.Align.CENTER)
-        btn.set_popover(self.popover)
+        btn.set_popover(self.new_popover)
 
         self.add_suffix(btn)
-
-    def _create_popover(self) -> Gtk.Popover:
-        popover = Gtk.Popover.new()
-        popover.set_position(Gtk.PositionType.BOTTOM)
-        popover.set_css_classes(['menu'])
-        box = Gtk.ListBox()
-        box.append(self._create_menu_option(START_ICON, 'Play Track'))
-        box.append(self._create_menu_option(ADD_ICON, 'Insert Next'))
-        box.append(self._create_menu_option(ADD_ICON, 'Append to Queue'))
-        box.connect('row-activated', self._popover_selected)
-        popover.set_child(box)
-        return popover
-
-    def _create_menu_option(self, icon_name: str, label: str) -> Gtk.Box:
-        box = Gtk.Box()
-        box.set_orientation(Gtk.Orientation.HORIZONTAL)
-        box.set_halign(Gtk.Align.START)
-        icon = Gtk.Image.new_from_icon_name(icon_name)
-        label = Gtk.Label(label=label, halign=Gtk.Align.START)
-        box.append(icon)
-        box.append(label)
-        return box
-
-    def _popover_selected(self, _, row: Gtk.ListBoxRow):
-        self.popover.popdown()
-        match row.get_index():
-            case 0:
-                self.emit('play_track', self.track)
-            case 1:
-                self.emit('add_track_next', self.track)
-            case 2:
-                self.emit('add_track', self.track)

@@ -24,15 +24,16 @@ from .musicdb import MusicDB
 from .parser import MusicParser
 from .play_queue import PlayQueue
 from .player import Player
-from .album_view import AlbumView, PlayRequest
+from .album_view import AlbumView
 from .player_controls import RecordBoxPlayerControls
 
-from collections import deque
+from collections import deque, namedtuple
 
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 
 TrackList = list[TrackItem]
+PlayRequest = namedtuple('PlayRequest', ['tracks', 'index'])
 
 
 @Gtk.Template(resource_path='/com/github/edestcroix/RecordBox/window.ui')
@@ -113,16 +114,36 @@ class RecordBoxWindow(Adw.ApplicationWindow):
 
     ### Action Callbacks ###
 
-    @Gtk.Template.Callback()
-    def play_album(self, *_):
+    def play(self, _, index: GLib.Variant):
+        """Callback for the play action. Plays the currently selected album
+        starting at the given index. Will destructively overwrite the queue"""
         if album := self.album_overview.current_album:
-            self._confirm_play(PlayRequest(album.tracks, 0), album.raw_name)
+            i = index.get_int32()
+            name = album.tracks[i].title if i else album.raw_name
+            self._confirm_play(album.tracks, i, name)
 
-    def append_queue(self, *_):
+    def append_album(self, *_):
+        """Callback for the add-album action. Can't currently be combined with append
+        track like how play is, because the add to queue option in the album menu
+        doesn't work with the append action for some reason."""
         self._add_to_queue(self._current_album_tracks())
+
+    def append_track(self, _, index: GLib.Variant):
+        """Gets the track at the given index in the current album and adds
+        it to the queue. Callback for the append action."""
+        i: int = index.get_int32()
+        self._add_to_queue(self._current_album_tracks()[i : i + 1])
 
     def overwrite_queue(self, *_):
         self._add_to_queue(self._current_album_tracks(), overwrite=True)
+
+    def insert_track(self, _, index: GLib.Variant):
+        track = self._current_album_tracks()[index.get_int32()]
+        was_empty = self.play_queue.is_empty()
+        self.play_queue.add_after_current(track)
+        if self.player.state == 'stopped':
+            self.player.ready()
+        self.send_toast('Track Inserted', undo=not was_empty)
 
     def undo(self, *_):
         if self.undo_toasts:
@@ -141,21 +162,10 @@ class RecordBoxWindow(Adw.ApplicationWindow):
     ## UI Callbacks ##
 
     @Gtk.Template.Callback()
-    def _on_play_request(self, _, play_request: PlayRequest):
-        tracks, track_index = play_request
-        self._confirm_play(play_request, tracks[track_index].title)
-
-    @Gtk.Template.Callback()
-    def _on_add_track(self, _, track: TrackItem):
-        self._add_to_queue([track])
-
-    @Gtk.Template.Callback()
-    def _on_add_track_next(self, _, track: TrackItem):
-        was_empty = self.play_queue.is_empty()
-        self.play_queue.add_after_current(track)
-        if self.player.state == 'stopped':
-            self.player.ready()
-        self.send_toast('Track Inserted', undo=not was_empty)
+    def _play_album(self, *_):
+        """Callback for when a row in the album list is activated."""
+        if album := self.album_overview.current_album:
+            self._confirm_play(album.tracks, 0, album.raw_name)
 
     @Gtk.Template.Callback()
     def _album_selected(self, _, album: AlbumItem):
@@ -165,9 +175,9 @@ class RecordBoxWindow(Adw.ApplicationWindow):
             self.library_split.get_collapsed() == False
         )
 
-        self.play_button.set_sensitive(True)
         self.play_action.set_enabled(True)
-        self.queue_add.set_enabled(True)
+        self.play_button.set_sensitive(True)
+        self.add_album.set_enabled(True)
 
     @Gtk.Template.Callback()
     def _close_sidebar(self, _):
@@ -187,8 +197,9 @@ class RecordBoxWindow(Adw.ApplicationWindow):
 
     # library and queue methods #
 
-    def _confirm_play(self, play_request: PlayRequest, name: str):
+    def _confirm_play(self, tracks: TrackList, start_index: int, name: str):
         confirm_play = self.app.settings.get_boolean('confirm-play')
+        play_request = PlayRequest(tracks, start_index)
         if self.player.state == 'stopped' or not confirm_play:
             self._play_tracks(play_request)
             return
@@ -275,8 +286,26 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         obj.set_property(property, self.app.settings.get_value(key).unpack())
 
     def _setup_actions(self):
-        self.play_action = self._create_action('play-album', self.play_album)
-        self.queue_add = self._create_action('add-album', self.append_queue)
+
+        self.play_action = self._create_action(
+            'play',
+            self.play,
+            parameter_type=GLib.VariantType('i'),
+        )
+        self.add_album = self._create_action('add-album', self.append_album)
+        self.append_track = self._create_action(
+            'append',
+            self.append_track,
+            enabled=True,
+            parameter_type=GLib.VariantType('i'),
+        )
+        self.insert = self._create_action(
+            'insert',
+            self.insert_track,
+            enabled=True,
+            parameter_type=GLib.VariantType('i'),
+        )
+
         self.replace_queue = self._create_action(
             'replace-queue', self.overwrite_queue
         )
@@ -310,8 +339,10 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         )
         self.add_action(self.album_sort)
 
-    def _create_action(self, name, callback, enabled=False):
-        action = Gio.SimpleAction.new(name, None)
+    def _create_action(
+        self, name, callback, enabled=False, parameter_type=None
+    ):
+        action = Gio.SimpleAction.new(name, parameter_type)
         action.connect('activate', callback)
         action.set_enabled(enabled)
         self.add_action(action)

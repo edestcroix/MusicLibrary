@@ -39,7 +39,6 @@
                 <property name='minimized' bind-source='library_split' bind-property='collapsed'
                   bind-flags='bidirectional' />
                 <signal name="album-selected" handler="_album_selected" />
-                <signal name="album-activated" handler="play_album" />
                 <signal name="close" handler="_close_sidebar" />
               </object>
             </property>
@@ -63,7 +62,8 @@
                     <child type="start">
                       <object class="AdwSplitButton" id="play_button">
                         <property name="icon-name">media-playback-start-symbolic</property>
-                        <property name="action-name">win.play-album</property>
+                        <property name="action-name">win.play</property>
+                        <property name="action-target">0</property>
                         <property name="sensitive">false</property>
                         <property name="popover">
                           <object class="GtkPopoverMenu">
@@ -120,9 +120,6 @@
                                 </child>
                                 <property name="content">
                                   <object class="RecordBoxAlbumView" id="album_overview">
-                                    <signal name="play_request" handler="_on_play_request" />
-                                    <signal name="add_track" handler="_on_add_track" />
-                                    <signal name="add_track_next" handler="_on_add_track_next" />
                                   </object>
                                 </property>
                               </object>

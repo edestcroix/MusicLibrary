@@ -109,7 +109,7 @@ class RecordBoxApplication(Adw.Application):
 
     def bind_window_actions(self):
         """Bind the window's actions to accelerators."""
-        self.set_accels_for_action('win.play-album', ['<primary>space'])
+        self.set_accels_for_action('win.play(0)', ['<primary>space'])
         self.set_accels_for_action('win.add-album', ['<primary>plus'])
         self.set_accels_for_action('win.replace-queue', ['<primary>minus'])
 
