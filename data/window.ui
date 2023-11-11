@@ -10,7 +10,7 @@
     <child>
       <object class="AdwBreakpoint" id="breakpoint1">
         <condition>max-width: 1050sp</condition>
-        <setter object="inner_split" property="collapsed">True</setter>
+        <setter object="library" property="collapsed">True</setter>
         <setter object="outer_split" property="min-sidebar-width">160</setter>
         <setter object="outer_split" property="max-sidebar-width">300</setter>
       </object>
@@ -20,8 +20,7 @@
         <condition>max-width: 640sp</condition>
         <setter object="outer_split" property="pin-sidebar">false</setter>
         <setter object="outer_split" property="collapsed">True</setter>
-        <setter object="inner_split" property="collapsed">True</setter>
-        <setter object="album_return" property="visible">true</setter>
+        <setter object="library" property="collapsed">True</setter>
         <setter object="lists_toggle" property="visible">true</setter>
       </object>
     </child>
@@ -37,105 +36,11 @@
           <object class="AdwNavigationPage">
             <property name="title" translatable="yes">Sidebar</property>
             <property name="child">
-              <object class="GtkOverlay">
-                <child type="overlay">
-                  <object class="GtkProgressBar" id="progress_bar">
-                    <property name="visible">False</property>
-                    <property name="halign">fill</property>
-                    <property name="valign">end</property>
-                    <style>
-                      <class name="osd" />
-                    </style>
-                  </object>
-                </child>
-                <child>
-                  <object class="AdwNavigationSplitView" id="inner_split">
-                    <property name="max-sidebar-width">300</property>
-                    <property name="min-sidebar-width">100</property>
-                    <property name="sidebar-width-fraction">0.43</property>
-                    <property name="sidebar">
-                      <!-- sidebar -->
-                      <object class="AdwNavigationPage">
-                        <property name="title" translatable="yes">Artists</property>
-                        <property name="child">
-                          <object class="AdwToolbarView">
-                            <child type="top">
-                              <object class="AdwHeaderBar">
-                                <child type="end">
-                                  <object class="GtkButton" id="artist_return">
-                                    <property name="visible">False</property>
-                                    <property name="visible" bind-source="outer_split"
-                                      bind-property="collapsed" />
-                                    <property name="icon-name">go-next-symbolic</property>
-                                    <signal name="clicked" handler="_on_artist_return" />
-                                  </object>
-                                </child>
-                                <child type="end">
-                                  <object class="GtkMenuButton">
-                                    <property name="icon-name">open-menu-symbolic</property>
-                                    <property name="primary">true</property>
-                                    <property name="menu-model">primary_menu</property>
-                                  </object>
-                                </child>
-                              </object>
-                            </child>
-                            <property name="content">
-                              <object class="GtkScrolledWindow">
-                                <property name="hscrollbar-policy">never</property>
-                                <child>
-                                  <object class="RecordBoxArtistList" id="artist_list">
-                                    <signal name="selected" handler="select_artist" />
-                                    <style>
-                                      <class name="navigation-sidebar" />
-                                    </style>
-                                  </object>
-                                </child>
-                              </object>
-                            </property>
-                          </object>
-                        </property>
-                      </object>
-                    </property>
-                    <property name="content">
-                      <!-- middle pane -->
-                      <object class="AdwNavigationPage" id="album_list_page">
-                        <property name="title" translatable="yes">Albums</property>
-                        <property name="tag">album-view</property>
-                        <property name="child">
-                          <object class="AdwToolbarView">
-                            <child type="top">
-                              <object class="AdwHeaderBar">
-                                <child type="end">
-                                  <object class="GtkButton" id="album_return">
-                                    <property name="visible">False</property>
-                                    <property name="visible" bind-source="outer_split"
-                                      bind-property="collapsed" />
-                                    <property name="icon-name">go-next-symbolic</property>
-                                    <signal name="clicked" handler="_on_album_return" />
-                                  </object>
-                                </child>
-                              </object>
-                            </child>
-                            <property name="content">
-                              <object class="GtkScrolledWindow">
-                                <property name="hscrollbar-policy">never</property>
-                                <child>
-                                  <object class="RecordBoxAlbumList" id="album_list">
-                                    <signal name="selected" handler="select_album" />
-                                    <signal name="activate" handler="_on_album_activated" />
-                                    <style>
-                                      <class name="navigation-sidebar" />
-                                    </style>
-                                  </object>
-                                </child>
-                              </object>
-                            </property>
-                          </object>
-                        </property>
-                      </object>
-                    </property>
-                  </object>
-                </child>
+              <object class="RecordBoxMusicLibrary" id="library">
+                <property name='minimized' bind-source='outer_split' bind-property='collapsed'
+                  bind-flags='bidirectional' />
+                <signal name="album-selected" handler="_album_selected" />
+                <signal name="close" handler="_close_sidebar" />
               </object>
             </property>
           </object>
@@ -196,81 +101,6 @@
       </object>
     </property>
   </template>
-  <menu id="primary_menu">
-    <section>
-      <item>
-        <attribute name="label" translatable="yes">S_ync Library</attribute>
-        <attribute name="action">app.refresh</attribute>
-      </item>
-    </section>
-    <section>
-      <item>
-        <attribute name="label" translatable="yes">Show _All Albums</attribute>
-        <attribute name="action">win.filter-all</attribute>
-      </item>
-      <submenu>
-        <attribute name="label" translatable="yes">_Sort</attribute>
-        <submenu>
-          <attribute name="label" translatable="yes">_Artists</attribute>
-          <item>
-            <attribute name="label">Name (_A-Z)</attribute>
-            <attribute name="action">win.artist-sort</attribute>
-            <attribute name="target">name-descending</attribute>
-          </item>
-          <item>
-            <attribute name="label">Name (_Z-A)</attribute>
-            <attribute name="action">win.artist-sort</attribute>
-            <attribute name="target">name-ascending</attribute>
-          </item>
-        </submenu>
-        <submenu>
-          <attribute name="label" translatable="yes">A_lbums</attribute>
-          <section>
-            <item>
-              <attribute name="label">Name (_A-Z)</attribute>
-              <attribute name="action">win.album-sort</attribute>
-              <attribute name="target">name-descending</attribute>
-            </item>
-            <item>
-              <attribute name="label">Name (_Z-A)</attribute>
-              <attribute name="action">win.album-sort</attribute>
-              <attribute name="target">name-ascending</attribute>
-            </item>
-          </section>
-          <section>
-            <item>
-              <attribute name="label">Date (_Most Recent)</attribute>
-              <attribute name="action">win.album-sort</attribute>
-              <attribute name="target">date-descending</attribute>
-            </item>
-            <item>
-              <attribute name="label" translatable="yes">Date (_Least Recent)</attribute>
-              <attribute name="action">win.album-sort</attribute>
-              <attribute name="target">date-ascending</attribute>
-            </item>
-          </section>
-        </submenu>
-      </submenu>
-    </section>
-    <section>
-      <item>
-        <attribute name="label" translatable="yes">_Preferences</attribute>
-        <attribute name="action">app.preferences</attribute>
-      </item>
-      <item>
-        <attribute name="label" translatable="yes">_Keyboard Shortcuts</attribute>
-        <attribute name="action">win.show-help-overlay</attribute>
-      </item>
-      <item>
-        <attribute name="label" translatable="yes">_About RecordBox</attribute>
-        <attribute name="action">app.about</attribute>
-      </item>
-      <item>
-        <attribute name="label" translatable="yes">_Quit</attribute>
-        <attribute name="action">app.quit</attribute>
-      </item>
-    </section>
-  </menu>
   <menu id="album-menu">
     <section>
       <item>

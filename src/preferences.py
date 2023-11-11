@@ -3,7 +3,7 @@ import gi
 
 gi.require_version('Gtk', '4.0')
 
-from .library import ArtistSort, AlbumSort
+from .library_lists import ArtistSort, AlbumSort
 
 
 @Gtk.Template(resource_path='/com/github/edestcroix/RecordBox/preferences.ui')

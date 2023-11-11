@@ -1,138 +1,131 @@
-from gi.repository import Adw, Gtk, GLib, GObject, Gio
-from enum import Enum
-from .items import TrackItem, AlbumItem, ArtistItem
+from gi.repository import Adw, Gtk, GLib, Gio, GObject
+import gi
+import threading
+
+from .parser import MusicParser
+from .musicdb import MusicDB
+from .items import AlbumItem, ArtistItem
+from .library_lists import AlbumList, ArtistList
+
+gi.require_version('Gtk', '4.0')
+gi.require_version('Adw', '1')
 
 
-class ArtistSort(Enum):
-    NAME_ASC = 'name-ascending'
-    NAME_DESC = 'name-descending'
+@Gtk.Template(resource_path='/com/github/edestcroix/RecordBox/library.ui')
+class MusicLibrary(Adw.Bin):
+    __gtype_name__ = 'RecordBoxMusicLibrary'
 
+    inner_split = Gtk.Template.Child()
 
-class AlbumSort(Enum):
-    NAME_ASC = 'name-ascending'
-    NAME_DESC = 'name-descending'
-    DATE_ASC = 'date-ascending'
-    DATE_DESC = 'date-descending'
+    artist_return = Gtk.Template.Child()
+    album_return = Gtk.Template.Child()
 
+    artist_list = Gtk.Template.Child()
+    album_list = Gtk.Template.Child()
+    album_list_page = Gtk.Template.Child()
 
-class LibraryList(Gtk.ListView):
-    """Base class for artist and album lists, since they're almost identical other than
-    the album list needing a filter model."""
+    progress_bar = Gtk.Template.Child()
 
-    __gtype_name__ = 'RecordBoxLibraryList'
+    collapsed = GObject.Property(type=bool, default=False)
+    minimized = GObject.Property(type=bool, default=False)
 
-    sort = GObject.Property(type=str)
-    selected = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
+    show_all_artists = GObject.Property(type=bool, default=False)
 
-    model: Gio.ListStore
-    template: str
+    filter_all_albums = GObject.Property(type=bool, default=False)
+
+    artist_sort = GObject.Property(type=str, default='name-descending')
+    album_sort = GObject.Property(type=str, default='name-descending')
+
+    close = GObject.Signal()
+    album_selected = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
 
     def __init__(self):
         super().__init__()
 
-        self._setup_model()
-        self.set_tab_behavior(Gtk.ListTabBehavior.ITEM)
-        self.set_factory(
-            Gtk.BuilderListItemFactory.new_from_resource(
-                Gtk.BuilderCScope(), self.template
-            )
+        self.parser = MusicParser()
+
+        self.parser.bind_property(
+            'progress',
+            self.progress_bar,
+            'fraction',
+            GObject.BindingFlags.DEFAULT,
         )
-        self.connect('notify::sort', lambda *_: self._update_sort())
+        self.connect(
+            'notify::show-all-artists', lambda *_: self.refresh_lists()
+        )
 
-    def append(self, item: GObject.Object):
-        self.model.append(item)
+    def sync_library(self, _):
+        self.thread = threading.Thread(target=self.update_db)
+        self.thread.daemon = True
+        self.progress_bar.set_visible(True)
+        self.thread.start()
 
-    def populate(self, items: list[GObject.Object]):
-        self.model.remove_all()
-        self.model.splice(0, 0, items)
-        self._update_sort()
-        self.scroll_to(0, Gtk.ListScrollFlags.FOCUS)
+    def update_db(self):
+        db = MusicDB()
+        self.parser.build(db)
+        db.close()
+        GLib.idle_add(self.refresh_lists)
+        GLib.idle_add(self.progress_bar.set_visible, False)
 
-    def unselect_all(self):
-        # for some reason unselect_all() doesn't work on a SingleSelection
-        self.selection_model.unselect_item(self.selection_model.get_selected())
+    def refresh_lists(self):
+        db = MusicDB()
+        self.artist_list.populate(db.get_artists(self.show_all_artists))
+        self.album_list.populate(db.get_albums())
+        db.close()
 
-    def remove_all(self):
-        self.model.remove_all()
+    def filter_all(self, *_):
+        self.album_list.filter_all()
+        self.artist_list.unselect_all()
+        self.album_list_page.set_title('Albums')
+        self.set_property('filter-all-albums', True)
 
-    def get_row_at_index(self, index: int) -> GObject.Object:
-        return self.model[index]
+    def find_album(self, album_name):
+        return self.album_list.find_album(album_name)
 
-    def select_index(self, index: int):
-        self.selection_model.select_item(index, True)
+    def select_album(self, album: AlbumItem):
+        self.album_list.filter_on_artist(album.artists[0])
+        self.album_list_page.set_title(album.artists[0])
 
-    def _setup_model(self):
-        self.selection_model = Gtk.SingleSelection.new(self.model)
-        self.selection_model.set_can_unselect(True)
-        self.selection_model.connect('selection_changed', self._item_selected)
-        self.set_model(self.selection_model)
+        self.album_return.set_sensitive(True)
 
-    def _item_selected(self, *_):
-        if selected := self.selection_model.get_selected_item():
-            self.emit('selected', selected)
+        self.inner_split.set_show_content('album_view')
 
-    def _key_press(self, key_controller, keyval, keycode, state):
-        if keycode == 114:
-            self.emit('focus-next')
-        elif keycode == 113:
-            self.emit('focus-prev')
+        self.album_list.unselect_all()
+        self.artist_list.unselect_all()
 
-    def _update_sort(self):
+        self._select_row_with_title(self.artist_list, album.artists[0])
+        self._select_row_with_title(self.album_list, album.raw_name)
+
+    @Gtk.Template.Callback()
+    def _album_selected(self, _, album: AlbumItem):
+        self.emit('album-selected', album)
+        self.set_property('filter-all-albums', False)
+
+    @Gtk.Template.Callback()
+    def select_artist(self, _, selected: ArtistItem):
+        self.album_list.filter_on_artist(selected.raw_name)
+        self.album_list_page.set_title(selected.raw_name)
+        self.inner_split.set_show_content('album_view')
+
+    @Gtk.Template.Callback()
+    def _on_artist_return(self, _):
+        self.inner_split.set_show_content('album_view')
+
+    @Gtk.Template.Callback()
+    def _on_album_return(self, _):
+        self.emit('close')
+
+    @Gtk.Template.Callback()
+    def _on_album_activated(self, *_):
         pass
 
-
-class ArtistList(LibraryList):
-    __gtype_name__ = 'RecordBoxArtistList'
-
-    model = Gio.ListStore.new(ArtistItem)
-    template = '/com/github/edestcroix/RecordBox/lists/artist_row.ui'
-
-    def _update_sort(self):
-        match ArtistSort(self.sort):
-            case ArtistSort.NAME_ASC:
-                self.model.sort(lambda a, b: a.sort < b.sort)
-            case ArtistSort.NAME_DESC:
-                self.model.sort(lambda a, b: a.sort > b.sort)
-
-
-class AlbumList(LibraryList):
-    __gtype_name__ = 'RecordBoxAlbumList'
-
-    model = Gio.ListStore.new(AlbumItem)
-    template = '/com/github/edestcroix/RecordBox/lists/album_row.ui'
-
-    def get_row_at_index(self, index: int):
-        return self.filter_model[index]
-
-    def filter_all(self):
-        self.filter_model.set_filter(None)
-
-    def filter_on_artist(self, artist: str):
-        self.filter_model.set_filter(
-            Gtk.CustomFilter.new(lambda r: artist in r.artists)
-        )
-        self._item_selected()
-
-    def find_album(self, album_name: str) -> AlbumItem | None:
-        return next(
-            (row for row in self.model if row.raw_name == album_name), None
-        )
-
-    def _setup_model(self):
-        self.filter_model = Gtk.FilterListModel.new(self.model, None)
-        self.selection_model = Gtk.SingleSelection.new(self.filter_model)
-        self.selection_model.set_can_unselect(True)
-        self.selection_model.set_autoselect(False)
-        self.selection_model.connect('selection_changed', self._item_selected)
-        self.set_model(self.selection_model)
-
-    def _update_sort(self):
-        match AlbumSort(self.sort):
-            case AlbumSort.NAME_ASC:
-                self.model.sort(lambda a, b: a.name < b.name)
-            case AlbumSort.NAME_DESC:
-                self.model.sort(lambda a, b: a.name > b.name)
-            case AlbumSort.DATE_ASC:
-                self.model.sort(lambda a, b: a.date > b.date)
-            case AlbumSort.DATE_DESC:
-                self.model.sort(lambda a, b: a.date < b.date)
+    def _select_row_with_title(
+        self, row_list: AlbumList | ArtistList, title: str
+    ):
+        i = 0
+        cur = row_list.get_row_at_index(i)
+        while cur and cur.raw_name != title:
+            i += 1
+            cur = row_list.get_row_at_index(i)
+        if cur:
+            row_list.scroll_to(i, Gtk.ListScrollFlags.SELECT)

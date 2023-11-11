@@ -91,7 +91,7 @@ class RecordBoxApplication(Adw.Application):
         preferences.present()
 
     def on_refresh_action(self, widget, _):
-        self.props.active_window.sync_library(_)
+        self.props.active_window.library.sync_library(_)
 
     def create_action(self, name, callback, shortcuts=None):
         """Add an application action.
