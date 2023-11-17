@@ -31,9 +31,8 @@
                       <object class="AdwHeaderBar">
                         <child type="end">
                           <object class="GtkButton" id="artist_return">
-                            <property name="visible">False</property>
                             <property name="visible" bind-source="RecordBoxMusicLibrary"
-                              bind-property="minimized" />
+                              bind-property="parent-collapsed">false</property>
                             <property name="icon-name">go-next-symbolic</property>
                             <signal name="clicked" handler="_on_artist_return" />
                           </object>
@@ -77,9 +76,8 @@
                       <object class="AdwHeaderBar">
                         <child type="end">
                           <object class="GtkButton" id="album_return">
-                            <property name="visible">False</property>
                             <property name="visible" bind-source="RecordBoxMusicLibrary"
-                              bind-property="minimized" />
+                              bind-property="parent-collapsed">false</property>
                             <property name="icon-name">go-next-symbolic</property>
                             <signal name="clicked" handler="_on_album_return" />
                           </object>

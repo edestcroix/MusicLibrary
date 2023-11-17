@@ -27,7 +27,7 @@ class MusicLibrary(Adw.Bin):
     progress_bar = Gtk.Template.Child()
 
     collapsed = GObject.Property(type=bool, default=False)
-    minimized = GObject.Property(type=bool, default=False)
+    parent_collapsed = GObject.Property(type=bool, default=False)
 
     show_all_artists = GObject.Property(type=bool, default=False)
 

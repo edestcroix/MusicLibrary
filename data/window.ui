@@ -36,7 +36,7 @@
             <property name="title" translatable="yes">Sidebar</property>
             <property name="child">
               <object class="RecordBoxMusicLibrary" id="library">
-                <property name='minimized' bind-source='library_split' bind-property='collapsed'
+                <property name='parent-collapsed' bind-source='library_split' bind-property='collapsed'
                   bind-flags='bidirectional' />
                 <signal name="album-selected" handler="_album_selected" />
                 <signal name="album-activated" handler="play" />
