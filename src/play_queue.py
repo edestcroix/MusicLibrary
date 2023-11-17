@@ -44,9 +44,7 @@ class PlayQueue(Adw.Bin):
     def overwrite(self, tracks: list[TrackItem]):
         self._backup_queue(save_index=True)
         self.model.splice(0, len(self.model), [t.clone() for t in tracks])
-        self.selected = []
-        self.select_all_button.set_active(False)
-        self.current_index = 0
+        self._reset(empty=False)
 
     def add_after_current(self, track: TrackItem):
         self._backup_queue()
@@ -71,8 +69,7 @@ class PlayQueue(Adw.Bin):
 
     def clear(self):
         self.model.remove_all()
-        self.selected = []
-        self.current_index = -1
+        self._reset()
 
     def restart(self):
         self.current_index = 0
@@ -136,35 +133,6 @@ class PlayQueue(Adw.Bin):
     def remove_backups(self):
         self.backups.clear()
 
-    def _create_factory(self):
-        factory = Gtk.SignalListItemFactory.new()
-        factory.connect('setup', self._setup_row)
-        factory.connect('bind', self._bind_row)
-        return factory
-
-    def _setup_row(self, _, item):
-        row = QueueRow()
-        item.set_child(row)
-        item.bind_property(
-            'position',
-            row,
-            'position',
-            GObject.BindingFlags.DEFAULT,
-        )
-        self.bind_property(
-            'current-index',
-            row,
-            'current-index',
-            GObject.BindingFlags.DEFAULT,
-        )
-
-    def _bind_row(self, _, item):
-        row = item.get_child()
-        track = item.get_item()
-        row.title = track.raw_title
-        row.subtitle = track.length
-        row.image_path = track.thumb
-
     @Gtk.Template.Callback()
     def _on_row_activated(self, _, index: int):
         self.set_index(index)
@@ -206,6 +174,13 @@ class PlayQueue(Adw.Bin):
         # new one needs to have the highlight applied.
         self.current_index = self.current_index
 
+    def _reset(self, empty=True):
+        """Puts queue state variables and widgets back to the default start state.
+        Used when the queue is cleared or overwritten."""
+        self.selected = []
+        self.current_index = -1 if empty else 0
+        self._update_selection_controls()
+
     def _check_selection(self, _, start, range_size):
         """Maintain a list of selected rows so we can delete them later.
         (Could just iterate over the list to find selected items on delete, but this
@@ -241,6 +216,35 @@ class PlayQueue(Adw.Bin):
             backup, index = self.backups.pop()
             self.model.splice(0, len(self.model), backup)
             self.current_index = index or self.current_index
+
+    def _create_factory(self):
+        factory = Gtk.SignalListItemFactory.new()
+        factory.connect('setup', self._setup_row)
+        factory.connect('bind', self._bind_row)
+        return factory
+
+    def _setup_row(self, _, item):
+        row = QueueRow()
+        item.set_child(row)
+        item.bind_property(
+            'position',
+            row,
+            'position',
+            GObject.BindingFlags.DEFAULT,
+        )
+        self.bind_property(
+            'current-index',
+            row,
+            'current-index',
+            GObject.BindingFlags.DEFAULT,
+        )
+
+    def _bind_row(self, _, item):
+        row = item.get_child()
+        track = item.get_item()
+        row.title = track.raw_title
+        row.subtitle = track.length
+        row.image_path = track.thumb
 
 
 @Gtk.Template(
