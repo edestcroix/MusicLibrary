@@ -114,11 +114,13 @@ class RecordBoxWindow(Adw.ApplicationWindow):
 
     ### Action Callbacks ###
 
-    def play(self, _, index: GLib.Variant):
+    @Gtk.Template.Callback()
+    def play(self, _, index=None):
         """Callback for the play action. Plays the currently selected album
-        starting at the given index. Will destructively overwrite the queue"""
+        starting at the given index. Will destructively overwrite the queue.
+        Also connected to the album-activated signal of the music library."""
         if album := self.album_overview.current_album:
-            i = index.get_int32()
+            i = index.get_int32() if index else 0
             name = album.tracks[i].title if i else album.raw_name
             self._confirm_play(album.tracks, i, name)
 
@@ -160,12 +162,6 @@ class RecordBoxWindow(Adw.ApplicationWindow):
             self.update_album(album)
 
     ## UI Callbacks ##
-
-    @Gtk.Template.Callback()
-    def _play_album(self, *_):
-        """Callback for when a row in the album list is activated."""
-        if album := self.album_overview.current_album:
-            self._confirm_play(album.tracks, 0, album.raw_name)
 
     @Gtk.Template.Callback()
     def _album_selected(self, _, album: AlbumItem):

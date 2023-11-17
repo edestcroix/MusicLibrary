@@ -39,6 +39,7 @@
                 <property name='minimized' bind-source='library_split' bind-property='collapsed'
                   bind-flags='bidirectional' />
                 <signal name="album-selected" handler="_album_selected" />
+                <signal name="album-activated" handler="play" />
                 <signal name="close" handler="_close_sidebar" />
               </object>
             </property>
