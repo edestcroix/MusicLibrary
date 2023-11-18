@@ -15,16 +15,12 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from collections import namedtuple
-from gi.repository import Adw, Gtk, GLib, GObject, Gio
 import gi
 
 gi.require_version('Gtk', '4.0')
 
 from .items import AlbumItem, TrackItem
-
-START_ICON = 'media-playback-start-symbolic'
-ADD_ICON = 'list-add-symbolic'
+from gi.repository import Adw, Gtk, GLib, GObject, Gio
 
 
 @Gtk.Template(resource_path='/com/github/edestcroix/RecordBox/album_view.ui')
@@ -41,8 +37,8 @@ class AlbumView(Adw.BreakpointBin):
     album_artist = Gtk.Template.Child()
 
     stack = Gtk.Template.Child()
-    current_album = None
 
+    current_album = GObject.Property(type=GObject.TYPE_PYOBJECT)
     expand_discs = GObject.Property(type=bool, default=False)
 
     def update_cover(self, cover_path: str):
@@ -62,12 +58,14 @@ class AlbumView(Adw.BreakpointBin):
 
     def update_tracks(self, tracks: list[TrackItem]):
         current_disc, disc_row = 0, None
-        for track in tracks:
+        for i, track in enumerate(tracks):
             if track.discnumber != current_disc:
-                disc_row = self._disc_row(
-                    current_disc := track.discnumber, track.discsubtitle
-                )
-            self._setup_row(track, disc_row)
+                current_disc = track.discnumber
+                disc_row = self._disc_row(current_disc, track.discsubtitle)
+            if disc_row:
+                disc_row.add_row(TrackRow(track=track, index=i))
+            else:
+                self.track_list.append(TrackRow(track=track, index=i))
 
     def _disc_row(self, current_disc: int, discsubtitle: str | None):
         disc_row = Adw.ExpanderRow(
@@ -81,34 +79,10 @@ class AlbumView(Adw.BreakpointBin):
         self.track_list.append(disc_row)
         return disc_row
 
-    def _setup_row(self, track: TrackItem, disc_row: Adw.ExpanderRow):
-        row = TrackRow(track=track)
-        row.connect('play_track', self._play_track)
-        row.connect('add_track', lambda _, t: self.add_track.emit(t))
-        row.connect('add_track_next', lambda _, t: self.add_track_next.emit(t))
-        if disc_row:
-            disc_row.add_row(row)
-        else:
-            self.track_list.append(row)
-
-    def _play_track(self, _, track: TrackItem):
-        if album := self.current_album:
-            self.emit(
-                'play_request',
-                PlayRequest(album.tracks, album.tracks.index(track)),
-            )
-
 
 class TrackRow(Adw.ActionRow):
-
-    play_track = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
-    add_track = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
-    start_from_track = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
-    add_track_next = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
-
-    def __init__(self, track: TrackItem, **kwargs):
+    def __init__(self, track: TrackItem, index: int, **kwargs):
         super().__init__(title_lines=1, selectable=False, **kwargs)
-        self.track = track
 
         artists = f'\n{track.artists}' if track.artists else ''
         self.set_subtitle(
@@ -120,11 +94,9 @@ class TrackRow(Adw.ActionRow):
         self.set_tooltip_text(track.raw_title)
 
         self.menu_model = Gio.Menu.new()
-        self.menu_model.append('Play Track', f'win.play({track.track - 1})')
-        self.menu_model.append(
-            'Add to Queue', f'win.append({track.track - 1})'
-        )
-        self.menu_model.append('Insert Next', f'win.insert({track.track - 1})')
+        self.menu_model.append('Play Track', f'win.play({index})')
+        self.menu_model.append('Add To Queue', f'win.append({index})')
+        self.menu_model.append('Insert Next', f'win.insert({index})')
         self.new_popover = Gtk.PopoverMenu.new_from_model(self.menu_model)
 
         btn = Gtk.MenuButton()
