@@ -296,7 +296,7 @@ class MPRIS(Server):
             case 'PlaybackStatus':
                 return GLib.Variant('s', self._get_status())
             case 'LoopStatus':
-                return GLib.Variant('s', self._player.loop.name.capitalize())
+                return GLib.Variant('s', self._player.loop.capitalize())
             case 'Metadata':
                 return GLib.Variant('a{sv}', self._metadata)
             case 'Volume':
@@ -323,11 +323,11 @@ class MPRIS(Server):
         if property_name == 'LoopStatus':
             match new_value:
                 case 'None':
-                    self._player.loop = LoopMode.NONE
+                    self._player.loop = LoopMode.NONE.value
                 case 'Playlist':
-                    self._player.loop = LoopMode.PLAYLIST
+                    self._player.loop = LoopMode.PLAYLIST.value
                 case 'Track':
-                    self._player.loop = LoopMode.TRACK
+                    self._player.loop = LoopMode.TRACK.value
 
         elif property_name == 'Volume':
             self._player.volume = new_value
@@ -412,7 +412,7 @@ class MPRIS(Server):
         )
 
     def _on_loop_changed(self, _, __):
-        loop = self._player.loop.name.capitalize()
+        loop = self._player.loop.capitalize()
         loop = GLib.Variant('s', loop)
         self.PropertiesChanged(
             self._MPRIS_PLAYER_IFACE, {'LoopStatus': loop}, []

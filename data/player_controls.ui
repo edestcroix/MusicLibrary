@@ -10,74 +10,61 @@
       <object class="GtkBox">
         <style>
           <class name="toolbar" />
+          <class name="upper-player-controls" />
         </style>
         <child>
           <object class="GtkBox">
             <property name="orientation">horizontal</property>
-            <property name="spacing">0</property>
-            <property name="valign">center</property>
+            <property name="homogeneous">false</property>
             <style>
-              <class name="linked" />
+              <class name="song-title-box" />
             </style>
+            <child>
+              <object class="GtkBox">
+                <property name="orientation">vertical</property>
+                <property name="homogeneous">false</property>
+                <child>
+                  <object class="GtkLabel" id="playing_song">
+                    <property name="ellipsize">end</property>
+                    <property name="hexpand">true</property>
+                    <property name="halign">start</property>
+                    <style>
+                      <class name="song-title" />
+                    </style>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkLabel" id="song_info">
+                    <property name="ellipsize">end</property>
+                    <property name="hexpand">true</property>
+                    <property name="halign">start</property>
+                    <property name="label">Song Info</property>
+                    <style>
+                      <class name="caption" />
+                    </style>
+                  </object>
+                </child>
+              </object>
+            </child>
             <child>
               <object class="GtkButton" id="skip_backward">
                 <property name="icon-name">media-skip-backward-symbolic</property>
+                <property name="halign">end</property>
                 <signal name="clicked" handler="_skip_backward" />
               </object>
             </child>
             <child>
-              <object class="GtkButton" id="play_pause">
+              <object class="GtkButton" id="playback_toggle">
                 <property name="icon-name">media-playback-start-symbolic</property>
+                <property name="halign">end</property>
                 <signal name="clicked" handler="_play_pause" />
               </object>
             </child>
             <child>
               <object class="GtkButton" id="skip_forward">
                 <property name="icon-name">media-skip-forward-symbolic</property>
+                <property name="halign">end</property>
                 <signal name="clicked" handler="_skip_forward" />
-              </object>
-            </child>
-          </object>
-        </child>
-        <child>
-          <object class="GtkBox">
-            <property name="orientation">vertical</property>
-            <property name="homogeneous">false</property>
-            <child>
-              <object class="GtkLabel" id="playing_song">
-                <property name="ellipsize">end</property>
-                <property name="hexpand">true</property>
-                <attributes>
-                  <attribute name="weight" value="PANGO_WEIGHT_BOLD" />
-                </attributes>
-              </object>
-            </child>
-            <child>
-              <object class="GtkLabel" id="playing_artist">
-                <property name="ellipsize">end</property>
-                <property name="hexpand">true</property>
-              </object>
-            </child>
-          </object>
-        </child>
-        <child>
-          <object class="GtkBox">
-            <property name="orientation">horizontal</property>
-            <property name="spacing">0</property>
-            <property name="valign">center</property>
-            <style>
-              <class name="linked" />
-            </style>
-            <child>
-              <object class="GtkButton" id="loop">
-                <property name="icon-name">media-playlist-consecutive-symbolic</property>
-                <signal name="clicked" handler="_cycle_loop_mode" />
-              </object>
-            </child>
-            <child>
-              <object class="GtkButton" id="stop_button">
-                <property name="icon-name">media-playback-stop-symbolic</property>
-                <signal name="clicked" handler="_stop" />
               </object>
             </child>
           </object>
@@ -90,35 +77,14 @@
         <property name="homogeneous">false</property>
         <property name="spacing">5</property>
         <style>
-          <class name="progress-box" />
+          <class name="lower-player-controls" />
+          <class name="toolbar" />
         </style>
-        <child>
-          <object class="GtkLabel" id="start_label">
-            <style>
-              <class name="numeric" />
-            </style>
-          </object>
-        </child>
-        <child>
-          <object class="GtkScale" id="progress">
-            <property name="hexpand">true</property>
-            <property name="sensitive">false</property>
-            <style>
-              <class name="progress-bar" />
-            </style>
-          </object>
-        </child>
-        <child>
-          <object class="GtkLabel" id="end_label">
-            <style>
-              <class name="numeric" />
-            </style>
-          </object>
-        </child>
         <child>
           <object class="AdwSplitButton" id="volume_toggle">
             <property name="icon-name">audio-volume-high-symbolic</property>
             <property name="direction">up</property>
+            <property name="dropdown-tooltip">Volume Control</property>
             <signal name="clicked" handler="_toggle_mute" />
             <property name="popover">
               <object class="GtkPopover">
@@ -149,13 +115,81 @@
                 </child>
               </object>
             </property>
-            <style>
-              <class name="flat" />
-              <class name="volume-button" />
-            </style>
+          </object>
+        </child>
+        <child>
+          <object class="GtkBox">
+            <property name="orientation">horizontal</property>
+            <property name="homogeneous">false</property>
+            <property name="spacing">5</property>
+            <child>
+              <object class="GtkLabel" id="start_label">
+                <style>
+                  <class name="numeric" />
+                  <class name="time-label" />
+                </style>
+              </object>
+            </child>
+            <child>
+              <object class="GtkScale" id="progress">
+                <property name="hexpand">true</property>
+                <property name="sensitive">false</property>
+                <style>
+                  <class name="progress-bar" />
+                </style>
+              </object>
+            </child>
+            <child>
+              <object class="GtkLabel" id="end_label">
+                <style>
+                  <class name="numeric" />
+                  <class name="time-label" />
+                </style>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkMenuButton" id="control_button">
+            <property name="icon-name">view-more-horizontal-symbolic</property>
+            <property name="direction">up</property>
+            <property name="menu-model">playback-menu</property>
+            <property name="tooltip-text">Playback Controls</property>
           </object>
         </child>
       </object>
     </child>
   </template>
+  <menu id="playback-menu">
+    <section>
+      <submenu>
+        <attribute name="label" translatable="yes">_Loop Mode</attribute>
+        <item>
+          <attribute name="label" translatable="yes">_Don't Repeat</attribute>
+          <attribute name="action">win.loop</attribute>
+          <attribute name="target">none</attribute>
+        </item>
+        <item>
+          <attribute name="label" translatable="yes">_Repeat Current Track</attribute>
+          <attribute name="action">win.loop</attribute>
+          <attribute name="target">track</attribute>
+        </item>
+        <item>
+          <attribute name="label" translatable="yes">_Repeat Queue</attribute>
+          <attribute name="action">win.loop</attribute>
+          <attribute name="target">playlist</attribute>
+        </item>
+      </submenu>
+    </section>
+    <section>
+      <item>
+        <attribute name="label" translatable="yes">_Exit Player</attribute>
+        <attribute name="action">win.exit_player</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">_Stop Playback</attribute>
+        <attribute name="action">win.stop</attribute>
+      </item>
+    </section>
+  </menu>
 </interface>

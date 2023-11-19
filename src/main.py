@@ -66,7 +66,7 @@ class RecordBoxApplication(Adw.Application):
             self.bind_window_actions()
         win.present()
 
-    def on_about_action(self, widget, _):
+    def on_about_action(self, *_):
         """Callback for the app.about action."""
         about = Adw.AboutWindow(
             transient_for=self.props.active_window,
@@ -80,7 +80,7 @@ class RecordBoxApplication(Adw.Application):
         )
         about.present()
 
-    def on_preferences_action(self, widget, _):
+    def on_preferences_action(self, *_):
         """Callback for the app.preferences action."""
         preferences = RecordBoxPreferencesWindow(
             transient_for=self.props.active_window,
@@ -89,7 +89,7 @@ class RecordBoxApplication(Adw.Application):
         preferences.bind_settings(self.settings)
         preferences.present()
 
-    def on_refresh_action(self, widget, _):
+    def on_refresh_action(self, *_):
         self.props.active_window.library.sync_library(_)
 
     def create_action(self, name, callback, shortcuts=None):
@@ -120,6 +120,9 @@ class RecordBoxApplication(Adw.Application):
         self.set_accels_for_action('win.filter-all', ['<primary>slash'])
 
         self.set_accels_for_action('win.undo-queue', ['<primary>z'])
+
+        self.set_accels_for_action('win.exit_player', ['<primary>e'])
+        self.set_accels_for_action('win.stop', ['<primary>period'])
 
 
 def main(version):

@@ -36,8 +36,9 @@
             <property name="title" translatable="yes">Sidebar</property>
             <property name="child">
               <object class="RecordBoxMusicLibrary" id="library">
-                <property name='parent-collapsed' bind-source='library_split' bind-property='collapsed'
-                  bind-flags='bidirectional' />
+                <property name="parent-collapsed" bind-source="library_split"
+                  bind-property="collapsed"
+                  bind-flags="bidirectional" />
                 <signal name="album-selected" handler="_album_selected" />
                 <signal name="album-activated" handler="play" />
                 <signal name="close" handler="_close_sidebar" />
@@ -115,9 +116,7 @@
                                 <property name="reveal-bottom-bars">false</property>
                                 <property name="bottom-bar-style">ADW_TOOLBAR_RAISED_BORDER</property>
                                 <child type="bottom">
-                                  <object class="RecordBoxPlayerControls" id="player_controls">
-                                    <signal name="exit-player" handler="_exit_player" />
-                                  </object>
+                                  <object class="RecordBoxPlayerControls" id="player_controls" />
                                 </child>
                                 <property name="content">
                                   <object class="RecordBoxAlbumView" id="album_overview">
@@ -141,7 +140,7 @@
   <menu id="album-menu">
     <section>
       <item>
-        <attribute name="label" translatable="yes">_Add to Queue</attribute>
+        <attribute name="label" translatable="yes">_Add To Queue</attribute>
         <attribute name="action">win.add-album</attribute>
       </item>
       <item>

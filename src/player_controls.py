@@ -12,13 +12,15 @@ from .player import LoopMode
     resource_path='/com/github/edestcroix/RecordBox/player_controls.ui'
 )
 class RecordBoxPlayerControls(Gtk.Box):
+    """Player control widget, responsible for displaying and controlling player state.
+    Binds to a Player instance and updates itself based on the player's state, relays
+    control signals to the player, and displays information about the currently playing track"""
+
     __gtype_name__ = 'RecordBoxPlayerControls'
-    play_pause = Gtk.Template.Child()
+    playback_toggle = Gtk.Template.Child()
 
     playing_song = Gtk.Template.Child()
-    playing_artist = Gtk.Template.Child()
-
-    loop = Gtk.Template.Child()
+    song_info = Gtk.Template.Child()
 
     progress = Gtk.Template.Child()
     start_label = Gtk.Template.Child()
@@ -26,19 +28,12 @@ class RecordBoxPlayerControls(Gtk.Box):
 
     volume_toggle = Gtk.Template.Child()
     volume_slider = Gtk.Template.Child()
-
-    stop_button = Gtk.Template.Child()
-
     muted = GObject.Property(type=bool, default=False)
-    stop_exits = GObject.Property(type=bool, default=False)
-
-    exit_player = GObject.Signal()
 
     def __init__(self):
         super().__init__()
         self.volume_slider.set_range(0, 1)
         self.progress.set_increments(1, 5)
-        self.connect('notify::stop_exits', lambda *_: self._update_stop)
 
     def attach_to_player(self, player):
         self._player = player
@@ -49,7 +44,6 @@ class RecordBoxPlayerControls(Gtk.Box):
             'notify::muted', lambda *_: self._update_volume_icon
         )
         self._player.connect('notify::volume', self._update_volume)
-        self._player.connect('notify::loop', self._update_loop_icon)
         self._player.connect('state-changed', self._update_state)
         self._player.connect('stream-start', self.set_current_track)
         self._player.connect('eos', self.set_current_track)
@@ -57,48 +51,23 @@ class RecordBoxPlayerControls(Gtk.Box):
 
     def activate(self, playing=True):
         self._monitor.start()
-        self.stop_button.set_icon_name('media-playback-stop-symbolic')
-        self.set_property('stop-exits', False)
         if playing:
-            self.play_pause.set_icon_name('media-playback-pause-symbolic')
+            self.playback_toggle.set_icon_name('media-playback-pause-symbolic')
             self.progress.set_sensitive(True)
         else:
-            self.play_pause.set_icon_name('media-playback-start-symbolic')
+            self.playback_toggle.set_icon_name('media-playback-start-symbolic')
 
     def deactivate(self):
-        self.stop_button.set_icon_name('application-exit-symbolic')
-        self.play_pause.set_icon_name('media-playback-start-symbolic')
+        self.playback_toggle.set_icon_name('media-playback-start-symbolic')
         self.progress.set_sensitive(False)
-        self.set_property('stop-exits', True)
 
     def set_current_track(self, *_):
         if track := self._player.current_track:
-            self.playing_song.set_markup(
-                f'<span size="large">{track.title}</span>'
-            )
-            artists = (
-                f'{track.albumartist}, {track.artists}'
-                if track.artists
-                else track.albumartist
-            )
-            self.playing_artist.set_markup(
-                f'<span size="small">{GLib.markup_escape_text(artists)}</span>'
-            )
-            self.end_label.set_text(track.length)
+            self._set_song_info(track)
         else:
             self.playing_song.set_text('')
             self.playing_artist.set_text('')
             self.end_label.set_text('0:00')
-
-    @Gtk.Template.Callback()
-    def _stop(self, _):
-        if self.stop_exits:
-            # don't exit the player here because the main view handles that.
-            # (It's callback for this signal will do it because that callback
-            # can also get called for other reasons and it's dumb to call exit twice)
-            self.emit('exit-player')
-        else:
-            self._player.stop()
 
     @Gtk.Template.Callback()
     def _play_pause(self, _):
@@ -125,10 +94,6 @@ class RecordBoxPlayerControls(Gtk.Box):
         )
         self._player.set_property('volume', value)
 
-    @Gtk.Template.Callback()
-    def _cycle_loop_mode(self, _):
-        self._player.loop = LoopMode((self._player.loop.value + 1) % 3)
-
     def _update_state(self, _, state: str):
         match state:
             case 'playing':
@@ -137,6 +102,23 @@ class RecordBoxPlayerControls(Gtk.Box):
                 self.activate(playing=False)
             case 'stopped':
                 self.deactivate()
+
+    def _set_song_info(self, track):
+        artists = (
+            f'{track.albumartist}, {track.artists}'
+            if track.artists
+            else track.albumartist
+        )
+        self.playing_song.set_markup(
+            f'<span size="large" weight="bold">{track.title}</span> - <span size="large">{GLib.markup_escape_text(artists)}</span>'
+        )
+        info = f'Track <span weight="bold">{track.track:02}</span> on <span weight="bold">{track.album}</span>'
+        if track.discsubtitle:
+            info += f' ({track.discsubtitle})'
+        elif track.discnumber:
+            info += f' (Disc {track.discnumber})'
+        self.song_info.set_markup(info)
+        self.end_label.set_text(track.length)
 
     def _update_volume(self, *_):
         value = GstAudio.StreamVolume.convert_volume(
@@ -157,12 +139,3 @@ class RecordBoxPlayerControls(Gtk.Box):
             self.volume_toggle.set_icon_name('audio-volume-medium-symbolic')
         else:
             self.volume_toggle.set_icon_name('audio-volume-high-symbolic')
-
-    def _update_loop_icon(self, *_):
-        match self._player.loop:
-            case LoopMode.NONE:
-                self.loop.set_icon_name('media-playlist-consecutive-symbolic')
-            case LoopMode.PLAYLIST:
-                self.loop.set_icon_name('media-playlist-repeat-symbolic')
-            case LoopMode.TRACK:
-                self.loop.set_icon_name('media-playlist-repeat-song-symbolic')

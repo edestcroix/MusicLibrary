@@ -44,12 +44,6 @@
   background: @sidebar_bg_color;
   padding: 10px;
 }
-
-.progress-box {
-  padding: 5px;
-  padding-top: 0px;
-}
-
 .header-accent {
   background: @accent_bg_color;
 }
@@ -60,10 +54,40 @@
 .progress-bar {
   margin: 0px;
   padding: 0px;
+  padding-top: 2px;
 }
 
 .volume-slider {
   margin: 0px;
   padding-top: 5px;
   padding-bottom: 5px;
+}
+
+.song-title-box, .upper-player-controls {
+  margin-bottom: 0px;
+  padding-bottom: 0px;
+}
+
+.upper-player-controls * {
+  margin-bottom: 0px;
+}
+
+.lower-player-controls {
+  padding: 5px;
+  padding-top: 0px;
+}
+
+
+.song-title-box {
+  margin-top: 0px;
+}
+
+.song-title {
+  margin: 0px;
+  padding: 0px;
+}
+
+.time-label {
+  padding-left: 0px;
+  padding-right: 0px;
 }

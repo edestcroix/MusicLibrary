@@ -93,6 +93,14 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         self.player.connect('state-changed', self._on_player_state_changed)
         self.player.connect('eos', self._on_player_eos)
 
+        loop = Gio.PropertyAction.new(
+            'loop',
+            self.player,
+            'loop',
+        )
+        self.add_action(loop)
+        self.stop_player = self._create_action('stop', self.player.stop)
+
     def update_album(self, album: AlbumItem):
         self.main_page.set_title(album.raw_name)
         self.album_overview.update_album(album)
@@ -159,6 +167,8 @@ class RecordBoxWindow(Adw.ApplicationWindow):
             self.library.select_album(album)
 
             self.main_page.set_title(album.raw_name)
+            # TODO: Don't update the album if it's already the same as the
+            # current track's album
             self.update_album(album)
 
     ## UI Callbacks ##
@@ -179,8 +189,7 @@ class RecordBoxWindow(Adw.ApplicationWindow):
     def _close_sidebar(self, _):
         self.library_split.set_show_sidebar(False)
 
-    @Gtk.Template.Callback()
-    def _exit_player(self, _):
+    def _exit_player(self, *_):
         self.player.exit()
         self.toolbar_view.set_reveal_bottom_bars(False)
         self.play_queue.clear()
@@ -264,12 +273,14 @@ class RecordBoxWindow(Adw.ApplicationWindow):
             self.replace_queue.set_enabled(True)
             self.queue_toggle.set_sensitive(True)
             self.return_to_playing.set_enabled(True)
+            self.stop_player.set_enabled(True)
+            self.exit_player.set_enabled(True)
         else:
             self.set_hide_on_close(False)
 
     def _on_player_eos(self, _):
         if self.app.settings.get_boolean('clear-queue'):
-            GLib.idle_add(self._exit_player, None)
+            self._exit_player(None)
 
     # action and settings setup/binding #
 
@@ -334,6 +345,10 @@ class RecordBoxWindow(Adw.ApplicationWindow):
             'album-sort',
         )
         self.add_action(self.album_sort)
+
+        self.exit_player = self._create_action(
+            'exit_player', self._exit_player
+        )
 
     def _create_action(
         self, name, callback, enabled=False, parameter_type=None
