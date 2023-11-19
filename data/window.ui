@@ -4,7 +4,7 @@
   <requires lib="Adw" version="1.0" />
   <template class="RecordBoxWindow" parent="AdwApplicationWindow">
     <property name="width-request">380</property>
-    <property name="height-request">700</property>
+    <property name="height-request">460</property>
     <property name="default-width">1260</property>
     <property name="default-height">650</property>
     <child>

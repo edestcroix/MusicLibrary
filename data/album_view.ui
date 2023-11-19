@@ -4,7 +4,13 @@
   <requires lib="Adw" version="1.0" />
   <template class="RecordBoxAlbumView" parent="AdwBreakpointBin">
     <property name="width-request">380</property>
-    <property name="height-request">500</property>
+    <property name="height-request">330</property>
+    <child>
+      <object class="AdwBreakpoint">
+        <condition>max-height: 390sp</condition>
+        <setter object="cover_image" property="pixel-size">256</setter>
+      </object>
+    </child>
     <child>
       <object class="AdwBreakpoint">
         <condition>max-width: 750sp</condition>
