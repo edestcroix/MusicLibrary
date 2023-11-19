@@ -190,6 +190,10 @@
         <attribute name="label" translatable="yes">_Stop Playback</attribute>
         <attribute name="action">win.stop</attribute>
       </item>
+      <item>
+        <attribute name="label" translatable="yes">_Stop After Current Track</attribute>
+        <attribute name="action">win.stop_after_current</attribute>
+      </item>
     </section>
   </menu>
 </interface>

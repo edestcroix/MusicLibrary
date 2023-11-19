@@ -36,6 +36,7 @@ class Player(GObject.GObject):
     )
 
     loop = GObject.Property(type=str)
+    stop_after_current = GObject.Property(type=bool, default=False)
     state = GObject.Property(type=str)
 
     single_repeated = False
@@ -157,6 +158,9 @@ class Player(GObject.GObject):
         self.emit('state-changed', 'playing')
 
     def _on_about_to_finish(self, _):
+        if self.stop_after_current:
+            return
+
         if self.loop == LoopMode.TRACK.value and not self.single_repeated:
             self.single_repeated = True
             self._player.set_property(

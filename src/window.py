@@ -98,6 +98,12 @@ class RecordBoxWindow(Adw.ApplicationWindow):
             self.player,
             'loop',
         )
+        stop_after_current = Gio.PropertyAction.new(
+            'stop_after_current',
+            self.player,
+            'stop-after-current',
+        )
+        self.add_action(stop_after_current)
         self.add_action(loop)
         self.stop_player = self._create_action('stop', self.player.stop)
 

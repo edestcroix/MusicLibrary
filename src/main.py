@@ -123,6 +123,9 @@ class RecordBoxApplication(Adw.Application):
 
         self.set_accels_for_action('win.exit_player', ['<primary>e'])
         self.set_accels_for_action('win.stop', ['<primary>period'])
+        self.set_accels_for_action(
+            'win.stop_after_current', ['<primary>greater']
+        )
 
 
 def main(version):
