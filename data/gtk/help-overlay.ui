@@ -23,7 +23,7 @@
             <child>
               <object class="GtkShortcutsShortcut">
                 <property name="title" translatable="yes" context="shortcut window">Play</property>
-                <property name="action-name">win.play-album</property>
+                <property name="action-name">win.play(0)</property>
               </object>
             </child>
             <child>
@@ -42,6 +42,29 @@
               <object class="GtkShortcutsShortcut">
                 <property name="title" translatable="yes" context="shortcut window">Undo Queue Action</property>
                 <property name="action-name">win.undo-queue</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkShortcutsGroup">
+            <property name="title" translatable="yes" context="shortcut window">Playback</property>
+            <child>
+              <object class="GtkShortcutsShortcut">
+                <property name="title" translatable="yes" context="shortcut window">Stop Playback</property>
+                <property name="action-name">win.stop</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkShortcutsShortcut">
+                <property name="title" translatable="yes" context="shortcut window">Toggle Stop After Current</property>
+                <property name="action-name">win.stop_after_current</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkShortcutsShortcut">
+                <property name="title" translatable="yes" context="shortcut window">Exit Player</property>
+                <property name="action-name">win.exit_player</property>
               </object>
             </child>
           </object>
