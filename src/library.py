@@ -37,8 +37,17 @@ class MusicLibrary(Adw.Bin):
     album_sort = GObject.Property(type=str, default='name-descending')
 
     close = GObject.Signal()
-    album_selected = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
+
+    # Emits when the AlbumList's selection changes.
+    album_changed = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
+
+    # Emits when the library sidebar is not collapsed and when the AlbumList emits it's
+    # selection_confirmed signal with the 'activated' parameter set to True.
     album_activated = GObject.Signal()
+
+    # Emits when the library sidebar is collapsed and when the AlbumList emits it's
+    # selection_confirmed signal, regardless of the 'activated' parameter.
+    album_confirmed = GObject.Signal()
 
     def __init__(self):
         super().__init__()
@@ -53,6 +62,9 @@ class MusicLibrary(Adw.Bin):
         )
         self.connect(
             'notify::show-all-artists', lambda *_: self.refresh_lists()
+        )
+        self.artist_list.connect(
+            'activate', lambda *_: self.album_list.grab_focus()
         )
 
     def sync_library(self, _):
@@ -98,15 +110,34 @@ class MusicLibrary(Adw.Bin):
         self._select_row_with_title(self.album_list, album.raw_name)
 
     @Gtk.Template.Callback()
-    def _album_selected(self, _, album: AlbumItem):
-        self.emit('album-selected', album)
+    def _artist_selection_changed(self, _, selected: ArtistItem):
+        self.album_list.filter_on_artist(selected.raw_name)
+        self.album_list_page.set_title(selected.raw_name)
+
+    @Gtk.Template.Callback()
+    def _artist_confirmed(self, *_):
+        self.inner_split.set_show_content('album_view')
+
+    @Gtk.Template.Callback()
+    def _album_selection_changed(self, _, selected: AlbumItem):
+        self.emit('album-changed', selected)
         self.set_property('filter-all-albums', False)
 
     @Gtk.Template.Callback()
-    def select_artist(self, _, selected: ArtistItem):
-        self.album_list.filter_on_artist(selected.raw_name)
-        self.album_list_page.set_title(selected.raw_name)
-        self.inner_split.set_show_content('album_view')
+    def _album_confirmed(self, _, activated: bool = False):
+        """Callback for the AlbumList's selection_confirmed signal, emits a different
+        signal depending on whether the library sidebar is collapsed or not.
+        """
+        if self.parent_collapsed:
+            # When the sidebar is collapsed, the album_confirmed signal is emitted to indicate that
+            # the user explicitly selected an album with a click rather than selecting it through keynav, so the library
+            # is closed and the album view is opened.
+            self.emit('album-confirmed')
+        elif activated:
+            # When the sidebar is not collapsed, the album_activated signal is emitted when the activated parameter is True.
+            # This is so that playback can be started when the user presses enter or double clicks on an album while still allowing
+            # clicks to change the selection without starting playback.
+            self.emit('album-activated')
 
     @Gtk.Template.Callback()
     def _on_artist_return(self, _):
@@ -115,10 +146,6 @@ class MusicLibrary(Adw.Bin):
     @Gtk.Template.Callback()
     def _on_album_return(self, _):
         self.emit('close')
-
-    @Gtk.Template.Callback()
-    def _on_album_activated(self, *_):
-        self.emit('album-activated')
 
     def _select_row_with_title(
         self, row_list: AlbumList | ArtistList, title: str

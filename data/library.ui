@@ -51,7 +51,8 @@
                         <property name="hscrollbar-policy">never</property>
                         <child>
                           <object class="RecordBoxArtistList" id="artist_list">
-                            <signal name="selected" handler="select_artist" />
+                            <signal name="selection-changed" handler="_artist_selection_changed" />
+                            <signal name="selection-confirmed" handler="_artist_confirmed" />
                             <property name="sort" bind-source="RecordBoxMusicLibrary"
                               bind-property="artist-sort" />
                             <style>
@@ -89,8 +90,8 @@
                         <property name="hscrollbar-policy">never</property>
                         <child>
                           <object class="RecordBoxAlbumList" id="album_list">
-                            <signal name="selected" handler="_album_selected" />
-                            <signal name="activate" handler="_on_album_activated" />
+                            <signal name="selection-changed" handler="_album_selection_changed" />
+                            <signal name="selection-confirmed" handler="_album_confirmed" />
                             <property name="sort" bind-source="RecordBoxMusicLibrary"
                               bind-property="album-sort" />
                             <style>

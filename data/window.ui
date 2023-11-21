@@ -39,7 +39,8 @@
                 <property name="parent-collapsed" bind-source="library_split"
                   bind-property="collapsed"
                   bind-flags="bidirectional" />
-                <signal name="album-selected" handler="_album_selected" />
+                <signal name="album-changed" handler="_album_changed" />
+                <signal name="album-confirmed" handler="_album_confirmed" />
                 <signal name="album-activated" handler="play" />
                 <signal name="close" handler="_close_sidebar" />
               </object>

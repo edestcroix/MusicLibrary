@@ -180,16 +180,17 @@ class RecordBoxWindow(Adw.ApplicationWindow):
     ## UI Callbacks ##
 
     @Gtk.Template.Callback()
-    def _album_selected(self, _, album: AlbumItem):
+    def _album_changed(self, _, album: AlbumItem):
         self.update_album(album)
-        self.main_page.set_title(album.raw_name)
-        self.library_split.set_show_sidebar(
-            self.library_split.get_collapsed() == False
-        )
-
         self.play_action.set_enabled(True)
         self.play_button.set_sensitive(True)
         self.add_album.set_enabled(True)
+
+    @Gtk.Template.Callback()
+    def _album_confirmed(self, *_):
+        self.library_split.set_show_sidebar(
+            self.library_split.get_collapsed() == False
+        )
 
     @Gtk.Template.Callback()
     def _close_sidebar(self, _):

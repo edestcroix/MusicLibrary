@@ -22,12 +22,19 @@ class LibraryList(Gtk.ListView):
     __gtype_name__ = 'RecordBoxLibraryList'
 
     sort = GObject.Property(type=str)
-    selected = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
+
+    # Emits whenever the selection model's selection changes, if a row is selected.
+    selection_changed = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
+
+    # Navigating lists with the arrow keys changes the selection, so other widgets
+    # can't use the selection_changed signal to know when to hide sidebar widgets, for example.
+    # Instead, this signal is used, which only emits when a row is clicked on or activated.
+    selection_confirmed = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
 
     model: Gio.ListStore
     template: str
 
-    def __init__(self):
+    def __init__(self, click_activates: bool = True):
         super().__init__()
 
         self._setup_model()
@@ -38,6 +45,17 @@ class LibraryList(Gtk.ListView):
             )
         )
         self.connect('notify::sort', lambda *_: self._update_sort())
+
+        self.connect(
+            'activate', lambda *_: self.selection_confirmed.emit(True)
+        )
+
+        click = Gtk.GestureClick.new()
+        click.connect(
+            'released',
+            lambda *_: self.selection_confirmed.emit(click_activates),
+        )
+        self.add_controller(click)
 
     def append(self, item: GObject.Object):
         self.model.append(item)
@@ -70,7 +88,7 @@ class LibraryList(Gtk.ListView):
 
     def _item_selected(self, *_):
         if selected := self.selection_model.get_selected_item():
-            self.emit('selected', selected)
+            self.selection_changed.emit(selected)
 
     def _update_sort(self):
         pass
@@ -96,6 +114,12 @@ class AlbumList(LibraryList):
     model = Gio.ListStore.new(AlbumItem)
     template = '/com/github/edestcroix/RecordBox/lists/album_row.ui'
 
+    def __init__(self):
+
+        # In the case of the AlbumList the click shouldn't count as an acvtivation,
+        # because playback will start when activation is true.
+        super().__init__(click_activates=False)
+
     def get_row_at_index(self, index: int):
         return self.filter_model[index]
 
@@ -118,7 +142,9 @@ class AlbumList(LibraryList):
         self.selection_model = Gtk.SingleSelection.new(self.filter_model)
         self.selection_model.set_can_unselect(True)
         self.selection_model.set_autoselect(False)
-        self.selection_model.connect('selection_changed', self._item_selected)
+        self.selection_model.connect(
+            'selection_changed', lambda *_: self._item_selected()
+        )
         self.set_model(self.selection_model)
 
     def _update_sort(self):
