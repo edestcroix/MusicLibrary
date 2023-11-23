@@ -107,10 +107,6 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         self.add_action(loop)
         self.stop_player = self._create_action('stop', self.player.stop)
 
-    def update_album(self, album: AlbumItem):
-        self.main_page.set_title(album.raw_name)
-        self.album_overview.update_album(album)
-
     def send_toast(
         self,
         title: str,
@@ -171,17 +167,14 @@ class RecordBoxWindow(Adw.ApplicationWindow):
             current_album = current_track.album
             album = self.library.find_album(current_album)
             self.library.select_album(album)
-
-            self.main_page.set_title(album.raw_name)
-            # TODO: Don't update the album if it's already the same as the
-            # current track's album
-            self.update_album(album)
+            if self.album_overview.current_album != album:
+                self._update_album(album)
 
     ## UI Callbacks ##
 
     @Gtk.Template.Callback()
     def _album_changed(self, _, album: AlbumItem):
-        self.update_album(album)
+        self._update_album(album)
         self.play_action.set_enabled(True)
         self.play_button.set_sensitive(True)
         self.add_album.set_enabled(True)
@@ -269,6 +262,10 @@ class RecordBoxWindow(Adw.ApplicationWindow):
                 self.player.ready()
         if toast:
             self.send_toast('Queue Updated', undo=not was_empty)
+
+    def _update_album(self, album: AlbumItem):
+        self.main_page.set_title(album.raw_name)
+        self.album_overview.update_album(album)
 
     # player specific methods #
     def _on_player_state_changed(self, _, state):
