@@ -16,7 +16,6 @@
         <condition>max-width: 750sp</condition>
         <setter object="album_box" property="orientation">vertical</setter>
         <setter object="album_box" property="valign">center</setter>
-        <setter object="album_box" property="spacing">0</setter>
         <setter object="cover_image" property="pixel-size">256</setter>
         <setter object="outer_scroll" property="vscrollbar-policy">automatic</setter>
         <setter object="inner_scroll" property="vscrollbar-policy">never</setter>

@@ -1,5 +1,6 @@
+/* The track list needs a tiny margin just to avoid ugly shadows on the corners */
 .track-list {
-  margin: 10px;
+  margin: 1px;
 }
 
 .library-row, .queue-row {
@@ -36,8 +37,7 @@
 }
 
 .album-view {
-  margin-left: 10px;
-  margin-right: 10px;
+  margin: 10px;
 }
 
 .album-card {
@@ -76,7 +76,6 @@
   padding: 5px;
   padding-top: 0px;
 }
-
 
 .song-title-box {
   margin-top: 0px;
