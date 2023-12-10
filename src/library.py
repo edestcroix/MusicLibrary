@@ -4,7 +4,7 @@ import threading
 
 from .parser import MusicParser
 from .musicdb import MusicDB
-from .items import AlbumItem, ArtistItem
+from .items import AlbumItem, ArtistItem, TrackItem
 from .library_lists import AlbumList, ArtistList
 
 gi.require_version('Gtk', '4.0')
@@ -92,12 +92,12 @@ class MusicLibrary(Adw.Bin):
         self.album_list_page.set_title('Albums')
         self.set_property('filter-all-albums', True)
 
-    def find_album(self, album_name):
-        return self.album_list.find_album(album_name)
+    def find_album_by_track(self, track: TrackItem):
+        return self.album_list.find_album_by_track(track)
 
-    def select_album(self, album: AlbumItem):
-        self.album_list.filter_on_artist(album.artists[0])
-        self.album_list_page.set_title(album.artists[0])
+    def select_album(self, artist: str, album: AlbumItem):
+        self.album_list.filter_on_artist(artist)
+        self.album_list_page.set_title(artist)
 
         self.album_return.set_sensitive(True)
 
@@ -106,7 +106,7 @@ class MusicLibrary(Adw.Bin):
         self.album_list.unselect_all()
         self.artist_list.unselect_all()
 
-        self._select_row_with_title(self.artist_list, album.artists[0])
+        self._select_row_with_title(self.artist_list, artist)
         self._select_row_with_title(self.album_list, album.raw_name)
 
     @Gtk.Template.Callback()

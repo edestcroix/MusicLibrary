@@ -273,7 +273,7 @@ class QueueRow(Adw.Bin):
                 parent.set_css_classes(
                     parent.get_css_classes() + ['current-track']
                 )
-            else:
+            elif 'current-track' in parent.get_css_classes():
                 parent.set_css_classes(
                     list(set(parent.get_css_classes()) - {'current-track'})
                 )

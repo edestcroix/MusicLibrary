@@ -50,6 +50,7 @@
               <object class="GtkButton" id="skip_backward">
                 <property name="icon-name">media-skip-backward-symbolic</property>
                 <property name="halign">end</property>
+                <property name="valign">center</property>
                 <signal name="clicked" handler="_skip_backward" />
               </object>
             </child>
@@ -57,6 +58,7 @@
               <object class="GtkButton" id="playback_toggle">
                 <property name="icon-name">media-playback-start-symbolic</property>
                 <property name="halign">end</property>
+                <property name="valign">center</property>
                 <signal name="clicked" handler="_play_pause" />
               </object>
             </child>
@@ -64,6 +66,7 @@
               <object class="GtkButton" id="skip_forward">
                 <property name="icon-name">media-skip-forward-symbolic</property>
                 <property name="halign">end</property>
+                <property name="valign">center</property>
                 <signal name="clicked" handler="_skip_forward" />
               </object>
             </child>

@@ -105,7 +105,9 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         )
         self.add_action(stop_after_current)
         self.add_action(loop)
-        self.stop_player = self._create_action('stop', self.player.stop)
+        self.stop_player = self._create_action(
+            'stop', lambda *_: self.player.stop()
+        )
 
     def send_toast(
         self,
@@ -164,9 +166,8 @@ class RecordBoxWindow(Adw.ApplicationWindow):
 
     def return_to_playing(self, *_):
         if current_track := self.player.current_track:
-            current_album = current_track.album
-            album = self.library.find_album(current_album)
-            self.library.select_album(album)
+            album = self.library.find_album_by_track(current_track)
+            self.library.select_album(current_track.albumartist, album)
             if self.album_overview.current_album != album:
                 self._update_album(album)
 
@@ -313,22 +314,19 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         self.insert = self._create_action(
             'insert',
             self.insert_track,
-            enabled=True,
             parameter_type=GLib.VariantType('i'),
         )
 
         self.replace_queue = self._create_action(
-            'replace-queue', self.overwrite_queue
+            'replace-queue', self.overwrite_queue, enabled=False
         )
         self.return_to_playing = self._create_action(
-            'return-to-playing', self.return_to_playing
+            'return-to-playing', self.return_to_playing, enabled=False
         )
-        self.undo_queue = self._create_action(
-            'undo-queue', self.undo, enabled=True
-        )
+        self.undo_queue = self._create_action('undo-queue', self.undo)
 
         self.filter_all_albums = self._create_action(
-            'filter-all', self.library.filter_all
+            'filter-all', self.library.filter_all, enabled=False
         )
         self.library.bind_property(
             'filter-all-albums',
@@ -355,7 +353,7 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         )
 
     def _create_action(
-        self, name, callback, enabled=False, parameter_type=None
+        self, name, callback, enabled=True, parameter_type=None
     ):
         action = Gio.SimpleAction.new(name, parameter_type)
         action.connect('activate', callback)

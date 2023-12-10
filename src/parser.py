@@ -177,7 +177,6 @@ class MusicParser(GObject.Object):
         self._parse(db, self._path)
         db.commit()
         self._dirs_visited = 0
-        print('Done!')
 
     def _parse(self, db: MusicDB, path: str):
         """Recursively parses the given directory and sends the parsed data to the database."""

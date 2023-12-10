@@ -73,6 +73,9 @@ class TrackItem(GObject.Object):
     def clone(self):
         return TrackItem(*self)
 
+    def __eq__(self, other):
+        return self.path == other.path
+
 
 class AlbumItem(GObject.Object):
     __gtype_name__ = 'AlbumItem'
@@ -91,6 +94,7 @@ class AlbumItem(GObject.Object):
         for i, arg in enumerate(args):
             self.set_property(AlbumProperties(i).name.lower(), arg)
 
+        self.date = self.date or ''
         self.artists = artists or []
         self.tracks = tracks or []
         self.tracks.sort(key=lambda t: (t.discnumber, t.track))
@@ -106,7 +110,10 @@ class AlbumItem(GObject.Object):
 
     @GObject.Property(type=str)
     def summary(self) -> str:
-        return f'{self.length_str} - {self.num_tracks} track{"s" if self.num_tracks>1 else ""}\n{self.date}'
+        if self.date:
+            return f'{self.length_str} - {self.num_tracks} track{"s" if self.num_tracks>1 else ""}\n{self.date}'
+        else:
+            return f'{self.length_str} - {self.num_tracks} track{"s" if self.num_tracks>1 else ""}'
 
     @GObject.Property(type=str)
     def length_str(self):
@@ -115,6 +122,16 @@ class AlbumItem(GObject.Object):
 
     def clone(self):
         return AlbumItem(*self, artists=self.artists, tracks=self.tracks)
+
+    def __eq__(self, other):
+        return all(
+            (
+                self.raw_name == other.raw_name,
+                self.date == other.date,
+                self.artists == other.artists,
+                self.tracks == other.tracks,
+            )
+        )
 
 
 class ArtistItem(GObject.Object):
@@ -131,3 +148,9 @@ class ArtistItem(GObject.Object):
         self.raw_name = name
         self.sort = sort or name
         self.albums = f'{num_albums} album{"s" if num_albums > 1 else ""}'
+
+    # NOTE: Artists currently do not have a unique identifier. (They do in the database,
+    # but any two given ArtistItems could have identical properties.) Might need to be
+    # addressed in the future.
+    def __eq__(self, other):
+        return self.name == other.name

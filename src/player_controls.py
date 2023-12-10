@@ -33,6 +33,7 @@ class RecordBoxPlayerControls(Gtk.Box):
     def __init__(self):
         super().__init__()
         self.volume_slider.set_range(0, 1)
+        self.volume_slider.set_increments(0.1, 0.1)
         self.progress.set_increments(1, 5)
 
     def attach_to_player(self, player):
@@ -87,6 +88,9 @@ class RecordBoxPlayerControls(Gtk.Box):
 
     @Gtk.Template.Callback()
     def _volume_changed(self, _, __, value):
+        if value < 0:
+            return
+
         value = GstAudio.StreamVolume.convert_volume(
             GstAudio.StreamVolumeFormat.CUBIC,
             GstAudio.StreamVolumeFormat.LINEAR,

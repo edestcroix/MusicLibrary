@@ -196,8 +196,10 @@ class Player(GObject.GObject):
                 # so the UI and MPRIS will update to show the first track again, signifying
                 # that the queue has ended and playing will start over.
                 if not self._play_queue.is_empty():
-                    self._play_queue.restart()
+                    if not self.stop_after_current:
+                            self._play_queue.restart()
                     self.current_track = self._play_queue.get_current_track()
+
                 self.emit('eos')
             case Gst.MessageType.STREAM_START:
                 self.current_track = self._play_queue.get_current_track()

@@ -1,6 +1,6 @@
 from gi.repository import Adw, Gtk, GLib, GObject, Gio
 from enum import Enum
-from .items import AlbumItem, ArtistItem
+from .items import AlbumItem, ArtistItem, TrackItem
 
 
 class ArtistSort(Enum):
@@ -132,10 +132,8 @@ class AlbumList(LibraryList):
         )
         self._item_selected()
 
-    def find_album(self, album_name: str) -> AlbumItem | None:
-        return next(
-            (row for row in self.model if row.raw_name == album_name), None
-        )
+    def find_album_by_track(self, track: TrackItem) -> AlbumItem | None:
+        return next((row for row in self.model if track in row.tracks), None)
 
     def _setup_model(self):
         self.filter_model = Gtk.FilterListModel.new(self.model, None)
