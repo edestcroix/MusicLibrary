@@ -92,17 +92,14 @@
                     </child>
                     <child>
                       <object class="AdwClamp">
-                        <property name="maximum-size">900</property>
+                        <property name="maximum-size">1000</property>
                         <child>
-                          <!-- <property name="set-vexpand">true</property> -->
                           <object class="GtkScrolledWindow" id="inner_scroll">
                             <property name="hscrollbar-policy">never</property>
-                            <!-- <property name="vexpand">true</property> -->
                             <child>
                               <object class="GtkListBox" id="track_list">
-                                <property name="width-request">320</property>
-                                <property name="vexpand">true</property>
                                 <property name="valign">center</property>
+                                <property name="activate-on-single-click">false</property>
                                 <style>
                                   <class name="boxed-list" />
                                   <class name="track-list" />

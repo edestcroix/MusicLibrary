@@ -127,29 +127,50 @@ class RecordBoxWindow(Adw.ApplicationWindow):
     ### Action Callbacks ###
 
     @Gtk.Template.Callback()
-    def play(self, _, index=None):
-        """Callback for the play action. Plays the currently selected album
-        starting at the given index. Will destructively overwrite the queue.
-        Also connected to the album-activated signal of the music library."""
+    def play(self, _, index=None, disc=None):
+        """Callback for various play actions. If index is provided, it will begin playing
+        the current album at the given index. If disc is provided, it will play the tracks
+        from the current album with said disc number. If neither are provided, it will
+        play the entire album."""
         if album := self.album_overview.current_album:
-            i = index.get_int32() if index else 0
-            name = album.tracks[i].title if i else album.raw_name
-            self._confirm_play(album.tracks, i, name)
+            tracks = album.tracks
 
-    def append_album(self, *_):
-        """Callback for the add-album action. Can't currently be combined with append
-        track like how play is, because the add to queue option in the album menu
-        doesn't work with the append action for some reason."""
-        self._add_to_queue(self._current_album_tracks())
+            if disc is not None and (d := disc.get_int32()):
+                tracks = [t for t in tracks if t.discnumber == d]
 
-    def append_track(self, _, index: GLib.Variant):
+            if index and (i := index.get_int32()):
+                self._confirm_play(tracks, i, album.tracks[i].title)
+            else:
+                self._confirm_play(tracks, 0, album.raw_name)
+
+    def play_single(self, _, index: GLib.Variant):
+        """Plays the track at the given index in the current album.
+        Callback for the play-single action. Unlike play, only the track at the given
+        index will be added to the queue, rather than the entire album."""
+        if album := self.album_overview.current_album:
+            i = index.get_int32()
+            self._confirm_play(
+                album.tracks[i : i + 1], 0, album.tracks[i].title
+            )
+
+    def append(self, _, index: GLib.Variant, disc: GLib.Variant = None):
         """Gets the track at the given index in the current album and adds
-        it to the queue. Callback for the append action."""
-        i: int = index.get_int32()
-        self._add_to_queue(self._current_album_tracks()[i : i + 1])
+        it to the queue. Callback for the append action. If a disc number is
+        provided, it will instead add that disc's tracks to the queue."""
+        tracks = self._current_album_tracks()
 
-    def overwrite_queue(self, *_):
-        self._add_to_queue(self._current_album_tracks(), overwrite=True)
+        if (i := index.get_int32()) == -1:
+            if disc and (d := disc.get_int32()):
+                tracks = [t for t in tracks if t.discnumber == d]
+            self._add_to_queue(tracks)
+        else:
+            self._add_to_queue(tracks[i : i + 1])
+
+    def overwrite_queue(self, _, disc: GLib.Variant = None):
+        tracks = self._current_album_tracks()
+        if disc and (d := disc.get_int32()):
+            tracks = [t for t in tracks if t.discnumber == d]
+        self._add_to_queue(tracks, overwrite=True)
 
     def insert_track(self, _, index: GLib.Variant):
         track = self._current_album_tracks()[index.get_int32()]
@@ -279,7 +300,6 @@ class RecordBoxWindow(Adw.ApplicationWindow):
             self.queue_toggle.set_sensitive(True)
             self.return_to_playing.set_enabled(True)
             self.stop_player.set_enabled(True)
-            self.exit_player.set_enabled(True)
         else:
             self.set_hide_on_close(False)
 
@@ -304,14 +324,35 @@ class RecordBoxWindow(Adw.ApplicationWindow):
             self.play,
             parameter_type=GLib.VariantType('i'),
         )
-        self.add_album = self._create_action('add-album', self.append_album)
-        self.append_track = self._create_action(
-            'append',
-            self.append_track,
-            enabled=True,
+        self._create_action(
+            'play-single',
+            self.play_single,
             parameter_type=GLib.VariantType('i'),
         )
-        self.insert = self._create_action(
+        self._create_action(
+            'play-disc',
+            lambda _, disc: self.play(None, disc=disc),
+            parameter_type=GLib.VariantType('i'),
+        )
+
+        self.add_album = self._create_action(
+            'add-album',
+            lambda *_: self.append(None, GLib.Variant('i', -1)),
+            enabled=False,
+        )
+        self._create_action(
+            'append',
+            self.append,
+            parameter_type=GLib.VariantType('i'),
+        )
+        self._create_action(
+            'append-disc',
+            lambda _, disc: self.append(
+                None, GLib.Variant('i', -1), disc=disc
+            ),
+            parameter_type=GLib.VariantType('i'),
+        )
+        self._create_action(
             'insert',
             self.insert_track,
             parameter_type=GLib.VariantType('i'),
@@ -319,6 +360,11 @@ class RecordBoxWindow(Adw.ApplicationWindow):
 
         self.replace_queue = self._create_action(
             'replace-queue', self.overwrite_queue, enabled=False
+        )
+        self._create_action(
+            'replace-disc',
+            self.overwrite_queue,
+            parameter_type=GLib.VariantType('i'),
         )
         self.return_to_playing = self._create_action(
             'return-to-playing', self.return_to_playing, enabled=False
@@ -348,9 +394,7 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         )
         self.add_action(self.album_sort)
 
-        self.exit_player = self._create_action(
-            'exit_player', self._exit_player
-        )
+        self._create_action('exit_player', self._exit_player)
 
     def _create_action(
         self, name, callback, enabled=True, parameter_type=None

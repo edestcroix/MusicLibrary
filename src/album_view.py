@@ -61,28 +61,55 @@ class AlbumView(Adw.BreakpointBin):
         for i, track in enumerate(tracks):
             if track.discnumber != current_disc:
                 current_disc = track.discnumber
-                disc_row = self._disc_row(current_disc, track.discsubtitle)
+                disc_row = DiscRow(
+                    discnumber=current_disc,
+                    discsubtitle=track.discsubtitle,
+                    expanded=self.expand_discs,
+                )
+                self.track_list.append(disc_row)
             if disc_row:
                 disc_row.add_row(TrackRow(track=track, index=i))
             else:
                 self.track_list.append(TrackRow(track=track, index=i))
 
-    def _disc_row(self, current_disc: int, discsubtitle: str | None):
-        disc_row = Adw.ExpanderRow(
-            title=f'Disc {current_disc}',
-            subtitle=discsubtitle,
+
+class DiscRow(Adw.ExpanderRow):
+    __gtype_name__ = 'RecordBoxDiscRow'
+
+    def __init__(self, discnumber: int, discsubtitle: str | None, **kwargs):
+        super().__init__(
+            title=discsubtitle or f'Disc {discnumber}',
+            subtitle=f'Disc {discnumber}' if discsubtitle else None,
             selectable=False,
-            expanded=self.expand_discs,
+            **kwargs,
         )
-        if discsubtitle:
-            disc_row.set_css_classes(disc_row.get_css_classes() + ['property'])
-        self.track_list.append(disc_row)
-        return disc_row
+        box = self.get_child()
+        revealer = box.get_last_child()
+        listbox = revealer.get_child()
+        listbox.set_activate_on_single_click(False)
+
+        self.menu_model = Gio.Menu.new()
+        self.menu_model.append('Play Disc', f'win.play-disc({discnumber})')
+        self.menu_model.append(
+            'Add To Queue', f'win.append-disc({discnumber})'
+        )
+        self.menu_model.append(
+            'Replace Queue', f'win.replace-disc({discnumber})'
+        )
+        self.new_popover = Gtk.PopoverMenu.new_from_model(self.menu_model)
+        btn = Gtk.MenuButton()
+        btn.set_icon_name('view-more-symbolic')
+        btn.set_css_classes(['flat'])
+        btn.set_valign(Gtk.Align.CENTER)
+        btn.set_popover(self.new_popover)
+        self.add_suffix(btn)
 
 
 class TrackRow(Adw.ActionRow):
     def __init__(self, track: TrackItem, index: int, **kwargs):
-        super().__init__(title_lines=1, selectable=False, **kwargs)
+        super().__init__(
+            title_lines=1, selectable=False, activatable=True, **kwargs
+        )
 
         artists = f'\n{track.artists}' if track.artists else ''
         self.set_subtitle(
@@ -92,9 +119,10 @@ class TrackRow(Adw.ActionRow):
         )
         self.set_title(track.title)
         self.set_tooltip_text(track.raw_title)
+        self.set_detailed_action_name(f'win.play({index})')
 
         self.menu_model = Gio.Menu.new()
-        self.menu_model.append('Play Track', f'win.play({index})')
+        self.menu_model.append('Play Track', f'win.play-single({index})')
         self.menu_model.append('Add To Queue', f'win.append({index})')
         self.menu_model.append('Insert Next', f'win.insert({index})')
         self.new_popover = Gtk.PopoverMenu.new_from_model(self.menu_model)
