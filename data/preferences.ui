@@ -76,6 +76,25 @@
           <object class="AdwPreferencesGroup">
             <property name="title" translatable="yes">Sync</property>
             <child>
+              <object class="AdwActionRow" id="sync_now">
+                <property name="title" translatable="yes">Music Directorty</property>
+                <property name="subtitle" translatable="yes">The directory to scan for music.</property>
+                <property name="use_underline">True</property>
+                <child>
+                  <object class="GtkButton" id="directory_select_button">
+                    <signal name="clicked" handler="_on_directory_select_button_clicked" />
+                    <property name="valign">center</property>
+                    <property name="child">
+                      <object class="AdwButtonContent">
+                        <property name="icon_name">folder-symbolic</property>
+                        <property name="label" bind-source="RecordBoxPreferencesWindow" bind-property="music-directory" />
+                      </object>
+                    </property>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <child>
               <object class="AdwSwitchRow" id="sync_on_startup">
                 <property name="title" translatable="yes">_Sync on Startup</property>
                 <property name="subtitle" translatable="yes">Syncronize the library on startup.</property>

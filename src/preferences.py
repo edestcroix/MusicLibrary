@@ -1,4 +1,4 @@
-from gi.repository import Adw, Gtk, GLib, Gio
+from gi.repository import Adw, Gtk, GLib, Gio, GObject
 import gi
 
 gi.require_version('Gtk', '4.0')
@@ -20,6 +20,9 @@ class RecordBoxPreferencesWindow(Adw.PreferencesWindow):
     restore_window_state = Gtk.Template.Child()
     sync_on_startup = Gtk.Template.Child()
 
+    directory_select_button = Gtk.Template.Child()
+    music_directory = GObject.Property(type=str, default='')
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -30,6 +33,8 @@ class RecordBoxPreferencesWindow(Adw.PreferencesWindow):
         self.settings = settings
         self._artist_in()
         self._album_in()
+
+        self._bind('music-directory', self, 'music-directory')
 
         self.settings.connect('changed::artist-sort', self._artist_in)
         self.settings.connect('changed::album-sort', self._album_in)
@@ -64,3 +69,16 @@ class RecordBoxPreferencesWindow(Adw.PreferencesWindow):
 
     def _album_in(self, *_):
         self.album_sort.set_selected(self.settings.get_enum('album-sort'))
+
+    @Gtk.Template.Callback()
+    def _on_directory_select_button_clicked(self, _):
+        file_chooser = Gtk.FileDialog()
+        file_chooser.set_initial_folder(
+            Gio.File.new_for_path(GLib.get_home_dir())
+        )
+        file_chooser.select_folder(callback=self._on_folder_selected)
+
+    def _on_folder_selected(self, dialog, response):
+        folder: Gio.LocalFile = dialog.select_folder_finish(response)
+
+        self.music_directory = folder.get_path()

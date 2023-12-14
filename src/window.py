@@ -78,9 +78,6 @@ class RecordBoxWindow(Adw.ApplicationWindow):
 
         self._bind('expand-discs', self.album_overview, 'expand_discs')
 
-        # TODO: If sync-on-startup is False, a music directory is set, and the database is empty,
-        # the library should either automatically sync or prompt the user to sync. (Diffenrent screen
-        # from the setup one because the directory is already set.)
         if self.app.settings.get_boolean('sync-on-startup'):
             self.library.sync_library(None, show_spinner=False)
         else:
