@@ -15,96 +15,170 @@
           </object>
         </child>
         <child>
-          <object class="AdwNavigationSplitView" id="inner_split">
-            <property name="max-sidebar-width">300</property>
-            <property name="min-sidebar-width">100</property>
-            <property name="sidebar-width-fraction">0.43</property>
-            <property name="collapsed" bind-source="RecordBoxMusicLibrary" bind-property="collapsed"
-              bind-flags="bidirectional" />
-            <property name="sidebar">
-              <!-- sidebar -->
-              <object class="AdwNavigationPage">
-                <property name="title" translatable="yes">Artists</property>
+          <object class="AdwViewStack" id="stack">
+            <child>
+              <object class="AdwViewStackPage">
+                <property name="name">setup</property>
+                <property name="title">Library Empty</property>
                 <property name="child">
-                  <object class="AdwToolbarView">
-                    <child type="top">
-                      <object class="AdwHeaderBar">
-                        <child type="end">
-                          <object class="GtkButton" id="artist_return">
-                            <property name="visible" bind-source="RecordBoxMusicLibrary"
-                              bind-property="parent-collapsed">false</property>
-                            <property name="icon-name">go-next-symbolic</property>
-                            <signal name="clicked" handler="_on_artist_return" />
+                  <object class="AdwStatusPage">
+                    <property name="title">Library Empty</property>
+                    <property name="description">Select your music directory to get started</property>
+                    <property name="icon-name">emblem-music-symbolic</property>
+                    <child>
+                      <object class="GtkBox">
+                        <property name="orientation">vertical</property>
+                        <property name="spacing">20</property>
+                        <property name="homogeneous">false</property>
+                        <child>
+                          <object class="GtkButton" id="directory_select">
+                            <property name="halign">center</property>
+                            <signal name="clicked" handler="_on_directory_select" />
+                            <property name="child">
+                              <object class="AdwButtonContent">
+                                <property name="icon-name">document-open-symbolic</property>
+                                <property name="label" translatable="yes">_Select Music Directory</property>
+                                <property name="use-underline">True</property>
+                              </object>
+                            </property>
                           </object>
                         </child>
-                        <child type="end">
-                          <object class="GtkMenuButton">
-                            <property name="icon-name">open-menu-symbolic</property>
-                            <property name="primary">true</property>
-                            <property name="menu-model">primary_menu</property>
+                        <child>
+                          <object class="GtkButton" id="start_button">
+                            <property name="label">Start</property>
+                            <property name="sensitive">False</property>
+                            <property name="halign">center</property>
+                            <signal name="clicked" handler="sync_library" />
+                            <style>
+                              <class name="suggested-action" />
+                              <class name="pill" />
+                            </style>
                           </object>
                         </child>
                       </object>
                     </child>
-                    <property name="content">
-                      <object class="GtkScrolledWindow">
-                        <property name="hscrollbar-policy">never</property>
-                        <child>
-                          <object class="RecordBoxArtistList" id="artist_list">
-                            <signal name="selection-changed" handler="_artist_selection_changed" />
-                            <signal name="selection-confirmed" handler="_artist_confirmed" />
-                            <property name="sort" bind-source="RecordBoxMusicLibrary"
-                              bind-property="artist-sort" />
-                            <style>
-                              <class name="navigation-sidebar" />
-                            </style>
+                  </object>
+                </property>
+              </object>
+            </child>
+            <child>
+              <object class="AdwViewStackPage">
+                <property name="name">sync</property>
+                <property name="title">Updating Library</property>
+                <property name="child">
+                  <object class="AdwStatusPage">
+                    <property name="title">Syncronizing Music</property>
+                    <!-- <property name="description">Select an album from the list to get
+                    started</property> -->
+                    <property name="icon-name">emblem-music-symbolic</property>
+                    <property name="child">
+                      <object class="GtkSpinner" id="spinner" />
+                    </property>
+                  </object>
+                </property>
+              </object>
+            </child>
+            <child>
+              <object class="AdwViewStackPage">
+                <property name="name">library</property>
+                <property name="child">
+                  <object class="AdwNavigationSplitView" id="inner_split">
+                    <property name="max-sidebar-width">300</property>
+                    <property name="min-sidebar-width">100</property>
+                    <property name="sidebar-width-fraction">0.43</property>
+                    <property name="collapsed" bind-source="RecordBoxMusicLibrary"
+                      bind-property="collapsed"
+                      bind-flags="bidirectional" />
+                    <property name="sidebar">
+                      <!-- sidebar -->
+                      <object class="AdwNavigationPage">
+                        <property name="title" translatable="yes">Artists</property>
+                        <property name="child">
+                          <object class="AdwToolbarView">
+                            <child type="top">
+                              <object class="AdwHeaderBar">
+                                <child type="end">
+                                  <object class="GtkButton" id="artist_return">
+                                    <property name="visible" bind-source="RecordBoxMusicLibrary"
+                                      bind-property="parent-collapsed">false</property>
+                                    <property name="icon-name">go-next-symbolic</property>
+                                    <signal name="clicked" handler="_on_artist_return" />
+                                  </object>
+                                </child>
+                                <child type="end">
+                                  <object class="GtkMenuButton">
+                                    <property name="icon-name">open-menu-symbolic</property>
+                                    <property name="primary">true</property>
+                                    <property name="menu-model">primary_menu</property>
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+                            <property name="content">
+                              <object class="GtkScrolledWindow">
+                                <property name="hscrollbar-policy">never</property>
+                                <child>
+                                  <object class="RecordBoxArtistList" id="artist_list">
+                                    <signal name="selection-changed"
+                                      handler="_artist_selection_changed" />
+                                    <signal name="selection-confirmed" handler="_artist_confirmed" />
+                                    <property name="sort" bind-source="RecordBoxMusicLibrary"
+                                      bind-property="artist-sort" />
+                                    <style>
+                                      <class name="navigation-sidebar" />
+                                    </style>
+                                  </object>
+                                </child>
+                              </object>
+                            </property>
                           </object>
-                        </child>
+                        </property>
+                      </object>
+                    </property>
+                    <property name="content">
+                      <!-- middle pane -->
+                      <object class="AdwNavigationPage" id="album_list_page">
+                        <property name="title" translatable="yes">Albums</property>
+                        <property name="tag">album-view</property>
+                        <property name="child">
+                          <object class="AdwToolbarView">
+                            <child type="top">
+                              <object class="AdwHeaderBar">
+                                <child type="end">
+                                  <object class="GtkButton" id="album_return">
+                                    <property name="visible" bind-source="RecordBoxMusicLibrary"
+                                      bind-property="parent-collapsed">false</property>
+                                    <property name="icon-name">go-next-symbolic</property>
+                                    <signal name="clicked" handler="_on_album_return" />
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+                            <property name="content">
+                              <object class="GtkScrolledWindow">
+                                <property name="hscrollbar-policy">never</property>
+                                <child>
+                                  <object class="RecordBoxAlbumList" id="album_list">
+                                    <signal name="selection-changed"
+                                      handler="_album_selection_changed" />
+                                    <signal name="selection-confirmed" handler="_album_confirmed" />
+                                    <property name="sort" bind-source="RecordBoxMusicLibrary"
+                                      bind-property="album-sort" />
+                                    <style>
+                                      <class name="navigation-sidebar" />
+                                    </style>
+                                  </object>
+                                </child>
+                              </object>
+                            </property>
+                          </object>
+                        </property>
                       </object>
                     </property>
                   </object>
                 </property>
               </object>
-            </property>
-            <property name="content">
-              <!-- middle pane -->
-              <object class="AdwNavigationPage" id="album_list_page">
-                <property name="title" translatable="yes">Albums</property>
-                <property name="tag">album-view</property>
-                <property name="child">
-                  <object class="AdwToolbarView">
-                    <child type="top">
-                      <object class="AdwHeaderBar">
-                        <child type="end">
-                          <object class="GtkButton" id="album_return">
-                            <property name="visible" bind-source="RecordBoxMusicLibrary"
-                              bind-property="parent-collapsed">false</property>
-                            <property name="icon-name">go-next-symbolic</property>
-                            <signal name="clicked" handler="_on_album_return" />
-                          </object>
-                        </child>
-                      </object>
-                    </child>
-                    <property name="content">
-                      <object class="GtkScrolledWindow">
-                        <property name="hscrollbar-policy">never</property>
-                        <child>
-                          <object class="RecordBoxAlbumList" id="album_list">
-                            <signal name="selection-changed" handler="_album_selection_changed" />
-                            <signal name="selection-confirmed" handler="_album_confirmed" />
-                            <property name="sort" bind-source="RecordBoxMusicLibrary"
-                              bind-property="album-sort" />
-                            <style>
-                              <class name="navigation-sidebar" />
-                            </style>
-                          </object>
-                        </child>
-                      </object>
-                    </property>
-                  </object>
-                </property>
-              </object>
-            </property>
+            </child>
           </object>
         </child>
       </object>

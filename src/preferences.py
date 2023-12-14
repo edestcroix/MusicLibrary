@@ -18,6 +18,7 @@ class RecordBoxPreferencesWindow(Adw.PreferencesWindow):
     confirm_play = Gtk.Template.Child()
     show_all_artists = Gtk.Template.Child()
     restore_window_state = Gtk.Template.Child()
+    sync_on_startup = Gtk.Template.Child()
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -46,6 +47,8 @@ class RecordBoxPreferencesWindow(Adw.PreferencesWindow):
         self._bind('show-all-artists', self.show_all_artists, 'active')
 
         self._bind('restore-window-state', self.restore_window_state, 'active')
+
+        self._bind('sync-on-startup', self.sync_on_startup, 'active')
 
     def _bind(self, key, obj, prop):
         self.settings.bind(key, obj, prop, Gio.SettingsBindFlags.DEFAULT)

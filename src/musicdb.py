@@ -55,10 +55,10 @@ class MusicDB:
     def close(self):
         self.db.close()
 
-    def remove_missing(self):
+    def remove_missing(self, root: str):
         self.cursor.execute('SELECT path FROM tracks')
         for path in self.cursor.fetchall():
-            if not os.path.exists(path[0]):
+            if not os.path.exists(path[0]) or not path[0].startswith(root):
                 self.cursor.execute('DELETE FROM tracks WHERE path = ?', path)
                 self.cursor.execute('DELETE FROM artists WHERE path= ?', path)
         self.db.commit()

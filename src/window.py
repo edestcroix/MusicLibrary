@@ -71,13 +71,20 @@ class RecordBoxWindow(Adw.ApplicationWindow):
             self._bind('is-maximized', self, 'maximized')
             self._bind('is-fullscreen', self, 'fullscreened')
 
-        if self.app.settings.get_boolean('sync-on-startup'):
-            self.library.sync_library(None)
-
+        self._bind('music-directory', self.library, 'music_directory')
         self._set('artist-sort', self.library, 'artist-sort')
         self._set('album-sort', self.library, 'album-sort')
-        self._bind('expand-discs', self.album_overview, 'expand_discs')
         self._bind('show-all-artists', self.library, 'show_all_artists')
+
+        self._bind('expand-discs', self.album_overview, 'expand_discs')
+
+        # TODO: If sync-on-startup is False, a music directory is set, and the database is empty,
+        # the library should either automatically sync or prompt the user to sync. (Diffenrent screen
+        # from the setup one because the directory is already set.)
+        if self.app.settings.get_boolean('sync-on-startup'):
+            self.library.sync_library(None, show_spinner=False)
+        else:
+            self.library.present()
 
         self._setup_actions()
 

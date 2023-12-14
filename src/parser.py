@@ -160,9 +160,10 @@ class AudioFile:
 class MusicParser(GObject.Object):
     """A class that parses a directory of audio files and sends them to a database."""
 
+    path = GObject.Property(type=str, default='')
+
     def __init__(self, path=os.path.expanduser('~/Music'), **kwargs):
         super().__init__(**kwargs)
-        self._path = path
         self._total_dirs = int(os.popen(f'find {path} -type d | wc -l').read())
         self._dirs_visited = 0
 
@@ -173,8 +174,8 @@ class MusicParser(GObject.Object):
         Args:
             db: The MusicDB object to send the parsed data to.
         """
-        db.remove_missing()
-        self._parse(db, self._path)
+        db.remove_missing(self.path)
+        self._parse(db, self.path)
         db.commit()
         self._dirs_visited = 0
 

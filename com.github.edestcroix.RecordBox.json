@@ -10,7 +10,7 @@
     "--socket=fallback-x11",
     "--device=dri",
     "--socket=wayland",
-    "--filesystem=xdg-music",
+    "--filesystem=home",
     "--socket=pulseaudio",
     "--own-name=org.mpris.MediaPlayer2.RecordBox"
   ],

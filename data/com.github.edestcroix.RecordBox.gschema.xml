@@ -14,6 +14,14 @@
   </enum>
 
   <schema id="com.github.edestcroix.RecordBox" path="/com/github/edestcroix/recordbox/">
+    <key name="music-directory" type="s">
+      <default>"-"</default>
+      <summary>Music directory</summary>
+      <description>
+        The directory where music is stored
+      </description>
+    </key>
+
     <key name="width" type="i">
       <default>1200</default>
     </key>

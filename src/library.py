@@ -26,12 +26,19 @@ class MusicLibrary(Adw.Bin):
 
     progress_bar = Gtk.Template.Child()
 
+    stack = Gtk.Template.Child()
+    spinner = Gtk.Template.Child()
+    directory_select = Gtk.Template.Child()
+    start_button = Gtk.Template.Child()
+
     collapsed = GObject.Property(type=bool, default=False)
     parent_collapsed = GObject.Property(type=bool, default=False)
 
     show_all_artists = GObject.Property(type=bool, default=False)
 
     filter_all_albums = GObject.Property(type=bool, default=False)
+
+    music_directory = GObject.Property(type=str, default='')
 
     artist_sort = GObject.Property(type=str, default='name-descending')
     album_sort = GObject.Property(type=str, default='name-descending')
@@ -54,6 +61,13 @@ class MusicLibrary(Adw.Bin):
 
         self.parser = MusicParser()
 
+        self.bind_property(
+            'music-directory',
+            self.parser,
+            'path',
+            GObject.BindingFlags.DEFAULT,
+        )
+
         self.parser.bind_property(
             'progress',
             self.progress_bar,
@@ -67,7 +81,21 @@ class MusicLibrary(Adw.Bin):
             'activate', lambda *_: self.album_list.grab_focus()
         )
 
-    def sync_library(self, _):
+    def present(self):
+        if self.parser.path in ['', '-']:
+            self.stack.set_visible_child_name('setup')
+        else:
+            self.stack.set_visible_child_name('library')
+
+    @Gtk.Template.Callback()
+    def sync_library(self, _, show_spinner: bool = True):
+        if self.parser.path in ['', '-']:
+            self.stack.set_visible_child_name('setup')
+            return
+
+        if show_spinner:
+            self.stack.set_visible_child_name('sync')
+            self.spinner.start()
         self.thread = threading.Thread(target=self.update_db)
         self.thread.daemon = True
         self.progress_bar.set_visible(True)
@@ -79,9 +107,11 @@ class MusicLibrary(Adw.Bin):
         db.close()
         GLib.idle_add(self.refresh_lists)
         GLib.idle_add(self.progress_bar.set_visible, False)
+        GLib.idle_add(self.spinner.stop)
 
     def refresh_lists(self):
         db = MusicDB()
+        self.stack.set_visible_child_name('library')
         self.artist_list.populate(db.get_artists(self.show_all_artists))
         self.album_list.populate(db.get_albums())
         db.close()
@@ -157,3 +187,19 @@ class MusicLibrary(Adw.Bin):
             cur = row_list.get_row_at_index(i)
         if cur:
             row_list.scroll_to(i, Gtk.ListScrollFlags.SELECT)
+
+    @Gtk.Template.Callback()
+    def _on_directory_select(self, _):
+
+        file_chooser = Gtk.FileDialog()
+        file_chooser.set_initial_folder(
+            Gio.File.new_for_path(GLib.get_home_dir())
+        )
+        file_chooser.select_folder(callback=self._on_folder_selected)
+
+    def _on_folder_selected(self, dialog, response):
+        folder: Gio.LocalFile = dialog.select_folder_finish(response)
+
+        self.music_directory = folder.get_path()
+        self.directory_select.get_child().set_label(self.music_directory)
+        self.start_button.set_sensitive(True)
