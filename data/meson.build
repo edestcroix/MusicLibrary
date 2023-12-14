@@ -10,8 +10,8 @@ gnome.compile_resources('recordbox',
 )
 
 desktop_file = i18n.merge_file(
-        input: 'com.github.edestcroix.RecordBox.desktop.in',
-       output: 'com.github.edestcroix.RecordBox.desktop',
+        input: application_id + '.desktop.in',
+       output: application_id + '.desktop',
          type: 'desktop',
        po_dir: '../po',
       install: true,

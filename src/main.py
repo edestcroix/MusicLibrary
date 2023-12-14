@@ -34,12 +34,17 @@ from .player import Player
 class RecordBoxApplication(Adw.Application):
     """The main application singleton class."""
 
-    def __init__(self, version):
+    def __init__(self, version, app_id):
         self.version = version
+        self.app_id = app_id
+        self.dev = 'Devel' in app_id
+        self.app_name = 'RecordBox' + (' (Devel)' if self.dev else '')
         super().__init__(
-            application_id='com.github.edestcroix.RecordBox',
+            application_id=app_id,
             flags=Gio.ApplicationFlags.DEFAULT_FLAGS,
         )
+        self.set_resource_base_path('/com/github/edestcroix/RecordBox')
+
         self.create_action('quit', lambda *_: self.quit(), ['<primary>q'])
         self.create_action('about', self.on_about_action)
         self.create_action(
@@ -61,8 +66,11 @@ class RecordBoxApplication(Adw.Application):
             win = self.props.active_window
         else:
             win = RecordBoxWindow(application=self)
+            if self.dev:
+                win.set_css_classes(win.get_css_classes() + ['devel'])
+
             win.attach_to_player(self.player)
-            win.set_title('RecordBox')
+            win.set_title(self.app_name)
             self.bind_window_actions()
         win.present()
 
@@ -70,8 +78,8 @@ class RecordBoxApplication(Adw.Application):
         """Callback for the app.about action."""
         about = Adw.AboutWindow(
             transient_for=self.props.active_window,
-            application_name='RecordBox',
-            application_icon='com.github.edestcroix.RecordBox',
+            application_name=self.app_name,
+            application_icon=self.app_id,
             developer_name='Emmett de St. Croix',
             version=self.version,
             developers=['Emmett de St. Croix'],
@@ -128,7 +136,7 @@ class RecordBoxApplication(Adw.Application):
         )
 
 
-def main(version):
+def main(version, app_id):
     """The application's entry point."""
-    app = RecordBoxApplication(version)
+    app = RecordBoxApplication(version, app_id)
     return app.run(sys.argv)
