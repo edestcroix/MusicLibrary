@@ -3,6 +3,7 @@ import time
 import urllib
 import urllib.parse
 from enum import Enum
+from .items import TrackItem
 
 import gi
 
@@ -41,8 +42,8 @@ class Player(GObject.GObject):
 
     single_repeated = False
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self):
+        super().__init__()
         self._player = Gst.parse_launch(
             'playbin audio-sink="rgvolume album-mode=\\"true\\" ! autoaudiosink"'
         )
@@ -78,7 +79,7 @@ class Player(GObject.GObject):
     def ready(self):
         self.setup(Gst.State.PAUSED)
 
-    def setup(self, initial_state):
+    def setup(self, initial_state: str):
         url = self._prepare_url(self._play_queue.get_current_track())
         self._player.set_state(Gst.State.NULL)
         time.sleep(0.1)
@@ -131,7 +132,7 @@ class Player(GObject.GObject):
     def get_duration(self):
         return self._player.query_duration(Gst.Format.TIME)[1]
 
-    def seek(self, position):
+    def seek(self, position: int):
         duration = self._player.query_duration(Gst.Format.TIME)[1]
         if self._seeking or position > duration:
             return
@@ -175,7 +176,7 @@ class Player(GObject.GObject):
                 'uri', self._prepare_url(self._play_queue.get_current_track())
             )
 
-    def _prepare_url(self, track):
+    def _prepare_url(self, track: TrackItem):
         path = os.path.realpath(track.path.strip())
         result = urllib.parse.ParseResult(
             scheme='file',
@@ -188,7 +189,7 @@ class Player(GObject.GObject):
         result = urllib.parse.urlunparse(result)
         return result
 
-    def _on_message(self, _, message):
+    def _on_message(self, _, message: Gst.Message):
         match message.type:
             case Gst.MessageType.EOS:
                 self.stop()
@@ -197,7 +198,7 @@ class Player(GObject.GObject):
                 # that the queue has ended and playing will start over.
                 if not self._play_queue.is_empty():
                     if not self.stop_after_current:
-                            self._play_queue.restart()
+                        self._play_queue.restart()
                     self.current_track = self._play_queue.get_current_track()
 
                 self.emit('eos')

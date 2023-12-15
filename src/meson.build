@@ -29,7 +29,6 @@ recordbox_sources = [
   'play_queue.py',
   'preferences.py',
   'player.py',
-  'monitor.py',
   'musicdb.py',
   'parser.py',
   'mpris.py',

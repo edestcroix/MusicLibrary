@@ -24,21 +24,30 @@
                 <property name="orientation">vertical</property>
                 <property name="homogeneous">false</property>
                 <child>
-                  <object class="GtkLabel" id="playing_song">
+                  <object class="GtkLabel">
                     <property name="ellipsize">end</property>
                     <property name="hexpand">true</property>
                     <property name="halign">start</property>
+                    <property name="use-markup">true</property>
+                    <property name="label" bind-source="RecordBoxPlayerControls"
+                      bind-property="playing_track" />
+                    <property name="sensitive" bind-source="RecordBoxPlayerControls"
+                      bind-property="active" bind-flags="sync-create" />
                     <style>
                       <class name="song-title" />
                     </style>
                   </object>
                 </child>
                 <child>
-                  <object class="GtkLabel" id="song_info">
+                  <object class="GtkLabel">
                     <property name="ellipsize">end</property>
                     <property name="hexpand">true</property>
                     <property name="halign">start</property>
-                    <property name="label">Song Info</property>
+                    <property name="use-markup">true</property>
+                    <property name="label" bind-source="RecordBoxPlayerControls"
+                      bind-property="playing_track_info" />
+                    <property name="sensitive" bind-source="RecordBoxPlayerControls"
+                      bind-property="active" bind-flags="sync-create" />
                     <style>
                       <class name="caption" />
                     </style>
@@ -126,7 +135,11 @@
             <property name="homogeneous">false</property>
             <property name="spacing">5</property>
             <child>
-              <object class="GtkLabel" id="start_label">
+              <object class="GtkLabel">
+                <property name="sensitive" bind-source="RecordBoxPlayerControls"
+                  bind-property="active" bind-flags="sync-create" />
+                <property name="label" bind-source="RecordBoxPlayerControls"
+                  bind-property="progress_text" bind-flags="sync-create" />
                 <style>
                   <class name="numeric" />
                   <class name="time-label" />
@@ -134,16 +147,21 @@
               </object>
             </child>
             <child>
-              <object class="GtkScale" id="progress">
+              <object class="GtkScale" id="progress_bar">
                 <property name="hexpand">true</property>
-                <property name="sensitive">false</property>
+                <property name="sensitive" bind-source="RecordBoxPlayerControls"
+                  bind-property="active" bind-flags="sync-create" />
                 <style>
                   <class name="progress-bar" />
                 </style>
               </object>
             </child>
             <child>
-              <object class="GtkLabel" id="end_label">
+              <object class="GtkLabel">
+                <property name="sensitive" bind-source="RecordBoxPlayerControls"
+                  bind-property="active" bind-flags="sync-create" />
+                <property name="label" bind-source="RecordBoxPlayerControls"
+                  bind-property="duration_text" bind-flags="sync-create" />
                 <style>
                   <class name="numeric" />
                   <class name="time-label" />
