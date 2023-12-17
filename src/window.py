@@ -97,6 +97,11 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         self.player.connect('state-changed', self._on_player_state_changed)
         self.player.connect('eos', self._on_player_eos)
 
+        self._bind('rg-mode', self.player, 'rg-mode')
+        self._bind('rg-enabled', self.player, 'rg-enabled')
+        self._bind('rg-preamp', self.player, 'rg-preamp')
+        self._bind('rg-fallback', self.player, 'rg-fallback')
+
         loop = Gio.PropertyAction.new(
             'loop',
             self.player,

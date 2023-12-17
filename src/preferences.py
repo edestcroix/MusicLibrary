@@ -20,6 +20,11 @@ class RecordBoxPreferencesWindow(Adw.PreferencesWindow):
     restore_window_state = Gtk.Template.Child()
     sync_on_startup = Gtk.Template.Child()
 
+    rg_mode = Gtk.Template.Child()
+    rg_enable = Gtk.Template.Child()
+    rg_preamp = Gtk.Template.Child()
+    rg_fallback = Gtk.Template.Child()
+
     directory_select_button = Gtk.Template.Child()
     music_directory = GObject.Property(type=str, default='')
 
@@ -28,24 +33,25 @@ class RecordBoxPreferencesWindow(Adw.PreferencesWindow):
 
         self.artist_sort.connect('notify::selected', self._artist_out)
         self.album_sort.connect('notify::selected', self._album_out)
+        self.rg_mode.connect('notify::selected', self._rg_mode_out)
 
     def bind_settings(self, settings: Gio.Settings):
         self.settings = settings
         self._artist_in()
         self._album_in()
+        self._rg_mode_in()
 
         self._bind('music-directory', self, 'music-directory')
 
         self.settings.connect('changed::artist-sort', self._artist_in)
         self.settings.connect('changed::album-sort', self._album_in)
+        self.settings.connect('changed::rg-mode', self._rg_mode_in)
 
         self._bind('clear-queue', self.clear_queue, 'active')
 
         self._bind('background-playback', self.background_playback, 'active')
 
         self._bind('expand-discs', self.expand_discs, 'active')
-
-        # self._bind('album-sort', self.album_sort, 'selected')
 
         self._bind('confirm-play', self.confirm_play, 'active')
 
@@ -54,6 +60,10 @@ class RecordBoxPreferencesWindow(Adw.PreferencesWindow):
         self._bind('restore-window-state', self.restore_window_state, 'active')
 
         self._bind('sync-on-startup', self.sync_on_startup, 'active')
+
+        self._bind('rg-enabled', self.rg_enable, 'enable-expansion')
+        self._bind('rg-preamp', self.rg_preamp, 'value')
+        self._bind('rg-fallback', self.rg_fallback, 'value')
 
     def _bind(self, key, obj, prop):
         self.settings.bind(key, obj, prop, Gio.SettingsBindFlags.DEFAULT)
@@ -69,6 +79,12 @@ class RecordBoxPreferencesWindow(Adw.PreferencesWindow):
 
     def _album_in(self, *_):
         self.album_sort.set_selected(self.settings.get_enum('album-sort'))
+
+    def _rg_mode_out(self, *_):
+        self.settings.set_enum('rg-mode', self.rg_mode.get_selected())
+
+    def _rg_mode_in(self, *_):
+        self.rg_mode.set_selected(self.settings.get_enum('rg-mode'))
 
     @Gtk.Template.Callback()
     def _on_directory_select_button_clicked(self, _):

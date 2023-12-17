@@ -9,7 +9,7 @@
         <property name="use-underline">True</property>
         <child>
           <object class="AdwPreferencesGroup">
-            <property name="title" translatable="yes">General</property>
+            <property name="title" translatable="yes">Window</property>
             <child>
               <object class="AdwSwitchRow" id="restore_window_state">
                 <property name="title" translatable="yes">_Restore Window State</property>
@@ -36,21 +36,60 @@
                 <property name="use_underline">True</property>
               </object>
             </child>
-            <!-- <child> -->
-            <!--   <object class="AdwComboRow" id="rg_mode"> -->
-            <!--     <property name="title" translatable="yes">ReplayGain</property> -->
-            <!--     <property name="subtitle" translatable="yes">Configure ReplayGain mode</property> -->
-            <!--     <property name="model"> -->
-            <!--       <object class="GtkStringList"> -->
-            <!--         <items> -->
-            <!--           <item translatable="yes">None</item> -->
-            <!--           <item translatable="yes">Track</item> -->
-            <!--           <item translatable="yes">Album</item> -->
-            <!--         </items> -->
-            <!--       </object> -->
-            <!--     </property> -->
-            <!--   </object> -->
-            <!-- </child> -->
+            <child>
+              <object class="AdwExpanderRow" id="rg_enable">
+                <property name="title" translatable="yes">ReplayGain</property>
+                <property name="subtitle" translatable="yes">Enable ReplayGain volume normalization. Note that changing this won't take effect until the currently playing track finishes</property>
+                <property name="use_underline">True</property>
+                <property name="show-enable-switch">True</property>
+                <child>
+                  <object class="AdwComboRow" id="rg_mode">
+                    <property name="title" translatable="yes">ReplayGain Mode</property>
+                    <property name="subtitle" translatable="yes">Which ReplayGain mode to use</property>
+                    <property name="model">
+                      <object class="GtkStringList">
+                        <items>
+                          <item translatable="yes">Album</item>
+                          <item translatable="yes">Track</item>
+                        </items>
+                      </object>
+                    </property>
+                  </object>
+                </child>
+                <child>
+                  <object class="AdwSpinRow" id="rg_preamp">
+                    <property name="title" translatable="yes">Preamp</property>
+                    <property name="subtitle" translatable="yes">Apply additional gain globally</property>
+                    <property name="digits">2</property>
+                    <property name="adjustment">
+                      <object class="GtkAdjustment">
+                        <property name="lower">-20.0</property>
+                        <property name="upper">20.0</property>
+                        <property name="value">0.0</property>
+                        <property name="step-increment">0.5</property>
+                        <property name="page-increment">1</property>
+                      </object>
+                    </property>
+                  </object>
+                </child>  
+                <child>
+                  <object class="AdwSpinRow" id="rg_fallback">
+                    <property name="title" translatable="yes">Fallback Gain</property>
+                    <property name="subtitle" translatable="yes">Gain adjustment to use when ReplayGain data for a track is not found</property>
+                    <property name="digits">2</property>
+                    <property name="adjustment">
+                      <object class="GtkAdjustment">
+                        <property name="lower">-20.0</property>
+                        <property name="upper">20.0</property>
+                        <property name="value">0.0</property>
+                        <property name="step-increment">0.5</property>
+                        <property name="page-increment">1</property>
+                      </object>
+                    </property>
+                  </object>
+                </child>
+              </object>
+            </child>
           </object>
         </child>
         <child>
@@ -102,28 +141,10 @@
               </object>
             </child>
             <!-- <child> -->
-            <!--   <object class="AdwExpanderRow" id="watch_for_changes"> -->
+            <!--   <object class="AdwSwitchRow" id="watch_for_changes"> -->
             <!--     <property name="title" translatable="yes">_Watch for Changes</property> -->
             <!--     <property name="subtitle" translatable="yes">Periodically check for changes to the library.</property> -->
             <!--     <property name="use_underline">True</property> -->
-            <!--     <property name="show_enable_switch">True</property> -->
-            <!--     <child> -->
-            <!--       <object class="AdwComboRow" id="check_interval"> -->
-            <!--         <property name="title" translatable="yes">_Interval</property> -->
-            <!--         <property name="subtitle" translatable="yes">The interval between checks for changes to the library.</property> -->
-            <!--         <property name="use_underline">True</property> -->
-            <!--         <property name="model"> -->
-            <!--           <object class="GtkStringList"> -->
-            <!--             <items> -->
-            <!--               <item translatable="yes">1 Minute</item> -->
-            <!--               <item translatable="yes">5 Minutes</item> -->
-            <!--               <item translatable="yes">10 Minutes</item> -->
-            <!--               <item translatable="yes">30 Minutes</item> -->
-            <!--             </items> -->
-            <!--           </object> -->
-            <!--         </property> -->
-            <!--       </object> -->
-            <!--     </child> -->
             <!--   </object> -->
             <!-- </child> -->
           </object>

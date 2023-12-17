@@ -13,6 +13,11 @@
     <value nick="date-ascending" value="3" />
   </enum>
 
+  <enum id="com.github.edestcroix.RecordBox.rg-mode">
+    <value nick="album" value="0" />
+    <value nick="track" value="1" />
+  </enum>
+
   <schema id="com.github.edestcroix.RecordBox" path="/com/github/edestcroix/recordbox/">
     <key name="music-directory" type="s">
       <default>"-"</default>
@@ -80,6 +85,36 @@
         Control if playback should continue when app is in background
       </description>
     </key>
+
+    <key name="rg-enabled" type="b">
+      <default>true</default>
+      <summary>Enable ReplayGain</summary>
+      <description>
+        Control if ReplayGain should be enabled
+      </description>
+    </key>
+    <key name="rg-mode" enum="com.github.edestcroix.RecordBox.rg-mode">
+      <default>"album"</default>
+      <summary>ReplayGain mode</summary>
+      <description>
+        Control how ReplayGain is applied
+      </description>
+    </key>
+    <key name="rg-preamp" type="d">
+      <default>0.0</default>
+      <summary>ReplayGain preamp</summary>
+      <description>
+        Control the ReplayGain preamp
+      </description>
+    </key>
+    <key name="rg-fallback" type="d">
+      <default>0.0</default>
+      <summary>ReplayGain fallback</summary>
+      <description>
+        Control the ReplayGain fallback
+      </description>
+    </key>
+
     <key name="expand-discs" type="b">
       <default>false</default>
       <summary>Expand discs</summary>

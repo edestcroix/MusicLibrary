@@ -10,7 +10,6 @@ import gi
 gi.require_version('Gst', '1.0')
 from gi.repository import GLib, Gst, GObject, Gio
 
-
 Gst.init(None)
 
 
@@ -27,26 +26,44 @@ class Player(GObject.GObject):
     volume = GObject.Property(type=float, default=1.0)
     muted = GObject.Property(type=bool, default=False)
 
-    eos = GObject.Signal()
-    stream_start = GObject.Signal()
-    seeked = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
-    player_error = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
+    loop = GObject.Property(type=str)
+    stop_after_current = GObject.Property(type=bool, default=False)
+    state = GObject.Property(type=str)
+
+    rg_mode = GObject.Property(type=str, default='album')
+    rg_enabled = GObject.Property(type=bool, default=False)
+    rg_preamp = GObject.Property(type=float, default=0.0)
+    rg_fallback = GObject.Property(type=float, default=0.0)
 
     current_track = GObject.Property(
         type=GObject.TYPE_PYOBJECT, default=None, setter=None
     )
 
-    loop = GObject.Property(type=str)
-    stop_after_current = GObject.Property(type=bool, default=False)
-    state = GObject.Property(type=str)
+    eos = GObject.Signal()
+    stream_start = GObject.Signal()
+    seeked = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
+    player_error = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
 
     single_repeated = False
 
     def __init__(self):
         super().__init__()
-        self._player = Gst.parse_launch(
-            'playbin audio-sink="rgvolume album-mode=\\"true\\" ! autoaudiosink"'
+
+        self._rg_bin, self._rg_volume = self._setup_replaygain()
+        self._rg_volume.bind_property(
+            'pre-amp', self, 'rg_preamp', GObject.BindingFlags.BIDIRECTIONAL
         )
+        self._rg_volume.bind_property(
+            'fallback-gain',
+            self,
+            'rg_fallback',
+            GObject.BindingFlags.BIDIRECTIONAL,
+        )
+
+        self._player = Gst.ElementFactory.make('playbin')
+        self._default_sink = Gst.ElementFactory.make('autoaudiosink')
+        self._player.set_property('audio-sink', self._default_sink)
+
         self._player.connect('about-to-finish', self._on_about_to_finish)
         self._player.bind_property(
             'volume', self, 'volume', GObject.BindingFlags.BIDIRECTIONAL
@@ -61,6 +78,9 @@ class Player(GObject.GObject):
 
         self.state = 'stopped'
         self.loop = LoopMode.NONE.value
+
+        self.connect('notify::rg-mode', self._on_rg_mode_changed)
+        self.connect('notify::rg-enabled', self._on_rg_enabled_changed)
 
     def attach_to_play_queue(self, play_queue):
         self._play_queue = play_queue
@@ -158,6 +178,33 @@ class Player(GObject.GObject):
         self._player.set_state(Gst.State.PLAYING)
         self.emit('state-changed', 'playing')
 
+    def _setup_replaygain(self) -> tuple[Gst.Bin, Gst.Element]:
+        rg_bin = Gst.Bin.new('rg')
+        rg_volume = Gst.ElementFactory.make('rgvolume', 'rg_volume')
+        rg_bin.add(rg_volume)
+        pad = rg_volume.get_static_pad('sink')
+        ghost_pad = Gst.GhostPad.new('sink', pad)
+        ghost_pad.set_active(True)
+        rg_bin.add_pad(ghost_pad)
+
+        output = Gst.ElementFactory.make('autoaudiosink', 'rg_output')
+        rg_bin.add(output)
+        rg_volume.link(output)
+
+        return rg_bin, rg_volume
+
+    def _on_rg_mode_changed(self, *_):
+        self._rg_volume.set_property(
+            'album-mode',
+            self.rg_mode == 'album',
+        )
+
+    def _on_rg_enabled_changed(self, *_):
+        self._player.set_property(
+            'audio-sink',
+            self._rg_bin if self.rg_enabled else self._default_sink,
+        )
+
     def _on_about_to_finish(self, _):
         if self.stop_after_current:
             return
@@ -201,6 +248,7 @@ class Player(GObject.GObject):
                         self._play_queue.restart()
                     self.current_track = self._play_queue.get_current_track()
 
+                self.stop_after_current = False
                 self.emit('eos')
             case Gst.MessageType.STREAM_START:
                 self.current_track = self._play_queue.get_current_track()
