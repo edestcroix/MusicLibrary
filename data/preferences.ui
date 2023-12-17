@@ -17,11 +17,6 @@
                 <property name="use_underline">True</property>
               </object>
             </child>
-          </object>
-        </child>
-        <child>
-          <object class="AdwPreferencesGroup">
-            <property name="title" translatable="yes">Playback</property>
             <child>
               <object class="AdwSwitchRow" id="background_playback">
                 <property name="title" translatable="yes">Play in _Background</property>
@@ -29,6 +24,11 @@
                 <property name="use_underline">True</property>
               </object>
             </child>
+          </object>
+        </child>
+        <child>
+          <object class="AdwPreferencesGroup">
+            <property name="title" translatable="yes">Playback</property>
             <child>
               <object class="AdwSwitchRow" id="confirm_play">
                 <property name="title" translatable="yes">Confirm Song _Change</property>
@@ -37,8 +37,15 @@
               </object>
             </child>
             <child>
+              <object class="AdwSwitchRow" id="clear_queue">
+                <property name="title" translatable="yes">_Autohide Playback Controls</property>
+                <property name="subtitle" translatable="yes">Automatically clear the play queue and hide the player controls when the last track finishes.</property>
+                <property name="use_underline">True</property>
+              </object>
+            </child>
+            <child>
               <object class="AdwExpanderRow" id="rg_enable">
-                <property name="title" translatable="yes">ReplayGain</property>
+                <property name="title" translatable="yes">_ReplayGain</property>
                 <property name="subtitle" translatable="yes">Enable ReplayGain volume normalization. Note that changing this won't take effect until the currently playing track finishes</property>
                 <property name="use_underline">True</property>
                 <property name="show-enable-switch">True</property>
@@ -88,18 +95,6 @@
                     </property>
                   </object>
                 </child>
-              </object>
-            </child>
-          </object>
-        </child>
-        <child>
-          <object class="AdwPreferencesGroup">
-            <property name="title" translatable="yes">Play Queue</property>
-            <child>
-              <object class="AdwSwitchRow" id="clear_queue">
-                <property name="title" translatable="yes">_Exit Player Automatically</property>
-                <property name="subtitle" translatable="yes">Automatically clear the play queue and hide the player controls when the last track finishes.</property>
-                <property name="use_underline">True</property>
               </object>
             </child>
           </object>
@@ -155,7 +150,7 @@
             <child>
               <object class="AdwSwitchRow" id="show_all_artists">
                 <property name="title" translatable="yes">Show All Artists</property>
-                <property name="subtitle" translatable="yes">Show all artists in the artist list.</property>
+                <property name="subtitle" translatable="yes">Show additional artists in the artist list.</property>
               </object>
             </child>
             <child>
