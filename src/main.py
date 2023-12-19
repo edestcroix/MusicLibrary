@@ -23,7 +23,7 @@ import gi
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 
-from gi.repository import Gtk, Gio, Adw
+from gi.repository import Gtk, Gio, Adw, GLib
 
 from .window import RecordBoxWindow
 from .preferences import RecordBoxPreferencesWindow
@@ -44,6 +44,9 @@ class RecordBoxApplication(Adw.Application):
             flags=Gio.ApplicationFlags.DEFAULT_FLAGS,
         )
         self.set_resource_base_path('/com/github/edestcroix/RecordBox')
+
+        GLib.set_prgname(self.app_name)
+        GLib.set_application_name(self.app_name)
 
         self.create_action('quit', lambda *_: self.quit(), ['<primary>q'])
         self.create_action('about', self.on_about_action)
