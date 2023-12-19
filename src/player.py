@@ -12,6 +12,9 @@ from gi.repository import GLib, Gst, GObject, Gio
 
 Gst.init(None)
 
+TIMEOUT = 100   # ms
+SEEK_THRESHOLD = 1000000000   # 1s
+
 
 class LoopMode(Enum):
     NONE = 'none'
@@ -35,6 +38,9 @@ class Player(GObject.GObject):
     rg_preamp = GObject.Property(type=float, default=0.0)
     rg_fallback = GObject.Property(type=float, default=0.0)
 
+    position = GObject.Property(type=float, default=0.0)
+    duration = GObject.Property(type=float, default=0.0)
+
     current_track = GObject.Property(
         type=GObject.TYPE_PYOBJECT, default=None, setter=None
     )
@@ -45,6 +51,8 @@ class Player(GObject.GObject):
     player_error = GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
 
     single_repeated = False
+
+    _monitoring = False
 
     def __init__(self):
         super().__init__()
@@ -92,6 +100,9 @@ class Player(GObject.GObject):
     @GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
     def state_changed(self, state):
         self.state = state
+        if state == 'playing' and not self._monitoring:
+            self._monitoring = True
+            GLib.timeout_add(TIMEOUT, self._update_position)
 
     def play(self):
         self.setup(Gst.State.PLAYING)
@@ -105,6 +116,7 @@ class Player(GObject.GObject):
         time.sleep(0.1)
         self._player.set_property('uri', url)
         self._player.set_state(initial_state)
+        self.position = 0
         if initial_state == Gst.State.PLAYING:
             self.emit('state_changed', 'playing')
         elif initial_state == Gst.State.PAUSED:
@@ -128,12 +140,14 @@ class Player(GObject.GObject):
 
     def stop(self):
         self._player.set_state(Gst.State.NULL)
+        self.position, self.duration = 0, 0
         self.emit('state_changed', 'stopped')
 
     def exit(self):
         self.current_track = None
         self._player.set_state(Gst.State.NULL)
         self.emit('state_changed', 'stopped')
+        self.position, self.duration = 0, 0
 
     def go_next(self):
         if self._play_queue.next():
@@ -145,26 +159,6 @@ class Player(GObject.GObject):
     def go_previous(self):
         if self._play_queue.previous():
             self.play()
-
-    def get_progress(self):
-        return self._player.query_position(Gst.Format.TIME)[1]
-
-    def get_duration(self):
-        return self._player.query_duration(Gst.Format.TIME)[1]
-
-    def seek(self, position: int):
-        duration = self._player.query_duration(Gst.Format.TIME)[1]
-        if self._seeking or position > duration:
-            return
-        # set seeking to True. This will be turned False by the message handler
-        # the next time it receives an ASYNC_DONE message and _seeking is True.
-        # This way, scrolling the seekbar doesn't trigger overlapping seeks.
-        # (Which I think can happen)
-        self._seeking = True
-        self._player.seek_simple(
-            Gst.Format.TIME, Gst.SeekFlags.FLUSH, position
-        )
-        self.emit('seeked', position)
 
     def jump_to_track(self, _):
         """Reloads the current track in the play queue, in response to the play
@@ -236,22 +230,54 @@ class Player(GObject.GObject):
         result = urllib.parse.urlunparse(result)
         return result
 
+    def _update_position(self):
+        """Updates the position property of the player. Should be called
+        periodically while the player is playing or paused. (Position is not
+        a property that can be bound to, it must be updated manually.)"""
+        if self.state == 'stopped':
+            self._monitoring = False
+            return False
+        new_position = self._player.query_position(Gst.Format.TIME)[1]
+        # if the position has changed by more than SEEK_THRESHOLD, seek to the new position
+        # (the postion property was changed externally, and the player needs to update to match)
+        if abs(self.position - new_position) >= SEEK_THRESHOLD:
+            self._seek(self.position)
+        else:
+            self.position = new_position
+        return True
+
+    def _seek(self, position: int):
+        duration = self._player.query_duration(Gst.Format.TIME)[1]
+        if self._seeking or position > duration:
+            return
+        # set seeking to True. This will be turned False by the message handler
+        # the next time it receives an ASYNC_DONE message and _seeking is True.
+        # This way, scrolling the seekbar doesn't trigger overlapping seeks.
+        # (Which I think can happen)
+        self._seeking = True
+        self.position = position
+        self._player.seek_simple(
+            Gst.Format.TIME, Gst.SeekFlags.FLUSH, position
+        )
+        self.emit('seeked', position)
+
     def _on_message(self, _, message: Gst.Message):
         match message.type:
             case Gst.MessageType.EOS:
                 self.stop()
-                # set the current track to the start of the queue if it exists
-                # so the UI and MPRIS will update to show the first track again, signifying
-                # that the queue has ended and playing will start over.
-                if not self._play_queue.is_empty():
-                    if not self.stop_after_current:
-                        self._play_queue.restart()
+                if not (
+                    self._play_queue.is_empty() or self.stop_after_current
+                ):
+                    self._play_queue.restart()
                     self.current_track = self._play_queue.get_current_track()
-
                 self.stop_after_current = False
                 self.emit('eos')
             case Gst.MessageType.STREAM_START:
                 self.current_track = self._play_queue.get_current_track()
+                self.duration = self._player.query_duration(Gst.Format.TIME)[1]
+                # set position to 0 here, otherwise it will still be the last position of the
+                # previous track the next time _update_position is called, triggering a seek
+                self.position = 0
                 self.emit('stream_start')
             case Gst.MessageType.ASYNC_DONE if self._seeking:
                 self._seeking = False

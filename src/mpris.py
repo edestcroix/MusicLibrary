@@ -243,15 +243,15 @@ class MPRIS(Server):
 
     def Seek(self, offset):
         offset = offset * 1000
-        position = self._player.get_progress()
-        duration = self._player.get_duration()
+        position = self._player.position
+        duration = self._player.duration
         logging.debug(f'Seek: {offset} from {position}')
         if position + offset > duration:
             self._player.go_next()
         elif position + offset < 0:
             self._player.go_previous()
         else:
-            self._player.seek(position + offset)
+            self._player.position = position + offset
 
     def Seeked(self, position):
         logging.debug(f'Seeked: {position / 1000}')
@@ -302,7 +302,7 @@ class MPRIS(Server):
             case 'Volume':
                 return GLib.Variant('d', self._player.volume)
             case 'Position':
-                return GLib.Variant('x', self._player.get_progress() / 1000)
+                return GLib.Variant('x', self._player.position / 1000)
             case _:
                 logging.warning(f'Unknown: {property_name} for {interface})')
                 return GLib.Variant('s', 'Unknown')
@@ -396,7 +396,7 @@ class MPRIS(Server):
         return f'/org/mpris/MediaPlayer2/Track{track_id}'
 
     def _length(self):
-        return self._player.get_duration() / 1000
+        return self._player.duration / 1000
 
     def _on_seeked(self, _, position):
         self.Seeked(position / 1000)

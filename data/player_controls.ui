@@ -151,6 +151,14 @@
                 <property name="hexpand">true</property>
                 <property name="sensitive" bind-source="RecordBoxPlayerControls"
                   bind-property="active" bind-flags="sync-create" />
+                <property name="adjustment">
+                  <object class="GtkAdjustment">
+                    <property name="lower">0</property>
+                    <!-- Value of progress bar is in nanoseconds -->
+                    <property name="step-increment">5000000000</property>
+                    <property name="page-increment">5000000000</property>
+                  </object>
+                </property>
                 <style>
                   <class name="progress-bar" />
                 </style>

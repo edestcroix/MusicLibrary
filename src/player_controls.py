@@ -9,7 +9,6 @@ from .player import Player
 
 
 TIME_DIVISOR = 1000000000
-TIMEOUT = 100
 
 
 @Gtk.Template(
@@ -41,9 +40,6 @@ class RecordBoxPlayerControls(Gtk.Box):
         super().__init__()
         self.volume_slider.set_range(0, 1)
         self.volume_slider.set_increments(0.1, 0.1)
-        self.progress_bar.set_increments(1, 5)
-        self._duration = 0
-        self._last_position = 0
 
     def attach_to_player(self, player: Player):
         self._player = player
@@ -55,49 +51,14 @@ class RecordBoxPlayerControls(Gtk.Box):
         self._player.connect('stream-start', self.set_current_track)
         self._player.connect('eos', self.set_current_track)
 
-    def activate(self):
-        if not self.active:
-            GLib.timeout_add(TIMEOUT, self._update_progress)
-            self.active = True
-
-    def deactivate(self):
-        self.playback_toggle.set_icon_name('media-playback-start-symbolic')
-        self.active = False
-
-    def _update_progress(self):
-        """Updates the progress bar and progress text to reflect the current position in the track,
-        ran periodically by the GLib main loop until active is False, where it returns False and stops."""
-        if self.active == False:
-            self.progress_text = '-:--'
-            self.duration_text = '-:--'
-            self._duration = 0
-            self.progress_bar.set_value(0)
-            return False
-
-        position, duration = (
-            self._player.get_progress() / TIME_DIVISOR,
-            self._player.get_duration() / TIME_DIVISOR,
+        self._player.bind_property(
+            'position',
+            self.progress_bar.get_adjustment(),
+            'value',
+            GObject.BindingFlags.BIDIRECTIONAL,
         )
-        if duration != self._duration:
-            self._update_duration(duration, position)
-        else:
-            value = self.progress_bar.get_value()
-            if abs(value - self._last_position) > 1:
-                self._player.seek(value * TIME_DIVISOR)
-            else:
-                self.progress_bar.set_value(position)
-                self.progress_text = self._format_time(position)
-            self._last_position = value
-
-        return True
-
-    def _update_duration(self, duration: int, position: int):
-        self.progress_bar.set_range(0, abs(duration))
-        self.progress_bar.set_value(position)
-        self.progress_text = self._format_time(position)
-        self.duration_text = self._format_time(duration)
-        self._duration = duration
-        self._last_position = 0
+        self._player.connect('notify::position', self._update_progress)
+        self._player.connect('notify::duration', self._update_duration)
 
     def set_current_track(self, *_):
         if track := self._player.current_track:
@@ -138,11 +99,26 @@ class RecordBoxPlayerControls(Gtk.Box):
         match state:
             case 'playing':
                 self._set_play_icon(True)
-                self.activate()
+                self.active = True
             case 'paused':
                 self._set_play_icon(False)
             case 'stopped':
-                self.deactivate()
+                self._set_play_icon(False)
+                self.active = False
+                self.progress_text = '-:--'
+                self.duration_text = '-:--'
+
+    def _update_progress(self, *_):
+        self.progress_text = self._format_time(self._player.position)
+
+    def _update_duration(self, *_):
+        if self._player.duration < 0:
+            # if the duration is unknown, try again in 100ms (player was probably still buffering)
+            GLib.timeout_add(100, self._update_duration)
+            return
+
+        self.duration_text = self._format_time(self._player.duration)
+        self.progress_bar.set_range(0, self._player.duration)
 
     def _set_song_info(self, track: TrackItem):
         artists = (
@@ -185,4 +161,5 @@ class RecordBoxPlayerControls(Gtk.Box):
             self.volume_toggle.set_icon_name('audio-volume-high-symbolic')
 
     def _format_time(self, time: int):
+        time //= TIME_DIVISOR
         return f'{int(time // 60)}:{int(time % 60):0>2}'
