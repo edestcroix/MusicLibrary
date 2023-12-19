@@ -17,22 +17,15 @@
                 <property name="use_underline">True</property>
               </object>
             </child>
-            <child>
-              <object class="AdwSwitchRow" id="background_playback">
-                <property name="title" translatable="yes">Play in _Background</property>
-                <property name="subtitle" translatable="yes">Keep playing in the background when the window is closed.</property>
-                <property name="use_underline">True</property>
-              </object>
-            </child>
           </object>
         </child>
         <child>
           <object class="AdwPreferencesGroup">
             <property name="title" translatable="yes">Playback</property>
             <child>
-              <object class="AdwSwitchRow" id="confirm_play">
-                <property name="title" translatable="yes">Confirm Song _Change</property>
-                <property name="subtitle" translatable="yes">Show a confirmation dialog before attempting to play an album or track when one is already playing.</property>
+              <object class="AdwSwitchRow" id="background_playback">
+                <property name="title" translatable="yes">Play in _Background</property>
+                <property name="subtitle" translatable="yes">Keep playing in the background when the window is closed.</property>
                 <property name="use_underline">True</property>
               </object>
             </child>

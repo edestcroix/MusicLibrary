@@ -13,7 +13,6 @@ class RecordBoxPreferencesWindow(Adw.PreferencesWindow):
     expand_discs = Gtk.Template.Child()
     artist_sort = Gtk.Template.Child()
     album_sort = Gtk.Template.Child()
-    confirm_play = Gtk.Template.Child()
     show_all_artists = Gtk.Template.Child()
     restore_window_state = Gtk.Template.Child()
     sync_on_startup = Gtk.Template.Child()
@@ -50,8 +49,6 @@ class RecordBoxPreferencesWindow(Adw.PreferencesWindow):
         self._bind('background-playback', self.background_playback, 'active')
 
         self._bind('expand-discs', self.expand_discs, 'active')
-
-        self._bind('confirm-play', self.confirm_play, 'active')
 
         self._bind('show-all-artists', self.show_all_artists, 'active')
 

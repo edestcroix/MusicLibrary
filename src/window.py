@@ -18,7 +18,7 @@
 from gi.repository import Adw, Gtk, GLib, Gio, GObject
 import gi
 from .library import MusicLibrary
-from .items import TrackItem, AlbumItem, ArtistItem
+from .items import TrackItem, AlbumItem
 from .library_lists import ArtistList, AlbumList
 from .musicdb import MusicDB
 from .parser import MusicParser
@@ -27,13 +27,12 @@ from .player import PlayerState, Player
 from .album_view import AlbumView
 from .player_controls import RecordBoxPlayerControls
 
-from collections import deque, namedtuple
+from collections import deque
 
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 
 TrackList = list[TrackItem]
-PlayRequest = namedtuple('PlayRequest', ['tracks', 'index'])
 
 
 @Gtk.Template(resource_path='/com/github/edestcroix/RecordBox/window.ui')
@@ -58,6 +57,8 @@ class RecordBoxWindow(Adw.ApplicationWindow):
     queue_toggle = Gtk.Template.Child()
 
     toast_overlay = Gtk.Template.Child()
+
+    player_active = GObject.Property(type=bool, default=False)
 
     undo_toasts = deque(maxlen=10)
 
@@ -136,7 +137,7 @@ class RecordBoxWindow(Adw.ApplicationWindow):
     ### Action Callbacks ###
 
     @Gtk.Template.Callback()
-    def play(self, _, index=None, disc=None):
+    def play(self, _, index: GLib.Variant = None, disc: GLib.Variant = None):
         """Callback for various play actions. If index is provided, it will begin playing
         the current album at the given index. If disc is provided, it will play the tracks
         from the current album with said disc number. If neither are provided, it will
@@ -144,13 +145,10 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         if album := self.album_overview.current_album:
             tracks = album.tracks
 
-            if disc is not None and (d := disc.get_int32()):
+            if disc and (d := disc.get_int32()):
                 tracks = [t for t in tracks if t.discnumber == d]
 
-            if index and (i := index.get_int32()):
-                self._confirm_play(tracks, i, album.tracks[i].title)
-            else:
-                self._confirm_play(tracks, 0, album.raw_name)
+            self._play_tracks(tracks, index.get_int32() if index else 0)
 
     def play_single(self, _, index: GLib.Variant):
         """Plays the track at the given index in the current album.
@@ -158,9 +156,7 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         index will be added to the queue, rather than the entire album."""
         if album := self.album_overview.current_album:
             i = index.get_int32()
-            self._confirm_play(
-                album.tracks[i : i + 1], 0, album.tracks[i].title
-            )
+            self._play_tracks(album.tracks[i : i + 1])
 
     def append(self, _, index: GLib.Variant, disc: GLib.Variant = None):
         """Gets the track at the given index in the current album and adds
@@ -220,60 +216,13 @@ class RecordBoxWindow(Adw.ApplicationWindow):
     def _close_sidebar(self, _):
         self.library_split.set_show_sidebar(False)
 
-    def _exit_player(self, *_):
-        self.player.exit()
-        self.toolbar_view.set_reveal_bottom_bars(False)
-        self.play_queue.clear()
-        self.queue_panel_split_view.set_show_sidebar(False)
-        self.return_to_playing.set_enabled(False)
-        self.queue_toggle.set_sensitive(False)
-        self.replace_queue.set_enabled(False)
-
     ## Private methods ##
 
     # library and queue methods #
 
-    def _confirm_play(self, tracks: TrackList, start_index: int, name: str):
-        confirm_play = self.app.settings.get_boolean('confirm-play')
-        play_request = PlayRequest(tracks, start_index)
-        if self.player.state == PlayerState.STOPPED or not confirm_play:
-            self._play_tracks(play_request)
-            return
-        dialog = self._play_dialog(name)
-        dialog.choose(self.cancellable, self._on_dialog_response, play_request)
-
-    def _play_dialog(self, name: str) -> Adw.MessageDialog:
-        dialog = Adw.MessageDialog(
-            heading='Already Playing',
-            body=f'A song is already playing. Do you want to clear the queue and play {name}?',
-            transient_for=Gio.Application.get_default().props.active_window,
-        )
-        self.cancellable = Gio.Cancellable()
-
-        dialog.add_response('cancel', 'Cancel')
-        dialog.set_default_response('cancel')
-        dialog.add_response('append', 'Append To Queue')
-        dialog.add_response('accept', 'Clear Queue and Play')
-        dialog.set_response_appearance(
-            'accept', Adw.ResponseAppearance.DESTRUCTIVE
-        )
-        dialog.set_response_appearance(
-            'append', Adw.ResponseAppearance.SUGGESTED
-        )
-        return dialog
-
-    def _on_dialog_response(
-        self, dialog: Adw.MessageDialog, response, play_request: PlayRequest
-    ):
-        result = dialog.choose_finish(response)
-        if result == 'accept':
-            self._play_tracks(play_request)
-        elif result == 'append':
-            self._add_to_queue(play_request.tracks)
-
-    def _play_tracks(self, play_request: PlayRequest):
-        self._add_to_queue(play_request.tracks, overwrite=True, toast=False)
-        self.play_queue.set_index(play_request.index)
+    def _play_tracks(self, tracks: list[TrackItem], start_index: int = 0):
+        self._add_to_queue(tracks, overwrite=True, toast=False)
+        self.play_queue.set_index(start_index)
         self.play_queue.remove_backups()
         self.player.play()
 
@@ -299,22 +248,24 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         self.album_overview.update_album(album)
 
     # player specific methods #
+
     def _on_player_state_changed(self, _, state):
-        if state in {PlayerState.PLAYING, PlayerState.PAUSED}:
-            self.toolbar_view.set_reveal_bottom_bars(True)
+        if state != PlayerState.STOPPED:
+            self.player_active = True
             self.set_hide_on_close(
                 self.app.settings.get_boolean('background-playback')
             )
-            self.replace_queue.set_enabled(True)
-            self.queue_toggle.set_sensitive(True)
-            self.return_to_playing.set_enabled(True)
-            self.stop_player.set_enabled(True)
         else:
             self.set_hide_on_close(False)
 
     def _on_player_eos(self, _):
         if self.app.settings.get_boolean('clear-queue'):
             self._exit_player(None)
+
+    def _exit_player(self, *_):
+        self.player.exit()
+        self.player_active = False
+        self.play_queue.clear()
 
     # action and settings setup/binding #
 
@@ -327,7 +278,6 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         obj.set_property(property, self.app.settings.get_value(key).unpack())
 
     def _setup_actions(self):
-
         self.play_action = self._create_action(
             'play',
             self.play,
@@ -340,7 +290,7 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         )
         self._create_action(
             'play-disc',
-            lambda _, disc: self.play(None, disc=disc),
+            lambda _, disc: self.play(None, 0, disc=disc),
             parameter_type=GLib.VariantType('i'),
         )
 
@@ -367,43 +317,56 @@ class RecordBoxWindow(Adw.ApplicationWindow):
             parameter_type=GLib.VariantType('i'),
         )
 
-        self.replace_queue = self._create_action(
+        replace_queue = self._create_action(
             'replace-queue', self.overwrite_queue, enabled=False
+        )
+        self.bind_property(
+            'player_active',
+            replace_queue,
+            'enabled',
+            GObject.BindingFlags.DEFAULT,
         )
         self._create_action(
             'replace-disc',
             self.overwrite_queue,
             parameter_type=GLib.VariantType('i'),
         )
-        self.return_to_playing = self._create_action(
+        return_to_playing = self._create_action(
             'return-to-playing', self.return_to_playing, enabled=False
         )
-        self.undo_queue = self._create_action('undo-queue', self.undo)
+        self.bind_property(
+            'player_active',
+            return_to_playing,
+            'enabled',
+            GObject.BindingFlags.DEFAULT,
+        )
+        self._create_action('exit_player', self._exit_player)
 
-        self.filter_all_albums = self._create_action(
+        self._create_action('undo-queue', self.undo)
+
+        filter_all_albums = self._create_action(
             'filter-all', self.library.filter_all, enabled=False
         )
         self.library.bind_property(
             'filter-all-albums',
-            self.filter_all_albums,
+            filter_all_albums,
             'enabled',
             GObject.BindingFlags.INVERT_BOOLEAN,
         )
-        self.artist_sort = Gio.PropertyAction.new(
-            'artist-sort',
-            self.library,
-            'artist-sort',
+        self.add_action(
+            Gio.PropertyAction.new(
+                'artist-sort',
+                self.library,
+                'artist-sort',
+            )
         )
-        self.add_action(self.artist_sort)
-
-        self.album_sort = Gio.PropertyAction.new(
-            'album-sort',
-            self.library,
-            'album-sort',
+        self.add_action(
+            Gio.PropertyAction.new(
+                'album-sort',
+                self.library,
+                'album-sort',
+            )
         )
-        self.add_action(self.album_sort)
-
-        self._create_action('exit_player', self._exit_player)
 
     def _create_action(
         self, name, callback, enabled=True, parameter_type=None

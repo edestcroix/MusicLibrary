@@ -78,7 +78,8 @@
                     <child type="end">
                       <object class="GtkToggleButton" id="queue_toggle">
                         <property name="icon-name">playlist-symbolic</property>
-                        <property name="sensitive">false</property>
+                        <property name="sensitive" bind-source="RecordBoxWindow"
+                          bind-property="player-active" bind-flags="sync-create" />
                       </object>
                     </child>
                     <child type="end">
@@ -114,7 +115,8 @@
                             <property name="title" translatable="yes">Overview</property>
                             <property name="child">
                               <object class="AdwToolbarView" id="toolbar_view">
-                                <property name="reveal-bottom-bars">false</property>
+                                <property name="reveal-bottom-bars" bind-source="RecordBoxWindow"
+                                  bind-property="player-active" bind-flags="sync-create" />
                                 <property name="bottom-bar-style">ADW_TOOLBAR_RAISED_BORDER</property>
                                 <child type="bottom">
                                   <object class="RecordBoxPlayerControls" id="player_controls" />
