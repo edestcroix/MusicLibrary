@@ -23,7 +23,7 @@ from .library_lists import ArtistList, AlbumList
 from .musicdb import MusicDB
 from .parser import MusicParser
 from .play_queue import PlayQueue
-from .player import Player
+from .player import PlayerState, Player
 from .album_view import AlbumView
 from .player_controls import RecordBoxPlayerControls
 
@@ -185,7 +185,7 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         track = self._current_album_tracks()[index.get_int32()]
         was_empty = self.play_queue.is_empty()
         self.play_queue.add_after_current(track)
-        if self.player.state == 'stopped':
+        if self.player.state == PlayerState.STOPPED:
             self.player.ready()
         self.send_toast('Track Inserted', undo=not was_empty)
 
@@ -236,7 +236,7 @@ class RecordBoxWindow(Adw.ApplicationWindow):
     def _confirm_play(self, tracks: TrackList, start_index: int, name: str):
         confirm_play = self.app.settings.get_boolean('confirm-play')
         play_request = PlayRequest(tracks, start_index)
-        if self.player.state == 'stopped' or not confirm_play:
+        if self.player.state == PlayerState.STOPPED or not confirm_play:
             self._play_tracks(play_request)
             return
         dialog = self._play_dialog(name)
@@ -289,7 +289,7 @@ class RecordBoxWindow(Adw.ApplicationWindow):
             self.play_queue.overwrite(tracks)
         else:
             self.play_queue.append(tracks)
-            if self.player.state == 'stopped':
+            if self.player.state == PlayerState.STOPPED:
                 self.player.ready()
         if toast:
             self.send_toast('Queue Updated', undo=not was_empty)
@@ -300,7 +300,7 @@ class RecordBoxWindow(Adw.ApplicationWindow):
 
     # player specific methods #
     def _on_player_state_changed(self, _, state):
-        if state in {'playing', 'paused'}:
+        if state in {PlayerState.PLAYING, PlayerState.PAUSED}:
             self.toolbar_view.set_reveal_bottom_bars(True)
             self.set_hide_on_close(
                 self.app.settings.get_boolean('background-playback')

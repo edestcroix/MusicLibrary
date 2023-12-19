@@ -2,8 +2,9 @@ import os
 import time
 import urllib
 import urllib.parse
-from enum import Enum
+from enum import auto, StrEnum
 from .items import TrackItem
+
 
 import gi
 
@@ -16,27 +17,24 @@ TIMEOUT = 100   # ms
 SEEK_THRESHOLD = 1000000000   # 1s
 
 
-class LoopMode(Enum):
-    NONE = 'none'
-    TRACK = 'track'
-    PLAYLIST = 'playlist'
+class LoopMode(StrEnum):
+    NONE = auto()
+    TRACK = auto()
+    PLAYLIST = auto()
+
+
+class PlayerState(StrEnum):
+    STOPPED = auto()
+    PAUSED = auto()
+    PLAYING = auto()
 
 
 class Player(GObject.GObject):
+    __gtype_name__ = 'RecordBoxPlayer'
     """The player class handles playback control and manages the GStreamer
     pipeline. Must be connected to a play queue to function."""
 
-    volume = GObject.Property(type=float, default=1.0)
-    muted = GObject.Property(type=bool, default=False)
-
-    loop = GObject.Property(type=str)
-    stop_after_current = GObject.Property(type=bool, default=False)
-    state = GObject.Property(type=str)
-
-    rg_mode = GObject.Property(type=str, default='album')
-    rg_enabled = GObject.Property(type=bool, default=False)
-    rg_preamp = GObject.Property(type=float, default=0.0)
-    rg_fallback = GObject.Property(type=float, default=0.0)
+    state = GObject.Property(type=str, default=PlayerState.STOPPED)
 
     position = GObject.Property(type=float, default=0.0)
     duration = GObject.Property(type=float, default=0.0)
@@ -44,6 +42,17 @@ class Player(GObject.GObject):
     current_track = GObject.Property(
         type=GObject.TYPE_PYOBJECT, default=None, setter=None
     )
+
+    volume = GObject.Property(type=float, default=1.0)
+    muted = GObject.Property(type=bool, default=False)
+
+    loop = GObject.Property(type=str, default=LoopMode.NONE)
+    stop_after_current = GObject.Property(type=bool, default=False)
+
+    rg_mode = GObject.Property(type=str, default='album')
+    rg_enabled = GObject.Property(type=bool, default=False)
+    rg_preamp = GObject.Property(type=float, default=0.0)
+    rg_fallback = GObject.Property(type=float, default=0.0)
 
     eos = GObject.Signal()
     stream_start = GObject.Signal()
@@ -53,6 +62,7 @@ class Player(GObject.GObject):
     single_repeated = False
 
     _monitoring = False
+    _seeking = False
 
     def __init__(self):
         super().__init__()
@@ -82,10 +92,6 @@ class Player(GObject.GObject):
         self.bus = self._player.get_bus()
         self.bus.add_signal_watch()
         self.bus.connect('message', self._on_message)
-        self._seeking = False
-
-        self.state = 'stopped'
-        self.loop = LoopMode.NONE.value
 
         self.connect('notify::rg-mode', self._on_rg_mode_changed)
         self.connect('notify::rg-enabled', self._on_rg_enabled_changed)
@@ -100,7 +106,7 @@ class Player(GObject.GObject):
     @GObject.Signal(arg_types=(GObject.TYPE_PYOBJECT,))
     def state_changed(self, state):
         self.state = state
-        if state == 'playing' and not self._monitoring:
+        if state == PlayerState.PLAYING and not self._monitoring:
             self._monitoring = True
             GLib.timeout_add(TIMEOUT, self._update_position)
 
@@ -110,7 +116,7 @@ class Player(GObject.GObject):
     def ready(self):
         self.setup(Gst.State.PAUSED)
 
-    def setup(self, initial_state: str):
+    def setup(self, initial_state: Gst.State):
         url = self._prepare_url(self._play_queue.get_current_track())
         self._player.set_state(Gst.State.NULL)
         time.sleep(0.1)
@@ -118,18 +124,18 @@ class Player(GObject.GObject):
         self._player.set_state(initial_state)
         self.position = 0
         if initial_state == Gst.State.PLAYING:
-            self.emit('state_changed', 'playing')
+            self.emit('state_changed', PlayerState.PLAYING)
         elif initial_state == Gst.State.PAUSED:
-            self.emit('state_changed', 'paused')
+            self.emit('state_changed', PlayerState.PAUSED)
 
     def toggle(self):
         match self._player.get_state(1 * Gst.SECOND)[1]:
             case Gst.State.PLAYING:
                 self._player.set_state(Gst.State.PAUSED)
-                self.emit('state_changed', 'paused')
+                self.emit('state_changed', PlayerState.PAUSED)
             case Gst.State.PAUSED:
                 self._player.set_state(Gst.State.PLAYING)
-                self.emit('state_changed', 'playing')
+                self.emit('state_changed', PlayerState.PLAYING)
             case Gst.State.NULL:
                 if self.current_track:
                     self.play()
@@ -141,18 +147,16 @@ class Player(GObject.GObject):
     def stop(self):
         self._player.set_state(Gst.State.NULL)
         self.position, self.duration = 0, 0
-        self.emit('state_changed', 'stopped')
+        self.emit('state_changed', PlayerState.STOPPED)
 
     def exit(self):
         self.current_track = None
-        self._player.set_state(Gst.State.NULL)
-        self.emit('state_changed', 'stopped')
-        self.position, self.duration = 0, 0
+        self.stop()
 
     def go_next(self):
         if self._play_queue.next():
             self.play()
-        elif self.loop == LoopMode.PLAYLIST.value:
+        elif self.loop == LoopMode.PLAYLIST:
             self._play_queue.restart()
             self.play()
 
@@ -170,7 +174,7 @@ class Player(GObject.GObject):
             'uri', self._prepare_url(self._play_queue.get_current_track())
         )
         self._player.set_state(Gst.State.PLAYING)
-        self.emit('state-changed', 'playing')
+        self.emit('state-changed', PlayerState.PLAYING)
 
     def _setup_replaygain(self) -> tuple[Gst.Bin, Gst.Element]:
         rg_bin = Gst.Bin.new('rg')
@@ -203,7 +207,7 @@ class Player(GObject.GObject):
         if self.stop_after_current:
             return
 
-        if self.loop == LoopMode.TRACK.value and not self.single_repeated:
+        if self.loop == LoopMode.TRACK and not self.single_repeated:
             self.single_repeated = True
             self._player.set_property(
                 'uri', self._prepare_url(self._play_queue.get_current_track())
@@ -211,7 +215,7 @@ class Player(GObject.GObject):
         elif next_track := self._play_queue.get_next_track():
             self.single_repeated = False
             self._player.set_property('uri', self._prepare_url(next_track))
-        elif self.loop == LoopMode.PLAYLIST.value:
+        elif self.loop == LoopMode.PLAYLIST:
             self._play_queue.restart()
             self._player.set_property(
                 'uri', self._prepare_url(self._play_queue.get_current_track())
@@ -234,7 +238,7 @@ class Player(GObject.GObject):
         """Updates the position property of the player. Should be called
         periodically while the player is playing or paused. (Position is not
         a property that can be bound to, it must be updated manually.)"""
-        if self.state == 'stopped':
+        if self.state == PlayerState.STOPPED:
             self._monitoring = False
             return False
         new_position = self._player.query_position(Gst.Format.TIME)[1]

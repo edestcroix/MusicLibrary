@@ -5,7 +5,7 @@ gi.require_version('GstAudio', '1.0')
 
 from gi.repository import Gtk, GLib, GObject, GstAudio
 from .items import TrackItem
-from .player import Player
+from .player import Player, PlayerState
 
 
 TIME_DIVISOR = 1000000000
@@ -89,14 +89,14 @@ class RecordBoxPlayerControls(Gtk.Box):
         )
         self._player.set_property('volume', value)
 
-    def _update_state(self, _, state: str):
+    def _update_state(self, _, state: PlayerState):
         match state:
-            case 'playing':
+            case PlayerState.PLAYING:
                 self._set_play_icon(True)
                 self.active = True
-            case 'paused':
+            case PlayerState.PAUSED:
                 self._set_play_icon(False)
-            case 'stopped':
+            case PlayerState.STOPPED:
                 self._set_play_icon(False)
                 self.active = False
                 self.progress_text = '-:--'

@@ -1,6 +1,6 @@
-from random import randint
 from gi.repository import Gio, GLib
-from .player import LoopMode
+from .player import LoopMode, PlayerState
+from random import randint
 
 import logging
 
@@ -213,19 +213,19 @@ class MPRIS(Server):
         self._app.quit()
 
     def Next(self):
-        playing = self._player.state == 'playing'
+        playing = self._player.state == PlayerState.PLAYING
         self._player.go_next()
         if not playing:
             self._player.toggle()
 
     def Previous(self):
-        playing = self._player.state == 'playing'
+        playing = self._player.state == PlayerState.PLAYING
         self._player.go_previous()
         if not playing:
             self._player.toggle()
 
     def Pause(self):
-        if self._player.state == 'playing':
+        if self._player.state == PlayerState.PLAYING:
             self._player.toggle()
 
     def PlayPause(self):
@@ -235,7 +235,7 @@ class MPRIS(Server):
         self._player.stop()
 
     def Play(self):
-        if self._player.state == 'paused':
+        if self._player.state == PlayerState.PAUSED:
             self._player.toggle()
 
     def OpenUri(self, uri):
@@ -321,13 +321,7 @@ class MPRIS(Server):
     def Set(self, _, property_name, new_value):
         logging.debug(f'Set: {property_name} {new_value}')
         if property_name == 'LoopStatus':
-            match new_value:
-                case 'None':
-                    self._player.loop = LoopMode.NONE.value
-                case 'Playlist':
-                    self._player.loop = LoopMode.PLAYLIST.value
-                case 'Track':
-                    self._player.loop = LoopMode.TRACK.value
+            self._player.loop = LoopMode(new_value.lower())
 
         elif property_name == 'Volume':
             self._player.volume = new_value
@@ -358,8 +352,7 @@ class MPRIS(Server):
     ## Private methods
 
     def _get_status(self):
-        state = self._player.state
-        return state.capitalize()
+        return self._player.state.capitalize()
 
     def _update_metadata(self):
         self._metadata = {}
@@ -412,8 +405,7 @@ class MPRIS(Server):
         )
 
     def _on_loop_changed(self, _, __):
-        loop = self._player.loop.capitalize()
-        loop = GLib.Variant('s', loop)
+        loop = GLib.Variant('s', self._player.loop.capitalize())
         self.PropertiesChanged(
             self._MPRIS_PLAYER_IFACE, {'LoopStatus': loop}, []
         )

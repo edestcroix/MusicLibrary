@@ -1,14 +1,14 @@
 from gi.repository import Adw, Gtk, GLib, GObject, Gio
-from enum import Enum
 from .items import AlbumItem, ArtistItem, TrackItem
+from enum import StrEnum
 
 
-class ArtistSort(Enum):
+class ArtistSort(StrEnum):
     NAME_ASC = 'name-ascending'
     NAME_DESC = 'name-descending'
 
 
-class AlbumSort(Enum):
+class AlbumSort(StrEnum):
     NAME_ASC = 'name-ascending'
     NAME_DESC = 'name-descending'
     DATE_ASC = 'date-ascending'
@@ -100,6 +100,8 @@ class ArtistList(LibraryList):
     model = Gio.ListStore.new(ArtistItem)
     template = '/com/github/edestcroix/RecordBox/lists/artist_row.ui'
 
+    sort = GObject.Property(type=str, default=ArtistSort.NAME_ASC)
+
     def _update_sort(self):
         match ArtistSort(self.sort):
             case ArtistSort.NAME_ASC:
@@ -113,6 +115,8 @@ class AlbumList(LibraryList):
 
     model = Gio.ListStore.new(AlbumItem)
     template = '/com/github/edestcroix/RecordBox/lists/album_row.ui'
+
+    sort = GObject.Property(type=str, default=AlbumSort.DATE_DESC)
 
     def __init__(self):
 
