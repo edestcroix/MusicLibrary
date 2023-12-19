@@ -26,7 +26,6 @@ class RecordBoxPlayerControls(Gtk.Box):
 
     volume_toggle = Gtk.Template.Child()
     volume_slider = Gtk.Template.Child()
-    muted = GObject.Property(type=bool, default=False)
 
     playing_track = GObject.Property(type=str, default='')
     playing_track_info = GObject.Property(type=str, default='')
@@ -35,11 +34,6 @@ class RecordBoxPlayerControls(Gtk.Box):
     duration_text = GObject.Property(type=str, default='-:--')
 
     active = GObject.Property(type=bool, default=False)
-
-    def __init__(self):
-        super().__init__()
-        self.volume_slider.set_range(0, 1)
-        self.volume_slider.set_increments(0.1, 0.1)
 
     def attach_to_player(self, player: Player):
         self._player = player
@@ -81,7 +75,7 @@ class RecordBoxPlayerControls(Gtk.Box):
 
     @Gtk.Template.Callback()
     def _toggle_mute(self, _):
-        self._player.set_property('muted', not self._player.muted)
+        self._update_volume_icon(self._player.toggle_mute())
 
     @Gtk.Template.Callback()
     def _volume_changed(self, _, __, value: float):
@@ -149,8 +143,11 @@ class RecordBoxPlayerControls(Gtk.Box):
         else:
             self.playback_toggle.set_icon_name('media-playback-start-symbolic')
 
-    def _update_volume_icon(self):
-        if self._player.muted:
+    def _update_volume_icon(self, muted: bool = False):
+        """Updates the volume icon based on the current volume, optionally
+        takes a 'muted' argument to manually set the icon to muted, because the
+        player's muted property doesn't update when paused"""
+        if self._player.muted or muted:
             self.volume_toggle.set_icon_name('audio-volume-muted-symbolic')
             return
         elif self.volume_slider.get_value() < 0.3:

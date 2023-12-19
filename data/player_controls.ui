@@ -113,6 +113,14 @@
                         <property name="orientation">horizontal</property>
                         <property name="width-request">200</property>
                         <signal name="change_value" handler="_volume_changed" />
+                        <property name="adjustment">
+                          <object class="GtkAdjustment">
+                            <property name="lower">0</property>
+                            <property name="upper">1</property>
+                            <property name="step-increment">0.1</property>
+                            <property name="page-increment">0.1</property>
+                          </object>
+                        </property>
                         <style>
                           <class name="volume-slider" />
                         </style>

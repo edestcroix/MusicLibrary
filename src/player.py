@@ -135,8 +135,8 @@ class Player(GObject.GObject):
                     self.play()
 
     def toggle_mute(self):
-        mute_state = self._player.get_property('mute')
-        self._player.set_property('mute', not mute_state)
+        self.muted = not self.muted
+        return self.muted
 
     def stop(self):
         self._player.set_state(Gst.State.NULL)
