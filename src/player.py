@@ -63,6 +63,7 @@ class Player(GObject.GObject):
 
     _monitoring = False
     _seeking = False
+    _stop_next = False
 
     def __init__(self):
         super().__init__()
@@ -147,6 +148,7 @@ class Player(GObject.GObject):
     def stop(self):
         self._player.set_state(Gst.State.NULL)
         self.position, self.duration = 0, 0
+        self.stop_after_current, self._stop_next = False, False
         self.emit('state_changed', PlayerState.STOPPED)
 
     def exit(self):
@@ -205,7 +207,7 @@ class Player(GObject.GObject):
 
     def _on_about_to_finish(self, _):
         if self.stop_after_current:
-            return
+            self._stop_next = True
 
         if self.loop == LoopMode.TRACK and not self.single_repeated:
             self.single_repeated = True
@@ -282,7 +284,11 @@ class Player(GObject.GObject):
                 # set position to 0 here, otherwise it will still be the last position of the
                 # previous track the next time _update_position is called, triggering a seek
                 self.position = 0
+                # always emit stream_start, even if we're going to stop immediately
+                # because the UI uses it as the signal to update the current track info
                 self.emit('stream_start')
+                if self._stop_next:
+                    self.stop()
             case Gst.MessageType.ASYNC_DONE if self._seeking:
                 self._seeking = False
             case Gst.MessageType.ERROR:
