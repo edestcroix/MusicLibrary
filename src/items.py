@@ -1,4 +1,4 @@
-from gi.repository import Adw, Gtk, GLib, GObject
+from gi.repository import Adw, Gtk, GLib, GObject, Gio
 import gi
 from enum import Enum
 import datetime
@@ -154,3 +154,52 @@ class ArtistItem(GObject.Object):
     # addressed in the future.
     def __eq__(self, other):
         return self.name == other.name
+
+
+class QueueItem(TrackItem):
+    """A TrackItem with additional properties for use in the playback queue. Basically,
+    since a list model can only have one object type. Since before rewriting the play queue
+    to use a TreeListModel, it was using TrackItems, and the rest of the code still expects that.
+    Rather than rewrite everything, the QueueItem just inherits from TrackItem and adds the
+    additional properties that the queue needs (Also the play_queue will never return a QueueItem
+    that wasn't made from a TrackItem)."""
+
+    __gtype_name__ = 'RecordBoxQueueItem'
+
+    subtitle = GObject.Property(type=str)
+    image_path = GObject.Property(type=str)
+    position = GObject.Property(type=int, default=-1)
+
+    from_album = GObject.Property(type=bool, default=False)
+    children = GObject.Property(type=Gio.ListStore)
+
+    row_name = GObject.Property(type=str, default='')
+
+    def __init__(self, item: TrackItem | AlbumItem):
+        if type(item) is TrackItem:
+            super().__init__(*item)
+            self.subtitle = item.length
+            self.image_path = item.thumb
+        elif type(item) is AlbumItem:
+            super().__init__(
+                '',
+                item.raw_name,
+                '',
+                '',
+                item.length,
+                '',
+                '',
+                '',
+                item.thumb,
+                item.cover,
+            )
+            self.subtitle = f'{len(item.tracks)} Tracks ({self.length})'
+            self.image_path = item.thumb
+            self.children = Gio.ListStore.new(QueueItem)
+            self.children.splice(
+                0, len(self.children), [QueueItem(t) for t in item.tracks]
+            )
+            self.from_album = True
+
+    def __eq__(self, other):
+        return super().__eq__(other) and self.position == other.position

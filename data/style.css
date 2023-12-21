@@ -10,6 +10,7 @@
 .queue-row {
   padding-top: 5px;
   padding-bottom: 5px;
+  margin: 0px;
 }
 
 .queue-row .prefix {
@@ -20,19 +21,19 @@
   margin-left: 0px;
 }
 
-.current-track {
+#current-track {
   background: alpha(@accent_bg_color, 0.3);
 }
 
-.current-track:hover {
+#current-track:hover {
   background: alpha(@accent_bg_color, 0.5);
 }
 
-.current-track:selected {
+#current-track:selected {
  background: alpha(@accent_bg_color, 0.6);
 }
 
-.current-track:selected:hover {
+#current-track:selected:hover {
  background: alpha(@accent_bg_color, 0.7);
 }
 
