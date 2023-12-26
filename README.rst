@@ -1,3 +1,5 @@
+.. image:: https://github.com/edestcroix/RecordBox/actions/workflows/flatpak.yml/badge.svg
+   :target: https://github.com/edestcroix/RecordBox/actions/workflows/flatpak.yml
 Record Box
 ==============================================
 A relatively simple, opinionated music player.
