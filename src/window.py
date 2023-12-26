@@ -27,8 +27,6 @@ from .player import PlayerState, Player
 from .album_view import AlbumView
 from .player_controls import RecordBoxPlayerControls
 
-from collections import deque
-
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 
@@ -59,8 +57,6 @@ class RecordBoxWindow(Adw.ApplicationWindow):
     toast_overlay = Gtk.Template.Child()
 
     player_active = GObject.Property(type=bool, default=False)
-
-    undo_toasts = deque(maxlen=10)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -119,19 +115,12 @@ class RecordBoxWindow(Adw.ApplicationWindow):
             'stop', lambda *_: self.player.stop()
         )
 
-    def send_toast(
-        self,
-        title: str,
-        timeout=2,
-        undo=False,
-        priority=Adw.ToastPriority.HIGH,
-    ):
-        toast = Adw.Toast(title=title, priority=priority)
-        toast.set_timeout(max(timeout, 3) if undo else timeout)
-        if undo:
-            toast.set_button_label('Undo')
-            toast.set_action_name('win.undo-queue')
-            self.undo_toasts.append(toast)
+    def send_toast(self, title: str, button: str = '', action: str = ''):
+        toast = Adw.Toast(title=title)
+        if button:
+            toast.set_button_label(button)
+        if action:
+            toast.set_action_name(action)
         self.toast_overlay.add_toast(toast)
 
     ### Action Callbacks ###
@@ -143,12 +132,9 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         from the current album with said disc number. If neither are provided, it will
         play the entire album."""
         if album := self.album_overview.current_album:
-            tracks = album.tracks
-
             if disc and (d := disc.get_int32()):
-                tracks = [t for t in tracks if t.discnumber == d]
-
-            self._play_tracks(tracks, index.get_int32() if index else 0)
+                album = self._album_to_disc(album, d)
+            self._play_album(album, index.get_int32() if index else 0)
 
     def play_single(self, _, index: GLib.Variant):
         """Plays the track at the given index in the current album.
@@ -165,29 +151,20 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         tracks = self._current_album_tracks()
 
         if (i := index.get_int32()) == -1:
+            album = self.album_overview.current_album
             if disc and (d := disc.get_int32()):
-                tracks = [t for t in tracks if t.discnumber == d]
-            self._add_to_queue(tracks)
+                album = self._album_to_disc(album, d)
+            self._add_album_to_queue(album)
         else:
             self._add_to_queue(tracks[i : i + 1])
 
     def overwrite_queue(self, _, disc: GLib.Variant = None):
-        tracks = self._current_album_tracks()
+        album = self.album_overview.current_album
         if disc and (d := disc.get_int32()):
-            tracks = [t for t in tracks if t.discnumber == d]
-        self._add_to_queue(tracks, overwrite=True)
-
-    def insert_track(self, _, index: GLib.Variant):
-        track = self._current_album_tracks()[index.get_int32()]
-        was_empty = self.play_queue.is_empty()
-        self.play_queue.add_after_current(track)
-        if self.player.state == PlayerState.STOPPED:
-            self.player.ready()
-        self.send_toast('Track Inserted', undo=not was_empty)
+            album = self._album_to_disc(album, d)
+        self._add_album_to_queue(album, overwrite=True)
 
     def undo(self, *_):
-        if self.undo_toasts:
-            self.undo_toasts.pop().dismiss()
         self.play_queue.undo()
 
     def return_to_playing(self, *_):
@@ -221,9 +198,14 @@ class RecordBoxWindow(Adw.ApplicationWindow):
     # library and queue methods #
 
     def _play_tracks(self, tracks: list[TrackItem], start_index: int = 0):
-        self._add_to_queue(tracks, overwrite=True, toast=False)
-        self.play_queue.set_index(start_index)
+        self.play_queue.overwrite_w_tracks(tracks, start_index)
         self.play_queue.remove_backups()
+        self.player.play()
+
+    def _play_album(self, album: AlbumItem, start_index: int = 0):
+        self.play_queue.overwrite_w_album(album, start_index)
+        self.play_queue.remove_backups()
+        self.play_queue.set_index(start_index)
         self.player.play()
 
     def _current_album_tracks(self) -> TrackList:
@@ -232,20 +214,42 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         else:
             return []
 
-    def _add_to_queue(self, tracks: TrackList, overwrite=False, toast=True):
-        was_empty = self.play_queue.is_empty()
+    def _add_album_to_queue(
+        self, album: AlbumItem, overwrite=False, toast=True
+    ):
         if overwrite:
-            self.play_queue.overwrite(tracks)
+            self.play_queue.overwrite_w_album(album)
+            toast_msg = 'Queue Replaced'
         else:
-            self.play_queue.append(tracks)
+            self.play_queue.append_album(album)
             if self.player.state == PlayerState.STOPPED:
                 self.player.ready()
-        if toast:
-            self.send_toast('Queue Updated', undo=not was_empty)
+            toast_msg = 'Queue Updated'
+        if toast and not self.queue_toggle.get_active():
+            self.send_toast(toast_msg, 'Show Queue', 'win.open-queue')
+
+    def _add_to_queue(self, tracks: TrackList, toast=True):
+        self.play_queue.append(tracks)
+        if self.player.state == PlayerState.STOPPED:
+            self.player.ready()
+        if toast and not self.queue_toggle.get_active():
+            self.send_toast('Queue Updated', 'Show Queue', 'win.open-queue')
 
     def _update_album(self, album: AlbumItem):
         self.main_page.set_title(album.raw_name)
         self.album_overview.update_album(album)
+
+    def _album_to_disc(self, album: AlbumItem, disc_number: int) -> AlbumItem:
+        tracks = [t for t in album.tracks if t.discnumber == disc_number]
+        album = album.clone()
+        album.tracks = tracks
+        album.length = sum(t.seconds for t in tracks)
+        if discsub := album.tracks[0].discsubtitle:
+            album.raw_name += f' ({discsub})'
+        else:
+            album.raw_name += f' (Disc {disc_number})'
+
+        return album
 
     # player specific methods #
 
@@ -311,11 +315,6 @@ class RecordBoxWindow(Adw.ApplicationWindow):
             ),
             parameter_type=GLib.VariantType('i'),
         )
-        self._create_action(
-            'insert',
-            self.insert_track,
-            parameter_type=GLib.VariantType('i'),
-        )
 
         replace_queue = self._create_action(
             'replace-queue', self.overwrite_queue, enabled=False
@@ -342,7 +341,12 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         )
         self._create_action('exit_player', self._exit_player)
 
-        self._create_action('undo-queue', self.undo)
+        self._create_action('undo-queue', lambda *_: self.play_queue.undo())
+        self._create_action('redo-queue', lambda *_: self.play_queue.redo())
+
+        self._create_action(
+            'open-queue', lambda *_: self.queue_toggle.set_active(True)
+        )
 
         filter_all_albums = self._create_action(
             'filter-all', self.library.filter_all, enabled=False

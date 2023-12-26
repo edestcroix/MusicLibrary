@@ -78,8 +78,8 @@
                     <child type="end">
                       <object class="GtkToggleButton" id="queue_toggle">
                         <property name="icon-name">playlist-symbolic</property>
-                        <property name="sensitive" bind-source="RecordBoxWindow"
-                          bind-property="player-active" bind-flags="sync-create" />
+                        <property name="sensitive" bind-source="play_queue"
+                          bind-property="empty" bind-flags="sync-create|invert-boolean" />
                       </object>
                     </child>
                     <child type="end">

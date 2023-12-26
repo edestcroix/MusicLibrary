@@ -9,24 +9,60 @@
         <child type="bottom">
           <object class="GtkActionBar">
             <child type="start">
-              <object class="GtkCheckButton" id="select_all_button">
-                <property name="label" translatable="yes">Select All</property>
-                <signal name="toggled" handler="toggle_selection" />
+              <object class="GtkBox">
                 <style>
-                  <class name="selection-mode" />
+                  <class name="linked" />
                 </style>
+                <child>
+                  <object class="GtkButton" id="undo">
+                    <property name="icon-name">edit-undo-symbolic</property>
+                    <property name="tooltip-markup" translatable="yes">Undo</property>
+                    <property name="sensitive" bind-source="RecordBoxPlayQueue"
+                      bind-property="can-undo" bind-flags="sync-create" />
+                    <signal name="clicked" handler="undo" />
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkButton" id="redo">
+                    <property name="icon-name">edit-redo-symbolic</property>
+                    <property name="tooltip-markup" translatable="yes">Redo</property>
+                    <property name="sensitive" bind-source="RecordBoxPlayQueue"
+                      bind-property="can-redo" bind-flags="sync-create" />
+                    <signal name="clicked" handler="redo" />
+                  </object>
+                </child>
               </object>
             </child>
             <child type="end">
-              <object class="GtkButton" id="delete_selected">
-                <property name="icon-name">user-trash-symbolic</property>
-                <property name="valign">center</property>
-                <property name="sensitive">false</property>
-                <property name="tooltip-markup" translatable="yes">Remove Selected</property>
-                <signal name="clicked" handler="_remove_selected" />
+              <object class="GtkBox">
                 <style>
-                  <class name="destructive-action" />
+                  <class name="linked" />
                 </style>
+                <child>
+                  <object class="GtkButton">
+                    <property name="icon-name">edit-select-all-symbolic</property>
+                    <property name="tooltip-markup" translatable="yes">Select All</property>
+                    <signal name="clicked" handler="select_all" />
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkButton">
+                    <property name="icon-name">edit-select-none-symbolic</property>
+                    <property name="tooltip-markup" translatable="yes">Unselect All</property>
+                    <signal name="clicked" handler="unselect_all" />
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkButton" id="delete_selected">
+                    <property name="icon-name">user-trash-symbolic</property>
+                    <property name="valign">center</property>
+                    <property name="tooltip-markup" translatable="yes">Remove Selected</property>
+                    <signal name="clicked" handler="_remove_selected" />
+                    <style>
+                      <class name="destructive-action" />
+                    </style>
+                  </object>
+                </child>
               </object>
             </child>
           </object>

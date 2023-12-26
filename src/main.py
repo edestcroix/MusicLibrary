@@ -131,6 +131,7 @@ class RecordBoxApplication(Adw.Application):
         self.set_accels_for_action('win.filter-all', ['<primary>slash'])
 
         self.set_accels_for_action('win.undo-queue', ['<primary>z'])
+        self.set_accels_for_action('win.redo-queue', ['<primary><shift>z'])
 
         self.set_accels_for_action('win.exit_player', ['<primary>e'])
         self.set_accels_for_action('win.stop', ['<primary>period'])

@@ -271,9 +271,7 @@ class Player(GObject.GObject):
         match message.type:
             case Gst.MessageType.EOS:
                 self.stop()
-                if not (
-                    self._play_queue.is_empty() or self.stop_after_current
-                ):
+                if not (self._play_queue.empty or self.stop_after_current):
                     self._play_queue.restart()
                     self.current_track = self._play_queue.get_current_track()
                 self.stop_after_current = False

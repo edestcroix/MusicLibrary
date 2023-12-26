@@ -1,4 +1,4 @@
-from gi.repository import Adw, Gtk, GLib, GObject
+from gi.repository import Adw, Gtk, GLib, GObject, Gio
 import gi
 from enum import Enum
 import datetime
@@ -73,8 +73,8 @@ class TrackItem(GObject.Object):
     def clone(self):
         return TrackItem(*self)
 
-    def __eq__(self, other):
-        return self.path == other.path
+    def __eq__(self, other) -> bool:
+        return other and self.path == other.path
 
 
 class AlbumItem(GObject.Object):
@@ -154,3 +154,65 @@ class ArtistItem(GObject.Object):
     # addressed in the future.
     def __eq__(self, other):
         return self.name == other.name
+
+
+class QueueItem(TrackItem):
+    """A TrackItem with additional properties for use in the playback queue. Basically,
+    since a list model can only have one object type. Since before rewriting the play queue
+    to use a TreeListModel, it was using TrackItems, and the rest of the code still expects that.
+    Rather than rewrite everything, the QueueItem just inherits from TrackItem and adds the
+    additional properties that the queue needs (Also the play_queue will never return a QueueItem
+    that wasn't made from a TrackItem)."""
+
+    __gtype_name__ = 'RecordBoxQueueItem'
+
+    subtitle = GObject.Property(type=str)
+    image_path = GObject.Property(type=str)
+
+    position = GObject.Property(type=int, default=-1)
+
+    is_current = GObject.Property(type=bool, default=False)
+    from_album = GObject.Property(type=bool, default=False)
+    children = GObject.Property(type=Gio.ListStore)
+
+    def __init__(self, item: TrackItem | AlbumItem):
+        if type(item) is AlbumItem:
+            super().__init__(
+                '',
+                item.raw_name,
+                '',
+                '',
+                item.length,
+                '',
+                '',
+                '',
+                item.thumb,
+                item.cover,
+            )
+            self.subtitle = f'{len(item.tracks)} Tracks ({self.length})'
+            self.children = Gio.ListStore.new(QueueItem)
+            self.children.splice(
+                0, len(self.children), [QueueItem(t) for t in item.tracks]
+            )
+            self.from_album = True
+        else:
+            super().__init__(*item)
+            self.subtitle = item.length
+
+        self.image_path = item.thumb
+
+    def __eq__(self, other):
+        if type(other) == TrackItem:
+            return super().__eq__(other)
+        else:
+            return super().__eq__(other) and self.position == other.position
+
+    def clone(self):
+        new = QueueItem(super().clone())
+        new.subtitle = self.subtitle
+        if self.children:
+            new.children = Gio.ListStore.new(QueueItem)
+            new.children.splice(0, 0, [c.clone() for c in self.children])
+        new.from_album = self.from_album
+        # is_current is not cloned because it should not be a persistent property
+        return new
