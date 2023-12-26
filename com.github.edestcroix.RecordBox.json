@@ -77,7 +77,8 @@
       "sources": [
         {
           "type": "git",
-          "url": "https://github.com/edestcroix/RecordBox/"
+          "url": "https://github.com/edestcroix/RecordBox",
+          "branch": "main"
         }
       ]
     }
