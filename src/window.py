@@ -58,6 +58,8 @@ class RecordBoxWindow(Adw.ApplicationWindow):
 
     player_active = GObject.Property(type=bool, default=False)
 
+    _last_toast = None
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.app = kwargs.get('application', None)
@@ -116,12 +118,16 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         )
 
     def send_toast(self, title: str, button: str = '', action: str = ''):
-        toast = Adw.Toast(title=title)
+        toast = Adw.Toast(title=title, timeout=3)
         if button:
             toast.set_button_label(button)
         if action:
             toast.set_action_name(action)
+        if self._last_toast:
+            self._last_toast.dismiss()
+
         self.toast_overlay.add_toast(toast)
+        self._last_toast = toast
 
     ### Action Callbacks ###
 
