@@ -5,9 +5,10 @@ import mimetypes
 import mutagen
 import os
 from PIL import Image
+from PIL import UnidentifiedImageError
 import contextlib
 
-from .musicdb import MusicDB, AlbumTags, ArtistTags, TrackTags
+from .musicdb import MusicDB, ArtistTags, TrackTags
 
 CoverPaths = tuple[str, str]
 
@@ -28,28 +29,32 @@ class CoverImage:
         cache_dir = f'{GLib.get_user_cache_dir()}/RecordBox'
         return f'{cache_dir}/{self.sha256()}.png'
 
-    def thumbnail(self) -> Image.Image:
+    def thumbnail(self) -> Image.Image | None:
         return self._resize(128)
 
-    def large(self) -> Image.Image:
+    def large(self) -> Image.Image | None:
         return self._resize(512)
 
-    def save(self) -> CoverPaths:
-        return (self.save_thumbnail(), self.save_large())
+    def save(self) -> CoverPaths | None:
+        thumbnail = self.save_thumbnail()
+        large = self.save_large()
+        return (thumbnail, large) if thumbnail and large else None
 
-    def save_thumbnail(self) -> str:
+    def save_thumbnail(self) -> str | None:
         path = self._save('/RecordBox/thumbnails')
-        if not os.path.exists(path):
-            image = self.thumbnail()
+        if os.path.exists(path):
+            return path
+        if image := self.thumbnail():
             image.save(path)
-        return path
+            return path
 
-    def save_large(self) -> str:
+    def save_large(self) -> str | None:
         path = self._save('/RecordBox/large')
-        if not os.path.exists(path):
-            image = self.large()
+        if os.path.exists(path):
+            return path
+        if image := self.large():
             image.save(path)
-        return path
+            return path
 
     def _save(self, path):
         thumb_dir = f'{GLib.get_user_cache_dir()}{path}'
@@ -59,10 +64,13 @@ class CoverImage:
         return result
 
     def _resize(self, size):
-        image = Image.open(BytesIO(self.image))
-        image = image.convert('RGB')
-        image.thumbnail((size, size))
-        return image
+        try:
+            image = Image.open(BytesIO(self.image))
+            image = image.convert('RGB')
+            image.thumbnail((size, size))
+            return image
+        except UnidentifiedImageError:
+            return None
 
 
 class AudioFile:
@@ -79,58 +87,36 @@ class AudioFile:
         Args:
             key: The key to get from the audio file.
         """
+
         return self.audio[key][0] if key in self.audio else None
 
     def try_key_all(self, key: str) -> list[str]:
         return self.audio[key] if key in self.audio else []
 
-    def album(self, cover_paths: CoverPaths | None) -> AlbumTags:
-        """Returns the album information from the audio file.
-        Args:
-            cover_paths: The paths to the cover images associated with the album
-        """
-        thumb, cover = cover_paths or (None, None)
-        albumartist = self.try_key('albumartist') or self.try_key('artist')
-        return AlbumTags(
-            self.try_key('album'),
-            albumartist,
-            self.try_key('date'),
-            thumb,
-            cover,
-        )
-
     def artists(self) -> list[ArtistTags]:
         """Returns a list of the artists associated with the audio file."""
-        albumartist = self.try_key('albumartist') or self.try_key('artist')
-        artists = [
-            ArtistTags(
-                str(artist),
-                self.try_key('artistsort'),
-                self.file,
-            )
+        return [
+            ArtistTags(str(artist), self.try_key('artistsort'), self.file)
             for artist in self.try_key_all('artist')
         ]
-        if albumartist not in self.try_key_all('artist'):
-            artists.append(
-                ArtistTags(
-                    str(albumartist),
-                    self.try_key('artistsort'),
-                    self.file,
-                )
-            )
-        return artists
 
-    def track(self) -> TrackTags:
+    def track_tags(self, cover_paths: CoverPaths | None) -> TrackTags:
         """Returns the track information from the audio file."""
+        thumb, cover = cover_paths or (None, None)
         return TrackTags(
-            self.try_key('title'),
-            self.try_key('tracknumber'),
+            self.try_key('title') or 'Unknown Title',
+            self.try_key('tracknumber') or '0',
             self.try_key('discnumber'),
             self.try_key('discsubtitle'),
-            self.try_key('album'),
+            self.try_key('album') or 'Unknown Album',
+            self.try_key('albumartist'),
+            self.try_key('date'),
             self.audio.info.length,
+            thumb,
+            cover,
             self.file,
             os.path.getmtime(self.file),
+            self.artists(),
         )
 
     def embedded_cover(self) -> CoverImage | None:
@@ -138,7 +124,10 @@ class AudioFile:
         if it exists. Otherwise, returns None."""
         if full := mutagen.File(self.file):
             if 'covr' in full.tags:
-                return CoverImage(full.tags['covr'][0].data)
+                try:
+                    return CoverImage(full.tags['covr'][0].data)
+                except AttributeError:
+                    return None
             elif 'APIC:' in full:
                 return CoverImage(full.tags.get('APIC:').data)
             else:
@@ -224,8 +213,11 @@ class MusicParser(GObject.Object):
     def _parse_audio(self, file: str) -> AudioFile | None:
         if (mime := self._mime_type(file)) and not mime.startswith('audio'):
             return None
-        elif audio := mutagen.File(file, easy=True):
-            return AudioFile(audio, file)
+        try:
+            audio = mutagen.File(file, easy=True)
+            return AudioFile(audio, file) if audio else None
+        except mutagen.MutagenError:
+            return None
 
     def _mime_type(self, file: str) -> str | None:
         return mimetypes.guess_type(file)[0]
@@ -233,10 +225,38 @@ class MusicParser(GObject.Object):
     def _send_to_db(
         self, db: MusicDB, tracks: list[AudioFile], cover: CoverImage | None
     ):
-        cover = tracks[0].embedded_cover() or cover
+        cover = cover or tracks[0].embedded_cover()
         cover_paths = cover.save() if cover else None
-        for track in tracks:
-            db.insert_track(track.track())
-            db.insert_album(track.album(cover_paths))
-            for artist in track.artists():
-                db.insert_artist(artist)
+
+        tags = [t.track_tags(cover_paths) for t in tracks]
+        self._find_albumartist(tags)
+
+        for track in tags:
+            db.insert_track(track)
+
+    def _find_albumartist(self, tracks: list[TrackTags]):
+        """Finds and sets an albumartist for the given tracks, if possible.
+        (If the tracks don't have an albumartist tag, then one is selected
+        from the artists of the tracks. If no albumartist can be found, then
+        it's left as None to signify it is a compilation album.)"""
+        if all(track.albumartist for track in tracks):
+            return
+        # get the sets of artists for each track,
+        # find the intersection of all of them.
+        artists = [
+            {artist.name for artist in track.artists} for track in tracks
+        ]
+        # if there are no artists at all, set albumartist to Unknown Artist
+        if not artists:
+            for i in range(len(tracks)):
+                tracks[i] = tracks[i]._replace(albumartist='Unknown Artist')
+        elif intersection := set.intersection(*artists):
+            albumartist = intersection.pop()
+            for i in range(len(tracks)):
+                tracks[i] = tracks[i]._replace(albumartist=albumartist)
+        else:
+            for i in range(len(tracks)):
+                tracks[i] = tracks[i]._replace(albumartist='[Various Artists]')
+                tracks[i].artists.append(
+                    ArtistTags('[Various Artists]', 'AAAAAA', tracks[i].path)
+                )

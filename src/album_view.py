@@ -53,13 +53,16 @@ class AlbumView(Adw.BreakpointBin):
         self.update_cover(album.cover)
         self.update_tracks(album.tracks)
         self.album_title.set_text(album.raw_name)
-        self.album_artist.set_text(album.artists[0])
+        self.album_artist.set_text(album.albumartist)
         self.stack.set_visible_child_name('album_view')
 
     def update_tracks(self, tracks: list[TrackItem]):
         current_disc, disc_row = 0, None
+        num_discs = max(track.discnumber for track in tracks)
+        need_discs = num_discs > 1
+
         for i, track in enumerate(tracks):
-            if track.discnumber != current_disc:
+            if need_discs and track.discnumber != current_disc:
                 current_disc = track.discnumber
                 disc_row = DiscRow(
                     discnumber=current_disc,

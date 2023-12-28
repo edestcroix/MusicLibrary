@@ -225,6 +225,8 @@ class Player(GObject.GObject):
 
     def _prepare_url(self, track: TrackItem):
         path = os.path.realpath(track.path.strip())
+        # escape characters that need to be escaped in a file URI
+        path = urllib.parse.quote(path)
         result = urllib.parse.ParseResult(
             scheme='file',
             path=path,

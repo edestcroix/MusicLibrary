@@ -115,11 +115,14 @@ class RecordBoxPlayerControls(Gtk.Box):
         self.progress_bar.set_range(0, self._player.duration)
 
     def _set_song_info(self, track: TrackItem):
-        artists = (
-            f'{track.albumartist}, {track.artists}'
-            if track.artists
-            else track.albumartist
-        )
+        if (not track.albumartist) or track.albumartist == '[Various Artists]':
+            artists = track.artists
+        else:
+            artists = (
+                f'{track.albumartist}, {track.artists}'
+                if track.artists
+                else track.albumartist
+            )
         self.playing_track = f"""<span weight="bold">{track.title}</span> - {GLib.markup_escape_text(artists)}"""
         album = GLib.markup_escape_text(track.album)
         self.playing_track_info = f'Track <span weight="bold">{track.track:02}</span> on <span weight="bold">{album}</span>'

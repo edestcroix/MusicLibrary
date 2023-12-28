@@ -9,21 +9,22 @@ class TrackProperties(Enum):
     RAW_TITLE = 1
     DISC_STR = 2
     DISCSUBTITLE = 3
-    SECONDS = 4
-    PATH = 5
-    ALBUM = 6
-    ARTISTS = 7
-    ALBUMARTIST = 8
+    ALBUMARTIST = 4
+    SECONDS = 5
+    PATH = 6
+    ALBUM = 7
+    ARTISTS = 8
     THUMB = 9
     COVER = 10
 
 
 class AlbumProperties(Enum):
     RAW_NAME = 0
-    LENGTH = 1
-    DATE = 2
-    THUMB = 3
-    COVER = 4
+    ALBUMARTIST = 1
+    LENGTH = 2
+    DATE = 3
+    THUMB = 4
+    COVER = 5
 
 
 gi.require_version('Gtk', '4.0')
@@ -59,7 +60,7 @@ class TrackItem(GObject.Object):
 
     @GObject.Property(type=int)
     def track(self) -> int:
-        return int(self.track_str.split('/')[0])
+        return int(self.track_str.split('/')[0]) if self.track_str else 0
 
     @GObject.Property(type=int)
     def title(self) -> str:
@@ -81,6 +82,7 @@ class AlbumItem(GObject.Object):
     __gtype_name__ = 'AlbumItem'
 
     raw_name = GObject.Property(type=str)
+    albumartist = GObject.Property(type=str)
     length = GObject.Property(type=int)
     date = GObject.Property(type=str)
     thumb = GObject.Property(type=str)
@@ -88,6 +90,8 @@ class AlbumItem(GObject.Object):
 
     artists: list[str]
     tracks: list[TrackItem]
+
+    compact = GObject.Property(type=bool, default=False)
 
     def __init__(self, *args, artists=None, tracks=None):
         super().__init__()
@@ -142,11 +146,17 @@ class ArtistItem(GObject.Object):
     sort = GObject.Property(type=str)
     albums = GObject.Property(type=str)
 
+    compact = GObject.Property(type=bool, default=False)
+
     def __init__(self, name, sort, num_albums):
         super().__init__()
+        self.sort = (
+            'AAAAAAAAAAAAAAAAAAAA'
+            if name == '[Various Artists]'
+            else (sort or name)
+        )
         self.name = GLib.markup_escape_text(name)
         self.raw_name = name
-        self.sort = sort or name
         self.albums = f'{num_albums} album{"s" if num_albums > 1 else ""}'
 
     # NOTE: Artists currently do not have a unique identifier. (They do in the database,
@@ -180,6 +190,7 @@ class QueueItem(TrackItem):
             super().__init__(
                 '',
                 item.raw_name,
+                '',
                 '',
                 '',
                 item.length,

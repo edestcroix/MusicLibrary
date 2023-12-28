@@ -142,7 +142,8 @@ class MusicLibrary(Adw.Bin):
     @Gtk.Template.Callback()
     def _artist_selection_changed(self, _, selected: ArtistItem):
         self.album_list.filter_on_artist(selected.raw_name)
-        self.album_list_page.set_title(selected.raw_name)
+        self.album_list_page.set_title(f'Albums - {selected.raw_name}')
+        self.filter_all_albums = False
 
     @Gtk.Template.Callback()
     def _artist_confirmed(self, *_):

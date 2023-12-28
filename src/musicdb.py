@@ -7,9 +7,6 @@ from .items import TrackItem, AlbumItem, ArtistItem
 
 
 ArtistTags = namedtuple('ArtistTags', ['name', 'sort', 'path'])
-AlbumTags = namedtuple(
-    'AlbumTags', ['name', 'artist', 'year', 'thumb', 'cover']
-)
 TrackTags = namedtuple(
     'TrackTags',
     [
@@ -18,9 +15,14 @@ TrackTags = namedtuple(
         'discnumber',
         'discsubtitle',
         'album',
+        'albumartist',
+        'date',
         'length',
+        'thumb',
+        'cover',
         'path',
         'modified',
+        'artists',
     ],
 )
 
@@ -38,15 +40,37 @@ class MusicDB:
             self._create_tables()
             self._create_views()
 
-    def insert_artist(self, artist: ArtistTags):
-        self.cursor.execute('INSERT INTO artists VALUES (?, ?, ?)', artist)
-
-    def insert_album(self, album: AlbumTags):
-        self.cursor.execute('INSERT INTO albums VALUES (?, ?, ?, ?, ?)', album)
-
     def insert_track(self, track: TrackTags):
         self.cursor.execute(
-            'INSERT INTO tracks VALUES (?, ?, ?, ?, ?, ?, ?, ?)', track
+            'INSERT INTO tracks VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            track[:12],
+        )
+
+        # Albums switching between Various Artists and a single artist
+        # need to be updated manually here to make sure all tracks in the album
+        # get the change propagated. (E.g if no tracks have an albumartist tag an
+        # the artist tag is deleted from a track, it becomes a Various Artists album,
+        # but only one track was modified, so the Parser will only change that one track. Without
+        # this update here, the rest of the tracks will still show up under the previous albumartist.)
+        if albumartist := track[5]:
+            if albumartist == '[Various Artists]':
+                self.cursor.execute(
+                    'UPDATE tracks SET albumartist = ? WHERE album = ? AND date = ?',
+                    (albumartist, track[4], track[6]),
+                )
+            else:
+                self.cursor.execute(
+                    'UPDATE tracks SET albumartist = ? WHERE albumartist = "[Various Artists]" AND album = ? AND date = ?',
+                    (albumartist, track[4], track[6]),
+                )
+
+        # Makes sure removed artists are actually removed from the database
+        self.cursor.execute(
+            'DELETE FROM artists WHERE path = ?',
+            (track.path,),
+        )
+        self.cursor.executemany(
+            'INSERT INTO artists VALUES (?, ?, ?)', track[12]
         )
 
     def commit(self):
@@ -60,13 +84,7 @@ class MusicDB:
         for path in self.cursor.fetchall():
             if not os.path.exists(path[0]) or not path[0].startswith(root):
                 self.cursor.execute('DELETE FROM tracks WHERE path = ?', path)
-                self.cursor.execute('DELETE FROM artists WHERE path= ?', path)
         self.db.commit()
-
-        self.cursor.execute(
-            'DELETE FROM albums WHERE name NOT IN (SELECT album FROM tracks)',
-            (),
-        )
 
     def modify_time(self, path: str) -> float | None:
         self.cursor.execute(
@@ -82,11 +100,7 @@ class MusicDB:
         return [ArtistItem(*artist) for artist in self.cursor.fetchall()]
 
     def get_albums(self) -> list[AlbumItem]:
-        self.cursor.execute(
-            """SELECT DISTINCT name, SUM(length), year, thumb, cover
-                FROM albums JOIN tracks ON albums.name = tracks.album
-                GROUP BY name ORDER BY year""",
-        )
+        self.cursor.execute("""SELECT * FROM [Albums]""")
         albums = []
         for album in self.cursor.fetchall():
             self.cursor.execute(
@@ -96,7 +110,7 @@ class MusicDB:
                 (album[0],),
             )
             artists = [a[0] for a in self.cursor.fetchall()]
-            tracks = self.get_tracks(album[0], album[3], album[4])
+            tracks = self.get_tracks(album[0], album[4], album[5])
             albums.append(AlbumItem(*album, artists=artists, tracks=tracks))
         return albums
 
@@ -104,7 +118,7 @@ class MusicDB:
         self, album: str, thumb: str, cover: str
     ) -> list[TrackItem]:
         self.cursor.execute(
-            """SELECT track, title, discnumber, discsubtitle, length, path 
+            """SELECT track, title, discnumber, discsubtitle, albumartist, length, path 
                 FROM tracks 
                 WHERE album = ? ORDER BY discnumber, track""",
             (album,),
@@ -112,86 +126,61 @@ class MusicDB:
         tracks = []
         for track in self.cursor.fetchall():
             self.cursor.execute(
-                'SELECT name FROM artists WHERE path = ?',
-                (track[5],),
+                'SELECT name FROM artists WHERE path = ? AND name != ?',
+                (track[6], track[4]),
             )
-            artists = [a[0] for a in self.cursor.fetchall()]
-            self.cursor.execute(
-                """SELECT artist FROM albums
-                WHERE name = ?""",
-                (album,),
-            )
-            if albumartist := self.cursor.fetchone():
-                albumartist = albumartist[0]
-            else:
-                albumartist = artists[0] if artists else ''
-            artists.remove(albumartist) if albumartist in artists else None
-            artists = ', '.join(artists) or ''
-            tracks.append(
-                TrackItem(
-                    *(track + (album, artists, albumartist, thumb, cover))
-                )
-            )
+            artists = ', '.join([a[0] for a in self.cursor.fetchall()])
+            tracks.append(TrackItem(*(track + (album, artists, thumb, cover))))
         return tracks
 
     def _create_tables(self):
-        """Artist table stores the name of the artist, and the value of the artistsort tag found
-        for the artist, if any. It also stores the path of the track file that the artist was found
-        in. This way, all artists for each track can be stored.
-
-        Album artists are then identified as
-        artists that have their name in the artist column of the albums table. For the purposes
-        of this application, album artists are either the value of the albumartist tag or the first
-        artist encountered when parsing the file.
-
-        Album table exists mainly to identify album artists and group album covers.
-
-        Track table stores all track-specific metadata.
-
-        """
         self._execute_queries(
-            """CREATE TABLE IF NOT EXISTS artists(
-                name TEXT NOT NULL, 
-                sort TEXT, 
-                path NOT NULL,
-                UNIQUE(name, path) 
-                ON CONFLICT REPLACE
-            )""",
-            """CREATE TABLE IF NOT EXISTS albums(
-                name TEXT NOT NULL, 
-                artist TEXT NOT NULL, 
-                year DATE, 
-                thumb TEXT, 
-                cover TEXT, 
-                UNIQUE(name, artist) 
-                ON CONFLICT REPLACE
-            )""",
             """CREATE TABLE IF NOT EXISTS tracks(
-                title TEXT,
-                track TEXT,
+                title TEXT NOT NULL,
+                track TEXT NOT NULL,
                 discnumber TEXT,
                 discsubtitle TEXT,
-                album TEXT,
-                length REAL,
-                path TEXT,
-                modified TIME,
-                UNIQUE(path)
-                ON CONFLICT REPLACE)
-                """,
+                album TEXT NOT NULL,
+                albumartist TEXT,
+                date DATE,
+                length REAL NOT NULL,
+                thumb TEXT,
+                cover TEXT,
+                path TEXT NOT NULL,
+                modified REAL NOT NULL,
+                PRIMARY KEY (path) ON CONFLICT REPLACE)
+            """,
+            # artists needs a separate table because tracks can have multiple artists
+            """CREATE TABLE IF NOT EXISTS artists(
+                name TEXT NOT NULL,
+                sort TEXT,
+                path TEXT NOT NULL,
+                PRIMARY KEY (path, name) ON CONFLICT REPLACE,
+                FOREIGN KEY (path) REFERENCES tracks(path) ON DELETE CASCADE)
+            """,
+            # TODO: Use this table to determine if an external cover has changed
+            """CREATE TABLE IF NOT EXISTS external_covers(
+                original TEXT NOT NULL,
+                thumb TEXT NOT NULL,
+                modified REAL NOT NULL,
+                PRIMARY KEY (original) ON CONFLICT REPLACE,
+                FOREIGN KEY (thumb) REFERENCES tracks(thumb) ON DELETE CASCADE)
+            """,
         )
 
     def _create_views(self):
         self._execute_queries(
-            """CREATE VIEW [Album Artists] AS
-                SELECT artists.name, sort, COUNT(DISTINCT albums.name)
-                FROM artists JOIN albums ON artists.name = albums.artist 
-                GROUP BY artists.name ORDER by artists.name
-               """,
-            """CREATE VIEW [ALL Artists] AS
-                SELECT name, sort, COUNT(DISTINCT album)
-                FROM artists NATURAL JOIN tracks
-                GROUP BY name ORDER BY name
+            """CREATE VIEW [Albums] AS
+            SELECT DISTINCT album, albumartist, SUM(length), date, thumb, cover
+            FROM tracks GROUP BY album, date ORDER BY date
             """,
+            """CREATE VIEW [Album Artists] AS
+            SELECT DISTINCT albumartist, sort, COUNT(DISTINCT album)
+            FROM tracks NATURAL JOIN artists WHERE albumartist IS NOT NULL GROUP BY albumartist
+            """,
+            """CREATE VIEW [All Artists] AS
+            SELECT DISTINCT name, sort, COUNT(DISTINCT album)
+            FROM tracks NATURAL JOIN artists GROUP BY name""",
         )
 
     def _execute_queries(self, *queries: str):
