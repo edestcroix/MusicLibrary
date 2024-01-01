@@ -1,5 +1,5 @@
 {
-  "app-id": "com.github.edestcroix.RecordBox.Devel",
+  "app-id": "com.github.edestcroix.RecordBox",
   "runtime": "org.gnome.Platform",
   "runtime-version": "45",
   "sdk": "org.gnome.Sdk",
@@ -78,7 +78,7 @@
         {
           "type": "git",
           "url": "https://github.com/edestcroix/RecordBox",
-          "branch": "main"
+          "branch": "release"
         }
       ]
     }
