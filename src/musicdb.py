@@ -172,7 +172,7 @@ class MusicDB:
         self._execute_queries(
             """CREATE VIEW [Albums] AS
             SELECT DISTINCT album, albumartist, SUM(length), date, thumb, cover
-            FROM tracks GROUP BY album, date ORDER BY date
+            FROM tracks GROUP BY album, albumartist
             """,
             """CREATE VIEW [Album Artists] AS
             SELECT DISTINCT albumartist, sort, COUNT(DISTINCT album)
