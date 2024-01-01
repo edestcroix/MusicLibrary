@@ -37,9 +37,7 @@ class RecordBoxPlayerControls(Gtk.Box):
 
     def attach_to_player(self, player: Player):
         self._player = player
-        self._player.connect(
-            'notify::muted', lambda *_: self._update_volume_icon
-        )
+        self._player.connect('notify::muted', self._update_volume_icon)
         self._player.connect('notify::volume', self._update_volume)
         self._player.connect('state-changed', self._update_state)
         self._player.connect('stream-start', self.set_current_track)
@@ -107,7 +105,7 @@ class RecordBoxPlayerControls(Gtk.Box):
 
     def _update_duration(self, *_):
         if self._player.duration < 0:
-            # if the duration is unknown, try again in 100ms (player was probably still buffering)
+            # if the duration is negative, try again in 100ms (player was probably still buffering)
             GLib.timeout_add(100, self._update_duration)
             return
 
@@ -146,7 +144,7 @@ class RecordBoxPlayerControls(Gtk.Box):
         else:
             self.playback_toggle.set_icon_name('media-playback-start-symbolic')
 
-    def _update_volume_icon(self, muted: bool = False):
+    def _update_volume_icon(self, *_, muted: bool = False):
         """Updates the volume icon based on the current volume, optionally
         takes a 'muted' argument to manually set the icon to muted, because the
         player's muted property doesn't update when paused"""

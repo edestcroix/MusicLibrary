@@ -148,7 +148,7 @@
             </child>
             <child>
               <object class="AdwSwitchRow" id="expand_discs">
-                <property name="title" translatable="yes">Expand discs</property>
+                <property name="title" translatable="yes">Expand Discs</property>
                 <property name="subtitle" translatable="yes">Expand discs in the track view by default.</property>
               </object>
             </child>
