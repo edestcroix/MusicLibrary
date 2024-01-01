@@ -158,14 +158,6 @@ class MusicDB:
                 PRIMARY KEY (path, name) ON CONFLICT REPLACE,
                 FOREIGN KEY (path) REFERENCES tracks(path) ON DELETE CASCADE)
             """,
-            # TODO: Use this table to determine if an external cover has changed
-            """CREATE TABLE IF NOT EXISTS external_covers(
-                original TEXT NOT NULL,
-                thumb TEXT NOT NULL,
-                modified REAL NOT NULL,
-                PRIMARY KEY (original) ON CONFLICT REPLACE,
-                FOREIGN KEY (thumb) REFERENCES tracks(thumb) ON DELETE CASCADE)
-            """,
         )
 
     def _create_views(self):
