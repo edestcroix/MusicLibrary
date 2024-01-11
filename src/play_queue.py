@@ -1,8 +1,7 @@
-import contextlib
-from collections import deque
-from gi.repository import Adw, Gtk, GLib, GObject, Gio
+from collections import deque, defaultdict
 import gi
-from collections import defaultdict
+from gi.repository import Adw, Gtk, GLib, GObject, Gio
+from itertools import chain
 from .items import TrackItem, AlbumItem, QueueItem
 
 gi.require_version('Gtk', '4.0')
@@ -31,10 +30,7 @@ class PlayQueue(Adw.Bin):
         super().__init__()
 
         self._base_model = Gio.ListStore.new(QueueItem)
-        self._base_model.connect(
-            'items-changed',
-            lambda *_: self.set_property('empty', not len(self._base_model)),
-        )
+        self._base_model.connect('items-changed', self._update_queue)
         self._tree_model = Gtk.TreeListModel.new(
             self._base_model,
             passthrough=False,
@@ -46,23 +42,20 @@ class PlayQueue(Adw.Bin):
         self.track_list.set_model(self._selection)
         self.track_list.set_factory(self._create_factory())
 
-        # flatten tree layout into a single list by mapping
-        # every item in model to a ListModel of it's children (or itself if it has none)
-        model_map = Gtk.MapListModel.new(self._base_model, self._map_to_model)
-        # then put this list of models into a FlattenListModel to make the actual queue
-        self._queue = Gtk.FlattenListModel.new(model_map)
-        self._queue.connect('notify::n-items', self._update_positions)
+        self._queue = []
 
         self._backups = deque(maxlen=10)
         self._redos = deque(maxlen=10)
 
     def append_album(self, album: AlbumItem):
-        was_empty = self._is_empty()
         album = QueueItem(album)
         self._backup_queue()
         self._base_model.append(album)
-        if was_empty:
-            self._update_current_highlight()
+
+    def append(self, tracks: list[TrackItem]):
+        tracks = [QueueItem(t) for t in tracks]
+        self._backup_queue()
+        self._base_model.splice(len(self._base_model), 0, tracks)
 
     def overwrite_w_album(self, album: AlbumItem, start: int = 0):
         album = QueueItem(album)
@@ -70,6 +63,7 @@ class PlayQueue(Adw.Bin):
         self._base_model.splice(0, len(self._base_model), [album])
         self._reset(empty=False)
         self.set_index(start)
+        self._update_current_parent(self._queue[self.current_index])
 
     def overwrite_w_tracks(self, tracks: list[TrackItem], start: int = 0):
         self._backup_queue(save_index=True)
@@ -78,30 +72,60 @@ class PlayQueue(Adw.Bin):
         )
         self._reset(empty=False)
         self.set_index(start)
+        self._update_current_parent(self._queue[self.current_index])
 
-    def append(self, tracks: list[TrackItem]):
-        was_empty = self._is_empty()
-        tracks = [QueueItem(t) for t in tracks]
-        self._backup_queue()
-        self._base_model.splice(len(self._base_model), 0, tracks)
-        if was_empty:
-            self._update_current_highlight()
 
-    def set_index(self, index: int, highlight=True, force=False):
-        no_change = index == self.current_index
-        if force or not no_change:
-            with contextlib.suppress(IndexError):
-                self._queue[self.current_index].is_current = False
-            if self.current_track:
-                # yes both the track at the current_index and the current_track
-                # have to have is_current set to False, because they can be out of sync
-                # and one of them set to True when they shouldn't be (like after undo/redo)
-                self.current_track.is_current = False
+    def set_index(self, index: int):
         self.current_index = index
-        if (not force) and index > 0 and no_change:
-            return
-        if highlight:
-            self._update_current_highlight()
+        self._update_queue(items_changed=False)
+
+    def next(self) -> bool:
+        if (
+            self.empty
+            or self.current_index < 0
+            or self.current_index >= len(self._queue) - 1
+        ):
+            return False
+
+        if self.current_track == self._queue[self.current_index]:
+            self.current_index += 1
+        return True
+
+    def previous(self) -> bool:
+        if self.current_index == 0 or self.empty:
+            return False
+        # if the current index is greater than the length of the queue, move it to the last index
+        elif self.current_index > len(self._queue) - 1:
+            self.current_index = len(self._queue) - 1
+        else:
+            self.current_index -= 1
+        return True
+
+    def get_current_track(self, update=True) -> QueueItem | None:
+        if self.current_index == -1 and not self.empty:
+            self.current_index = 0
+        if update:
+            self.current_track = self._queue[self.current_index]
+            self._update_current_parent(self.current_track)
+            self._update_queue(items_changed=False)
+        return self.current_track
+
+    def get_next_track(self) -> TrackItem | None:
+        if self.next():
+            return self.get_current_track()
+
+    def clear(self):
+        self._base_model.remove_all()
+        self._reset()
+
+    def restart(self):
+        self.set_index(0)
+
+    def remove_backups(self):
+        self._backups.clear()
+        self._redos.clear()
+        self.can_undo = False
+        self.can_redo = False
 
     @Gtk.Template.Callback()
     def undo(self, *_):
@@ -111,12 +135,13 @@ class PlayQueue(Adw.Bin):
 
             backup, index = self._backups.pop()
             self._base_model.splice(0, len(self._base_model), backup)
-            self.set_index(index or self.current_index, force=True)
+            self.set_index(index or self.current_index)
             self.can_undo = len(self._backups) > 0
         else:
             self.can_undo = False
 
         self.can_redo = len(self._redos) > 0
+        self._update_current_parent(self._queue[self.current_index])
 
     @Gtk.Template.Callback()
     def redo(self, *_):
@@ -126,12 +151,13 @@ class PlayQueue(Adw.Bin):
 
             backup, index = self._redos.pop()
             self._base_model.splice(0, len(self._base_model), backup)
-            self.set_index(index or self.current_index, force=True)
+            self.set_index(index or self.current_index)
             self.can_redo = len(self._redos) > 0
         else:
             self.can_redo = False
 
         self.can_undo = len(self._backups) > 0
+        self._update_current_parent(self._queue[self.current_index])
 
     @Gtk.Template.Callback()
     def select_all(self, *_):
@@ -140,74 +166,6 @@ class PlayQueue(Adw.Bin):
     @Gtk.Template.Callback()
     def unselect_all(self, *_):
         self._selection.unselect_all()
-
-    def clear(self):
-        self._base_model.remove_all()
-        self._reset()
-
-    def restart(self):
-        self.current_index = 0
-
-    def _is_empty(self) -> bool:
-        return len(self._base_model) == 0
-
-    def index_synced(self) -> bool:
-        """Checks if the current_track and the track at current_index are the same.
-        When they are not, it means the current track was changed outside of normal
-        queue advancement like get_next_track(), jumping to a track, or next() and previous().
-        (E.g the current track was deleted from the queue or a restored backup changed current_index)"""
-        return (
-            self._queue
-            and 0 <= self.current_index < len(self._queue)
-            and self.current_track == self._queue[self.current_index]
-        )
-
-    def index_valid(self) -> bool:
-        return 0 <= self.current_index < len(self._queue)
-
-    def get_next_track(self) -> TrackItem | None:
-        return self.get_current_track() if self.next() else None
-
-    def get_current_track(self) -> TrackItem | None:
-        """Retrieves the current track from the queue, and sets self.current_track
-        to the value retrieved. Uses self.current_index to determine the track to
-        get, meaning that if the two values are unsynced, they will resync after the next call
-        to this method."""
-
-        # An index of -1 is used to inidicate to the previous()
-        # function that the queue was already at the start. If the
-        # queue isn't empty then it should be considered a 0.
-
-        if self.current_index == -1 and len(self._queue) > 0:
-            self.current_index = 0
-        if not self.index_synced():
-            try:
-                self.current_track = self._queue[self.current_index]
-            except IndexError:
-                self.current_track = None
-        return self.current_track
-
-    def next(self) -> bool:
-        # Only advance if the index is synced, because otherwise
-        # the next track is already at the current index
-        if self.index_synced():
-            self.set_index(min(self.current_index + 1, len(self._queue) - 1))
-        return self.index_valid() and not (
-            self.current_track == self._queue[self.current_index] or self.empty
-        )
-
-    def previous(self) -> bool:
-        self.current_index = min(self.current_index, len(self._queue))
-        self.set_index(max(self.current_index - 1, 0))
-        return self.index_valid() and not (
-            self.current_track == self._queue[self.current_index] or self.empty
-        )
-
-    def remove_backups(self):
-        self._backups.clear()
-        self._redos.clear()
-        self.can_undo = False
-        self.can_redo = False
 
     @Gtk.Template.Callback()
     def _on_row_activated(self, _, index: int):
@@ -249,7 +207,7 @@ class PlayQueue(Adw.Bin):
                 self._splice_out_sequential(item.children, v)
 
         self.current_index -= index_delta
-        self._update_current_highlight(expand=False)
+        self._update_queue()
 
     def _find_removals(self) -> tuple[list[int], dict, int]:
         """Evaluates the currently selected rows in the queue to determine what should be removed.
@@ -279,7 +237,9 @@ class PlayQueue(Adw.Bin):
                     count += 1
                     if self._selection.is_selected(count):
                         removals[root_index].append(child_index)
-                        index_delta += child_index < self.current_index
+                        index_delta += (
+                            children[child_index].position < self.current_index
+                        )
                 if len(removals[root_index]) == len(children):
                     bulk_removes.append(root_index)
                     del removals[root_index]
@@ -317,6 +277,41 @@ class PlayQueue(Adw.Bin):
             model.splice(segment[0] - removed, len(segment), [])
             removed += len(segment)
 
+    def _update_queue(self, *_, items_changed=True):
+        if items_changed:
+            self._queue = list(
+                chain.from_iterable(
+                    item.children or [item] for item in self._base_model
+                )
+            )
+        for i, item in enumerate(self._queue):
+            item.position = i
+            if item.is_current and i != self.current_index:
+                item.is_current = False
+            elif i == self.current_index:
+                item.is_current = True
+
+        self.empty = len(self._queue) == 0
+
+    def _update_current_parent(self, current: QueueItem, expand=True):
+        for i in range(len(self._base_model)):
+            if row := self._tree_model.get_child_row(i):
+                item = row.get_item()
+                if not item.from_album:
+                    continue
+                if current in item.children:
+                    if expand and not row.get_expanded():
+                        row.set_expanded(True)
+                    item.is_current = True
+                elif item.is_current:
+                    if expand and row.get_expanded():
+                        row.set_expanded(False)
+                    # got to add a timeout apparently because states don't properly
+                    # update while the rows are being expanded/collapsed
+                    GLib.timeout_add(
+                        25, item.set_property, 'is-current', False
+                    )
+
     def _reset(self, empty=True):
         """Puts queue state variables and widgets back to the default start state.
         Used when the queue is cleared or overwritten."""
@@ -328,7 +323,7 @@ class PlayQueue(Adw.Bin):
         if self._base_model:
             if clear_redo:
                 self._redos.clear()
-            backup = Gio.ListStore.new(TrackItem)
+            backup = Gio.ListStore.new(QueueItem)
             backup.splice(
                 0, len(backup), [i.clone() for i in self._base_model]
             )
@@ -365,6 +360,12 @@ class PlayQueue(Adw.Bin):
 
         queue_row.title = obj.raw_title
         queue_row.subtitle = obj.subtitle
+        obj.bind_property(
+            'subtitle',
+            queue_row,
+            'subtitle',
+            GObject.BindingFlags.DEFAULT,
+        )
         queue_row.image_path = obj.thumb
         queue_row.is_album = obj.from_album
         obj.bind_property(
@@ -386,40 +387,6 @@ class PlayQueue(Adw.Bin):
         if not item:
             return None
         return children if (children := item.children) else None
-
-    def _map_to_model(self, item: QueueItem) -> Gio.ListModel:
-        if children := item.children:
-            if len(children) == 0:
-                children.append(item)
-            return children
-        store = Gio.ListStore.new(QueueItem)
-        store.append(item)
-        return store
-
-    def _update_current_highlight(self, expand=True):
-        """Updates the current track highlight on the album rows and top-level track rows."""
-        try:
-            current = self._queue[max(0, self.current_index)]
-        except IndexError:
-            return
-        current.is_current = True
-        for i in range(len(self._base_model)):
-            if row := self._tree_model.get_child_row(i):
-                item = row.get_item()
-                if not item.from_album:
-                    continue
-                if current in item.children:
-                    if expand and not row.get_expanded():
-                        row.set_expanded(True)
-                    item.is_current = True
-                elif item.is_current:
-                    if expand and row.get_expanded():
-                        row.set_expanded(False)
-                    # got to add a timeout apparently because states don't properly
-                    # update while the rows are being expanded/collapsed
-                    GLib.timeout_add(
-                        25, item.set_property, 'is-current', False
-                    )
 
 
 @Gtk.Template(
