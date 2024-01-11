@@ -12,7 +12,7 @@ TrackTags = namedtuple(
     [
         'title',
         'track',
-        'discnumber',
+        'disc',
         'discsubtitle',
         'album',
         'albumartist',
@@ -35,6 +35,7 @@ class MusicDB:
             os.makedirs(os.path.dirname(path), exist_ok=True)
         self.path = path
         self.db = sqlite3.connect(self.path)
+        self.db.row_factory = sqlite3.Row
         self.cursor = self.db.cursor()
         if first_start:
             self._create_tables()
@@ -110,17 +111,18 @@ class MusicDB:
                 (album[0],),
             )
             artists = [a[0] for a in self.cursor.fetchall()]
-            tracks = self.get_tracks(album[0], album[4], album[5])
-            albums.append(AlbumItem(*album, artists=artists, tracks=tracks))
+            tracks = self.get_tracks(album[0])
+            albums.append(
+                AlbumItem(**dict(album, artists=artists, tracks=tracks))
+            )
         return albums
 
-    def get_tracks(
-        self, album: str, thumb: str, cover: str
-    ) -> list[TrackItem]:
+    def get_tracks(self, album: str) -> list[TrackItem]:
         self.cursor.execute(
-            """SELECT track, title, discnumber, discsubtitle, albumartist, length, path 
+            """SELECT track, title, discnumber as disc, discsubtitle, albumartist,
+                length, path, thumb, cover
                 FROM tracks 
-                WHERE album = ? ORDER BY discnumber, track""",
+                WHERE album = ? ORDER BY disc, track""",
             (album,),
         )
         tracks = []
@@ -130,7 +132,9 @@ class MusicDB:
                 (track[6], track[4]),
             )
             artists = ', '.join([a[0] for a in self.cursor.fetchall()])
-            tracks.append(TrackItem(*(track + (album, artists, thumb, cover))))
+            # remove None values
+            track = {k: v for k, v in dict(track).items() if v is not None}
+            tracks.append(TrackItem(**track, artists=artists, album=album))
         return tracks
 
     def _create_tables(self):
@@ -163,7 +167,7 @@ class MusicDB:
     def _create_views(self):
         self._execute_queries(
             """CREATE VIEW [Albums] AS
-            SELECT DISTINCT album, albumartist, SUM(length), date, thumb, cover
+            SELECT DISTINCT album as title, albumartist, SUM(length) as length, date, thumb, cover
             FROM tracks GROUP BY album, albumartist
             """,
             """CREATE VIEW [Album Artists] AS

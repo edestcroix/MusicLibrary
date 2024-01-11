@@ -48,17 +48,17 @@ class PlayQueue(Adw.Bin):
         self._redos = deque(maxlen=10)
 
     def append_album(self, album: AlbumItem):
-        album = QueueItem(album)
+        album = QueueItem(**album.for_queue())
         self._backup_queue()
         self._base_model.append(album)
 
     def append(self, tracks: list[TrackItem]):
-        tracks = [QueueItem(t) for t in tracks]
+        tracks = [QueueItem(**dict(t)) for t in tracks]
         self._backup_queue()
         self._base_model.splice(len(self._base_model), 0, tracks)
 
     def overwrite_w_album(self, album: AlbumItem, start: int = 0):
-        album = QueueItem(album)
+        album = QueueItem(**album.for_queue())
         self._backup_queue(save_index=True)
         self._base_model.splice(0, len(self._base_model), [album])
         self._reset(empty=False)
@@ -68,7 +68,7 @@ class PlayQueue(Adw.Bin):
     def overwrite_w_tracks(self, tracks: list[TrackItem], start: int = 0):
         self._backup_queue(save_index=True)
         self._base_model.splice(
-            0, len(self._base_model), [QueueItem(t) for t in tracks]
+            0, len(self._base_model), [QueueItem(**dict(t)) for t in tracks]
         )
         self._reset(empty=False)
         self.set_index(start)
@@ -141,7 +141,8 @@ class PlayQueue(Adw.Bin):
             self.can_undo = False
 
         self.can_redo = len(self._redos) > 0
-        self._update_current_parent(self._queue[self.current_index])
+        if self.current_index < len(self._queue):
+            self._update_current_parent(self._queue[self.current_index])
 
     @Gtk.Template.Callback()
     def redo(self, *_):
@@ -157,7 +158,8 @@ class PlayQueue(Adw.Bin):
             self.can_redo = False
 
         self.can_undo = len(self._backups) > 0
-        self._update_current_parent(self._queue[self.current_index])
+        if self.current_index < len(self._queue):
+            self._update_current_parent(self._queue[self.current_index])
 
     @Gtk.Template.Callback()
     def select_all(self, *_):
@@ -358,7 +360,7 @@ class PlayQueue(Adw.Bin):
         expander.set_list_row(row)
         obj = row.get_item()
 
-        queue_row.title = obj.raw_title
+        queue_row.title = obj.title
         queue_row.subtitle = obj.subtitle
         obj.bind_property(
             'subtitle',
@@ -378,10 +380,6 @@ class PlayQueue(Adw.Bin):
             # need some delay otherwise GTK will crash (css is being set before the widget
             # is is fully constructed or something)
             GLib.timeout_add(25, queue_row.set_property, 'is-current', True)
-
-    def _update_positions(self, *_):
-        for i, item in enumerate(self._queue):
-            item.position = i
 
     def _child_model(self, item: QueueItem):
         if not item:

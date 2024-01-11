@@ -242,18 +242,18 @@ class RecordBoxWindow(Adw.ApplicationWindow):
             self.send_toast('Queue Updated', 'Show Queue', 'win.open-queue')
 
     def _update_album(self, album: AlbumItem):
-        self.main_page.set_title(album.raw_name)
+        self.main_page.set_title(album.title)
         self.album_overview.update_album(album)
 
     def _album_to_disc(self, album: AlbumItem, disc_number: int) -> AlbumItem:
         tracks = [t for t in album.tracks if t.discnumber == disc_number]
         album = album.clone()
         album.tracks = tracks
-        album.length = sum(t.seconds for t in tracks)
+        album.length = sum(t.length for t in tracks)
         if discsub := album.tracks[0].discsubtitle:
-            album.raw_name += f' ({discsub})'
+            album.title += f' ({discsub})'
         else:
-            album.raw_name += f' (Disc {disc_number})'
+            album.title += f' (Disc {disc_number})'
 
         return album
 

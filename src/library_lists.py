@@ -102,6 +102,13 @@ class ArtistList(LibraryList):
 
     sort = GObject.Property(type=str, default=ArtistSort.NAME_ASC)
 
+    def scroll_to_row_with_name(self, name: str):
+        name = GLib.markup_escape_text(name)
+        for i, row in enumerate(self.model):
+            if row.name == name:
+                self.scroll_to(i, Gtk.ListScrollFlags.SELECT)
+                break
+
     def _update_sort(self):
         match ArtistSort(self.sort):
             case ArtistSort.NAME_ASC:
@@ -138,6 +145,12 @@ class AlbumList(LibraryList):
 
     def find_album_by_track(self, track: TrackItem) -> AlbumItem | None:
         return next((row for row in self.model if track in row.tracks), None)
+
+    def scroll_to_row_with_title(self, title: str):
+        for i, row in enumerate(self.filter_model):
+            if row.title == title:
+                self.scroll_to(i, Gtk.ListScrollFlags.SELECT)
+                break
 
     def _setup_model(self):
         self.filter_model = Gtk.FilterListModel.new(self.model, None)

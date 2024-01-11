@@ -367,12 +367,12 @@ class MPRIS(Server):
 
     def _build_metadata(self):
         current_track = self._player.current_track
-        if not (track_number := current_track.track):
+        if not (track_number := current_track.tracknumber):
             track_number = 1
         self._metadata = {
             'mpris:trackid': GLib.Variant('o', self._track_id()),
             'xesam:trackNumber': GLib.Variant('i', track_number),
-            'xesam:title': GLib.Variant('s', current_track.raw_title),
+            'xesam:title': GLib.Variant('s', current_track.title),
             'xesam:album': GLib.Variant('s', current_track.album),
             'xesam:artist': GLib.Variant('as', (current_track.albumartist,)),
             'mpris:length': GLib.Variant('x', self._length()),

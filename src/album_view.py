@@ -52,7 +52,7 @@ class AlbumView(Adw.BreakpointBin):
         self.clear_all()
         self.update_cover(album.cover)
         self.update_tracks(album.tracks)
-        self.album_title.set_text(album.raw_name)
+        self.album_title.set_text(album.title)
         self.album_artist.set_text(album.albumartist)
         self.stack.set_visible_child_name('album_view')
 
@@ -117,11 +117,11 @@ class TrackRow(Adw.ActionRow):
         artists = f'\n{track.artists}' if track.artists else ''
         self.set_subtitle(
             GLib.markup_escape_text(
-                f'{track.track:0>2} - {track.length}{artists}'
+                f'{track.tracknumber:0>2} - {track.duration}{artists}'
             )
         )
-        self.set_title(track.title)
-        self.set_tooltip_text(track.raw_title)
+        self.set_title(track.markup_title)
+        self.set_tooltip_text(track.title)
         self.set_detailed_action_name(f'win.play({index})')
 
         self.menu_model = Gio.Menu.new()

@@ -30,7 +30,7 @@
             <child>
               <object class="GtkLabel" id="title">
                 <binding name="label">
-                  <lookup name="raw-name" type="AlbumItem">
+                  <lookup name="title" type="AlbumItem">
                     <lookup name="item">GtkListItem</lookup>
                   </lookup>
                 </binding>
@@ -47,7 +47,7 @@
             <child>
               <object class="GtkLabel" id="subtitle">
                 <binding name="label">
-                  <lookup name="summary" type="AlbumItem">
+                  <lookup name="subtitle" type="AlbumItem">
                     <lookup name="item">GtkListItem</lookup>
                   </lookup>
                 </binding>

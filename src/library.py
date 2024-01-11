@@ -137,7 +137,7 @@ class MusicLibrary(Adw.Bin):
         self.artist_list.unselect_all()
 
         self._select_row_with_title(self.artist_list, artist)
-        self._select_row_with_title(self.album_list, album.raw_name)
+        self._select_row_with_title(self.album_list, album.title)
 
     @Gtk.Template.Callback()
     def _artist_selection_changed(self, _, selected: ArtistItem):
@@ -181,13 +181,10 @@ class MusicLibrary(Adw.Bin):
     def _select_row_with_title(
         self, row_list: AlbumList | ArtistList, title: str
     ):
-        i = 0
-        cur = row_list.get_row_at_index(i)
-        while cur and cur.raw_name != title:
-            i += 1
-            cur = row_list.get_row_at_index(i)
-        if cur:
-            row_list.scroll_to(i, Gtk.ListScrollFlags.SELECT)
+        if type(row_list) is AlbumList:
+            row_list.scroll_to_row_with_title(title)
+        else:
+            row_list.scroll_to_row_with_name(title)
 
     @Gtk.Template.Callback()
     def _on_directory_select(self, _):
