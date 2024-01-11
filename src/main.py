@@ -48,12 +48,12 @@ class RecordBoxApplication(Adw.Application):
         GLib.set_prgname(self.app_name)
         GLib.set_application_name(self.app_name)
 
-        self.create_action('quit', lambda *_: self.quit(), ['<primary>q'])
+        self.create_action('quit', lambda *_: self.quit(), ['<control>q'])
         self.create_action('about', self.on_about_action)
         self.create_action(
-            'preferences', self.on_preferences_action, ['<primary>comma']
+            'preferences', self.on_preferences_action, ['<control>comma']
         )
-        self.create_action('refresh', self.on_refresh_action, ['<primary>r'])
+        self.create_action('refresh', self.on_refresh_action, ['<control>r'])
 
         self.player = Player()
         MPRIS(self)
@@ -120,23 +120,24 @@ class RecordBoxApplication(Adw.Application):
 
     def bind_window_actions(self):
         """Bind the window's actions to accelerators."""
-        self.set_accels_for_action('win.play(0)', ['<primary>space'])
-        self.set_accels_for_action('win.add-album', ['<primary>plus'])
-        self.set_accels_for_action('win.replace-queue', ['<primary>minus'])
+        self.set_accels_for_action('win.play(0)', ['<control>space'])
+        self.set_accels_for_action('win.add-album', ['<control>plus'])
+        self.set_accels_for_action('win.replace-queue', ['<control>minus'])
 
         self.set_accels_for_action(
-            'win.return-to-playing', ['<primary>BackSpace']
+            'win.return-to-playing', ['<control>BackSpace']
         )
 
-        self.set_accels_for_action('win.filter-all', ['<primary>slash'])
+        self.set_accels_for_action('win.filter-all', ['<control>slash'])
 
-        self.set_accels_for_action('win.undo-queue', ['<primary>z'])
-        self.set_accels_for_action('win.redo-queue', ['<primary><shift>z'])
+        self.set_accels_for_action('win.open-queue', ['<control>o'])
+        self.set_accels_for_action('win.undo-queue', ['<control>z'])
+        self.set_accels_for_action('win.redo-queue', ['<control><shift>z'])
 
-        self.set_accels_for_action('win.exit_player', ['<primary>e'])
-        self.set_accels_for_action('win.stop', ['<primary>period'])
+        self.set_accels_for_action('win.exit_player', ['<control>e'])
+        self.set_accels_for_action('win.stop', ['<control>period'])
         self.set_accels_for_action(
-            'win.stop_after_current', ['<primary>greater']
+            'win.stop_after_current', ['<control>greater']
         )
 
 
