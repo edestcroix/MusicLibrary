@@ -127,6 +127,7 @@ class TrackRow(Adw.ActionRow):
         self.menu_model = Gio.Menu.new()
         self.menu_model.append('Play Track', f'win.play-single({index})')
         self.menu_model.append('Add To Queue', f'win.append({index})')
+        self.menu_model.append('Insert as Next Track', f'win.insert({index})')
         self.new_popover = Gtk.PopoverMenu.new_from_model(self.menu_model)
 
         btn = Gtk.MenuButton()

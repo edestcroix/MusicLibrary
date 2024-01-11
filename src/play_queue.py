@@ -74,6 +74,35 @@ class PlayQueue(Adw.Bin):
         self.set_index(start)
         self._update_current_parent(self._queue[self.current_index])
 
+    def insert(self, track: TrackItem):
+        track = QueueItem(**dict(track))
+        self._backup_queue()
+        # find the index of the current_track in the base model (either it's own index in that model
+        # if it's a root, or the index of it's parent in that model if it's a child)
+        if self.current_track in self._base_model:
+            # if the current_track is a root, insert the new track after it
+            index = list(self._base_model).index(self.current_track)
+            self._base_model.insert(index + 1, track)
+            return
+        # iterate through children lists of root items until the current_track is found
+        for i, item in enumerate(list(self._base_model)):
+            if item.children and self.current_track in item.children:
+                index = list(item.children).index(self.current_track)
+                if index == len(item.children) - 1:
+                    self._base_model.insert(i + 1, track)
+                    break
+                # split the root into two (duplicate it into a new QueueItem,
+                # everything up to the current_track stays, new one gets everything after,
+                # put the new one after the old one)
+                new = item.clone(children=item.children[index + 1 :])
+                item.children.splice(
+                    index + 1, len(item.children) - index - 1, []
+                )
+                self._base_model.splice(i + 1, 0, [track, new])
+                break
+
+        self._update_queue()
+        self._update_current_parent(self.current_track)
 
     def set_index(self, index: int):
         self.current_index = index

@@ -164,6 +164,10 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         else:
             self._add_to_queue(tracks[i : i + 1])
 
+    def insert(self, _, index: GLib.Variant):
+        tracks = self._current_album_tracks()
+        self.play_queue.insert(tracks[index.get_int32()])
+
     def overwrite_queue(self, _, disc: GLib.Variant = None):
         album = self.album_overview.current_album
         if disc and (d := disc.get_int32()):
@@ -320,6 +324,16 @@ class RecordBoxWindow(Adw.ApplicationWindow):
                 None, GLib.Variant('i', -1), disc=disc
             ),
             parameter_type=GLib.VariantType('i'),
+        )
+
+        insert = self._create_action(
+            'insert',
+            self.insert,
+            enabled=False,
+            parameter_type=GLib.VariantType('i'),
+        )
+        self.play_queue.bind_property(
+            'empty', insert, 'enabled', GObject.BindingFlags.INVERT_BOOLEAN
         )
 
         replace_queue = self._create_action(
