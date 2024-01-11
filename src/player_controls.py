@@ -50,7 +50,6 @@ class RecordBoxPlayerControls(Gtk.Box):
             GObject.BindingFlags.BIDIRECTIONAL,
         )
         self._player.connect('notify::position', self._update_progress)
-        self._player.connect('notify::duration', self._update_duration)
 
     def set_current_track(self, *_):
         if track := self._player.current_track:
@@ -103,15 +102,6 @@ class RecordBoxPlayerControls(Gtk.Box):
     def _update_progress(self, *_):
         self.progress_text = self._format_time(self._player.position)
 
-    def _update_duration(self, *_):
-        if self._player.duration < 0:
-            # if the duration is negative, try again in 100ms (player was probably still buffering)
-            GLib.timeout_add(100, self._update_duration)
-            return
-
-        self.duration_text = self._format_time(self._player.duration)
-        self.progress_bar.set_range(0, self._player.duration)
-
     def _set_song_info(self, track: TrackItem):
         if (not track.albumartist) or track.albumartist == '[Various Artists]':
             artists = track.artists
@@ -128,6 +118,9 @@ class RecordBoxPlayerControls(Gtk.Box):
             self.playing_track_info += f' ({track.discsubtitle})'
         elif track.discnumber:
             self.playing_track_info += f' (Disc {track.discnumber})'
+
+        self.duration_text = self._format_time(self._player.duration)
+        self.progress_bar.set_range(0, self._player.duration)
 
     def _update_volume(self, *_):
         value = GstAudio.StreamVolume.convert_volume(

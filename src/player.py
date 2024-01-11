@@ -273,25 +273,28 @@ class Player(GObject.GObject):
         match message.type:
             case Gst.MessageType.EOS:
                 self.stop()
-                if not (self._play_queue.empty or self.stop_after_current):
+                if not self._play_queue.empty and not self.stop_after_current:
                     self._play_queue.restart()
                     self.current_track = self._play_queue.get_current_track()
                 self.stop_after_current = False
                 self.emit('eos')
             case Gst.MessageType.STREAM_START:
-                self.current_track = self._play_queue.get_current_track()
-                self.duration = self._player.query_duration(Gst.Format.TIME)[1]
-                # set position to 0 here, otherwise it will still be the last position of the
-                # previous track the next time _update_position is called, triggering a seek
-                self.position = 0
-                # always emit stream_start, even if we're going to stop immediately
-                # because the UI uses it as the signal to update the current track info
-                self.emit('stream_start')
-                if self._stop_next:
-                    self.stop()
+                self._on_stream_start()
             case Gst.MessageType.ASYNC_DONE if self._seeking:
                 self._seeking = False
             case Gst.MessageType.ERROR:
                 self._player.set_state(Gst.State.NULL)
                 err, _ = message.parse_error()
                 self.player_error.emit(err)
+
+    def _on_stream_start(self):
+        self.current_track = self._play_queue.get_current_track()
+        # set position to 0 here, otherwise it will still be the last position of the
+        # previous track the next time _update_position is called, triggering a seek
+        self.position = 0
+        self.duration = self._player.query_duration(Gst.Format.TIME)[1]
+        # always emit stream_start, even if we're going to stop immediately
+        # because the UI uses it as the signal to update the current track info
+        self.emit('stream_start')
+        if self._stop_next:
+            self.stop()
