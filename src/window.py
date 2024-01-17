@@ -17,6 +17,8 @@
 
 from gi.repository import Adw, Gtk, GLib, Gio, GObject
 import gi
+import json
+import os
 from .library import MusicLibrary
 from .items import TrackItem, AlbumItem
 from .library_lists import ArtistList, AlbumList
@@ -116,6 +118,8 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         self.stop_player = self._create_action(
             'stop', lambda *_: self.player.stop()
         )
+        if self.app.settings.get_boolean('restore-playback-state'):
+            self.restore_state()
 
     def send_toast(self, title: str, button: str = '', action: str = ''):
         toast = Adw.Toast(title=title, timeout=3)
@@ -183,6 +187,42 @@ class RecordBoxWindow(Adw.ApplicationWindow):
             self.library.select_album(current_track.albumartist, album)
             if self.album_overview.current_album != album:
                 self._update_album(album)
+
+    def save_state(self):
+        data = self.play_queue.export()
+        data['current']['position'] = self.player.position
+        if current_album := self.album_overview.current_album:
+            data['current-album'] = {
+                'albumartist': current_album.albumartist,
+                'title': current_album.title,
+            }
+        with open(
+            f'{GLib.get_user_data_dir()}/RecordBox/state.json', 'w'
+        ) as f:
+            f.write(json.dumps(data))
+
+    def restore_state(self):
+        if not os.path.exists(
+            state_file := f'{GLib.get_user_data_dir()}/RecordBox/state.json'
+        ):
+            return
+        with open(state_file, 'r') as f:
+            state_data = json.loads(f.read())
+            if not state_data['queue']:
+                return
+            self.play_queue.import_state(state_data)
+            self.player.resume(state_data['current']['position'])
+
+        self.return_to_playing()
+        if current_album := self.album_overview.current_album:
+            # the selected items in the lists get cleared for some reason while
+            # the window is opening, so we need to reselect them after a delay
+            GLib.timeout_add(
+                300,
+                self.library.select_album,
+                current_album.albumartist,
+                current_album,
+            )
 
     ## UI Callbacks ##
 
@@ -339,11 +379,11 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         replace_queue = self._create_action(
             'replace-queue', self.overwrite_queue, enabled=False
         )
-        self.bind_property(
-            'player_active',
+        self.play_queue.bind_property(
+            'empty',
             replace_queue,
             'enabled',
-            GObject.BindingFlags.DEFAULT,
+            GObject.BindingFlags.INVERT_BOOLEAN,
         )
         self._create_action(
             'replace-disc',

@@ -15,6 +15,7 @@ class RecordBoxPreferencesWindow(Adw.PreferencesWindow):
     album_sort = Gtk.Template.Child()
     show_all_artists = Gtk.Template.Child()
     restore_window_state = Gtk.Template.Child()
+    restore_playback_state = Gtk.Template.Child()
     sync_on_startup = Gtk.Template.Child()
 
     rg_mode = Gtk.Template.Child()
@@ -53,6 +54,9 @@ class RecordBoxPreferencesWindow(Adw.PreferencesWindow):
         self._bind('show-all-artists', self.show_all_artists, 'active')
 
         self._bind('restore-window-state', self.restore_window_state, 'active')
+        self._bind(
+            'restore-playback-state', self.restore_playback_state, 'active'
+        )
 
         self._bind('sync-on-startup', self.sync_on_startup, 'active')
 

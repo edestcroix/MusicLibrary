@@ -9,11 +9,18 @@
         <property name="use-underline">True</property>
         <child>
           <object class="AdwPreferencesGroup">
-            <property name="title" translatable="yes">Window</property>
+            <property name="title" translatable="yes">Restore</property>
             <child>
               <object class="AdwSwitchRow" id="restore_window_state">
                 <property name="title" translatable="yes">_Restore Window State</property>
-                <property name="subtitle" translatable="yes">Restore window state on startup. Does not include player state.</property>
+                <property name="subtitle" translatable="yes">Restore window state on startup.</property>
+                <property name="use_underline">True</property>
+              </object>
+            </child>
+            <child>
+              <object class="AdwSwitchRow" id="restore_playback_state">
+                <property name="title" translatable="yes">Restore _Playback State</property>
+                <property name="subtitle" translatable="yes">Restore playback state and play queue on startup.</property>
                 <property name="use_underline">True</property>
               </object>
             </child>

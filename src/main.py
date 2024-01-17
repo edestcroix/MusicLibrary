@@ -59,6 +59,8 @@ class RecordBoxApplication(Adw.Application):
         MPRIS(self)
         self.settings = Gio.Settings.new('com.github.edestcroix.RecordBox')
 
+        self.connect('shutdown', self._save_state)
+
     def do_activate(self):
         """Called when the application is activated.
 
@@ -139,6 +141,12 @@ class RecordBoxApplication(Adw.Application):
         self.set_accels_for_action(
             'win.stop_after_current', ['<control>greater']
         )
+
+    def _save_state(self, *_):
+        if self.settings.get_boolean('restore-playback-state') and (
+            win := self.props.active_window
+        ):
+            win.save_state()
 
 
 def main(version, app_id):

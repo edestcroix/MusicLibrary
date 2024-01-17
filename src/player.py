@@ -97,6 +97,8 @@ class Player(GObject.GObject):
         self.connect('notify::rg-mode', self._on_rg_mode_changed)
         self.connect('notify::rg-enabled', self._on_rg_enabled_changed)
 
+        self._state_restored = False
+
     def attach_to_play_queue(self, play_queue):
         self._play_queue = play_queue
         self._play_queue.connect(
@@ -117,13 +119,19 @@ class Player(GObject.GObject):
     def ready(self):
         self.setup(Gst.State.PAUSED)
 
-    def setup(self, initial_state: Gst.State):
+    def resume(self, position: int):
+        self._state_restored = True
+        self.current_track = self._play_queue.get_current_track()
+        self.setup(Gst.State.PAUSED, position)
+        GLib.timeout_add(300, self._update_position)
+
+    def setup(self, initial_state: Gst.State, position=0):
         url = self._prepare_url(self._play_queue.get_current_track())
         self._player.set_state(Gst.State.NULL)
         time.sleep(0.1)
         self._player.set_property('uri', url)
         self._player.set_state(initial_state)
-        self.position = 0
+        self.position = position
         if initial_state == Gst.State.PLAYING:
             self.emit('state_changed', PlayerState.PLAYING)
         elif initial_state == Gst.State.PAUSED:
@@ -177,6 +185,13 @@ class Player(GObject.GObject):
         )
         self._player.set_state(Gst.State.PLAYING)
         self.emit('state-changed', PlayerState.PLAYING)
+
+    def export_state(self):
+        """Export the currently playing track and the position in the track."""
+        return {
+            'track': self.current_track,
+            'position': self.position,
+        }
 
     def _setup_replaygain(self) -> tuple[Gst.Bin, Gst.Element]:
         rg_bin = Gst.Bin.new('rg')
@@ -291,7 +306,13 @@ class Player(GObject.GObject):
         self.current_track = self._play_queue.get_current_track()
         # set position to 0 here, otherwise it will still be the last position of the
         # previous track the next time _update_position is called, triggering a seek
-        self.position = 0
+        # (Unless _state_restored is True, where the position was set manually when the app
+        # started while it restored from a previous session, then just disable _state_restored)
+        if not self._state_restored:
+            self.position = 0
+        else:
+            self._state_restored = False
+
         self.duration = self._player.query_duration(Gst.Format.TIME)[1]
         # always emit stream_start, even if we're going to stop immediately
         # because the UI uses it as the signal to update the current track info

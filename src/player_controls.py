@@ -49,6 +49,10 @@ class RecordBoxPlayerControls(Gtk.Box):
             'value',
             GObject.BindingFlags.BIDIRECTIONAL,
         )
+        self.progress_bar.set_range(0, self._player.duration)
+        GLib.timeout_add(
+            400, self.progress_bar.set_value, self._player.position
+        )
         self._player.connect('notify::position', self._update_progress)
 
     def set_current_track(self, *_):

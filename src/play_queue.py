@@ -156,6 +156,24 @@ class PlayQueue(Adw.Bin):
         self.can_undo = False
         self.can_redo = False
 
+    def export(self):
+        return {
+            'queue': [i.export() for i in self._base_model],
+            'current': {
+                'index': self.current_index,
+            },
+        }
+
+    def import_state(self, state: dict):
+        """Import queue state from a dict exported with export()."""
+        self._reset(empty=False)
+        self._base_model.splice(
+            0, len(self._base_model), [QueueItem(**i) for i in state['queue']]
+        )
+        self.current_index = state['current']['index']
+        self._update_queue()
+        self._update_current_parent(self._queue[self.current_index])
+
     @Gtk.Template.Callback()
     def undo(self, *_):
         if self._backups:

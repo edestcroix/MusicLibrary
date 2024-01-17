@@ -146,6 +146,16 @@ class AlbumList(LibraryList):
     def find_album_by_track(self, track: TrackItem) -> AlbumItem | None:
         return next((row for row in self.model if track in row.tracks), None)
 
+    def find_album(self, albumartist: str, title: str) -> AlbumItem | None:
+        return next(
+            (
+                row
+                for row in self.model
+                if row.albumartist == albumartist and row.title == title
+            ),
+            None,
+        )
+
     def scroll_to_row_with_title(self, title: str):
         for i, row in enumerate(self.filter_model):
             if row.title == title:

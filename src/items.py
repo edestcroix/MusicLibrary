@@ -153,6 +153,10 @@ class QueueItem(TrackItem):
     children = GObject.Property(type=Gio.ListStore)
 
     def __init__(self, **kwargs):
+        if 'children' in kwargs and type(kwargs['children']) == list:
+            children = Gio.ListStore.new(QueueItem)
+            children.splice(0, 0, [QueueItem(**t) for t in kwargs['children']])
+            kwargs['children'] = children
         super().__init__(**kwargs)
         if self.from_album:
             self.subtitle = f'{self.duration} - {len(self.children)} Tracks'
@@ -171,6 +175,16 @@ class QueueItem(TrackItem):
             )
             new['is_current'] = False
         return QueueItem(**new)
+
+    def export(self):
+        """Converts the QueueItem into a json-serializable dict."""
+        out_dict = dict(self)
+        if self.children:
+            out_dict['children'] = [c.export() for c in self.children]
+        else:
+            del out_dict['children']
+        out_dict['is_current'] = False
+        return out_dict
 
     def _update(self, *_):
         self.length = sum(c.length for c in self.children)

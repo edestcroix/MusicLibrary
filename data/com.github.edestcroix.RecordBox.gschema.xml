@@ -48,6 +48,14 @@
       </description>
     </key>
 
+    <key name="restore-playback-state" type="b">
+      <default>true</default>
+      <summary>Restore playback state</summary>
+      <description>
+        Control if playback state should be restored on startup.
+      </description>
+    </key>
+
     <key name="sync-on-startup" type="b">
       <default>true</default>
       <summary>Sync on startup</summary>

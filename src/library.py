@@ -125,6 +125,9 @@ class MusicLibrary(Adw.Bin):
     def find_album_by_track(self, track: TrackItem):
         return self.album_list.find_album_by_track(track)
 
+    def find_album(self, albumartist: str, title: str):
+        return self.album_list.find_album(albumartist, title)
+
     def select_album(self, artist: str, album: AlbumItem):
         self.album_list.filter_on_artist(artist)
         self.album_list_page.set_title(artist)
