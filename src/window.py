@@ -178,9 +178,6 @@ class RecordBoxWindow(Adw.ApplicationWindow):
             album = self._album_to_disc(album, d)
         self._add_album_to_queue(album, overwrite=True)
 
-    def undo(self, *_):
-        self.play_queue.undo()
-
     def return_to_playing(self, *_):
         if current_track := self.player.current_track:
             album = self.library.find_album_by_track(current_track)
@@ -320,6 +317,7 @@ class RecordBoxWindow(Adw.ApplicationWindow):
         self.player.exit()
         self.player_active = False
         self.play_queue.clear()
+        self.queue_panel_split_view.set_show_sidebar(False)
 
     # action and settings setup/binding #
 

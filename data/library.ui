@@ -193,7 +193,7 @@
     </section>
     <section>
       <item>
-        <attribute name="label" translatable="yes">Show _All Albums</attribute>
+        <attribute name="label" translatable="yes">_Clear Selected Artist</attribute>
         <attribute name="action">win.filter-all</attribute>
       </item>
       <submenu>

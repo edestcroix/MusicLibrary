@@ -1,5 +1,5 @@
 {
-  "app-id": "com.github.edestcroix.RecordBox",
+  "app-id": "com.github.edestcroix.RecordBox.Devel",
   "runtime": "org.gnome.Platform",
   "runtime-version": "45",
   "sdk": "org.gnome.Sdk",
