@@ -1,3 +1,6 @@
+Disclaimer: This project has moved to `codeberg <https://codeberg.org/edestcroix/Recordbox>`_.
+
+
 .. image:: https://github.com/edestcroix/RecordBox/actions/workflows/flatpak.yml/badge.svg
    :target: https://github.com/edestcroix/RecordBox/actions/workflows/flatpak.yml
 Record Box
